@@ -33,6 +33,7 @@ export async function GET(req: NextRequest) {
       imageUrl: string;
       menuName: string;
       menuId: string;
+      updatedAt: string;
     }[];
   }> = {};
 
