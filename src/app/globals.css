@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #242424;
+    --border: #2e2e2e;
+    --text: #f0f0f0;
+    --text-muted: #888;
+    --accent: #e85d04;
+    --accent-hover: #f48c42;
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    direction: ltr;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border bg-[var(--surface)] border-[var(--border)] p-6;
+  }
+
+  .btn {
+    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)];
+  }
+
+  .btn-secondary {
+    @apply btn bg-[var(--surface2)] text-[var(--text)] border border-[var(--border)]
+           hover:border-[var(--accent)] hover:text-[var(--accent)];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-[var(--text-muted)] hover:text-[var(--text)];
+  }
+
+  .btn-danger {
+    @apply btn bg-red-900/30 text-red-400 border border-red-900/50 hover:bg-red-900/50;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-[var(--border)] bg-[var(--surface2)]
+           px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]
+           focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent
+           transition-all duration-150;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-[var(--text-muted)] mb-1;
+  }
+
+  .badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .badge-pending  { @apply badge bg-gray-800 text-gray-400; }
+  .badge-generating { @apply badge bg-amber-900/40 text-amber-400 animate-pulse; }
+  .badge-done     { @apply badge bg-green-900/40 text-green-400; }
+  .badge-error    { @apply badge bg-red-900/40 text-red-400; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #444; }
