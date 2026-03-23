@@ -14,10 +14,10 @@ export async function GET(
 ) {
   const { id } = params;
 
-  // Serve from memory cache
   const cached = cache.get(id);
+
   if (cached) {
-    return new NextResponse(cached.buffer, {
+    return new NextResponse(new Uint8Array(cached.buffer), {
       headers: {
         'Content-Type': cached.mimeType,
         'Cache-Control': 'public, max-age=31536000, immutable',
@@ -77,7 +77,7 @@ export async function GET(
     await prisma.dish.update({ where: { id }, data: { imageUrl: b64 } });
 
     cache.set(id, { buffer, mimeType });
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': mimeType,
         'Cache-Control': 'public, max-age=31536000, immutable',
