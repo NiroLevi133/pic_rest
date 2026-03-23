@@ -62,7 +62,7 @@ export interface Menu {
 // ─── Settings Types ──────────────────────────────────────────────────────────
 
 export type LLMProvider = 'openai' | 'anthropic' | 'gemini';
-export type ImageProvider = 'dalle' | 'stability' | 'replicate' | 'gemini';
+export type ImageProvider = 'gemini';
 
 export interface AppSettings {
   llmProvider: LLMProvider;
