@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     const merged: AppSettings = { ...current };
     for (const [k, v] of Object.entries(updates)) {
       if (v !== undefined && v !== '') {
-        (merged as Record<string, unknown>)[k] = v;
+        (merged as unknown as Record<string, unknown>)[k] = v;
       }
     }
 
