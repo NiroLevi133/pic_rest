@@ -4,9 +4,10 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - echo "DATABASE_URL=$DATABASE_URL" >> .env.production
+        - echo "DIRECT_URL=$DIRECT_URL" >> .env.production
     build:
       commands:
-        - npx prisma generate
         - npm run build
   artifacts:
     baseDirectory: .next
