@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     let prompt: string;
     if (styleKey === 'custom' && styleRefImage) {
       // Analyze style reference image with GPT-4o vision
-      const llmKey = settings.llmApiKey || process.env.OPENAI_API_KEY || '';
+      const llmKey = settings.openaiApiKey || process.env.OPENAI_API_KEY || '';
       const openai = new OpenAI({ apiKey: llmKey });
       const analysis = await openai.chat.completions.create({
         model: 'gpt-4o',

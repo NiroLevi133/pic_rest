@@ -6,7 +6,7 @@ import {
   Save, Loader2, Eye, EyeOff, CheckCircle, ChevronDown, ChevronUp,
   Store, Sparkles, User, LogOut, Camera, X, Image as ImageIcon,
 } from 'lucide-react';
-import type { SafeSettings, AppSettings, LLMProvider, ImageProvider } from '@/lib/types';
+import type { SafeSettings, AppSettings, LLMProvider } from '@/lib/types';
 
 /* ── Reusable components ─────────────────────────────────────────── */
 function KeyInput({ label, name, placeholder, value, onChange, hasKey }: {
@@ -68,13 +68,6 @@ const LLM_PROVIDERS: { id: LLMProvider; label: string }[] = [
   { id: 'gemini', label: 'Google Gemini' },
 ];
 
-const IMAGE_PROVIDERS: { id: ImageProvider; label: string }[] = [
-  { id: 'dalle', label: 'DALL-E / GPT-Image' },
-  { id: 'gemini', label: 'Gemini Image' },
-  { id: 'stability', label: 'Stability AI' },
-  { id: 'replicate', label: 'Replicate' },
-];
-
 /* ── Main page ───────────────────────────────────────────────────── */
 export default function SettingsPage() {
   const router = useRouter();
@@ -98,16 +91,12 @@ export default function SettingsPage() {
   const [aiError, setAiError] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');
-  const [stabilityKey, setStabilityKey] = useState('');
-  const [replicateKey, setReplicateKey] = useState('');
   const [googleKey, setGoogleKey] = useState('');
   const [llmProvider, setLlmProvider] = useState<LLMProvider>('openai');
-  const [imageProvider, setImageProvider] = useState<ImageProvider>('dalle');
   const [openaiModel, setOpenaiModel] = useState('gpt-4o');
   const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-6');
   const [geminiLlmModel, setGeminiLlmModel] = useState('gemini-2.5-flash');
   const [geminiImageModel, setGeminiImageModel] = useState('gemini-2.0-flash-exp');
-  const [dalleModel, setDalleModel] = useState('gpt-image-latest');
   const [imageSize, setImageSize] = useState('1024x1024');
   const [imageStyle, setImageStyle] = useState('vivid');
   const [concurrency, setConcurrency] = useState(3);
@@ -138,12 +127,10 @@ export default function SettingsPage() {
           const s: SafeSettings = d.data;
           setSafeSettings(s);
           setLlmProvider(s.llmProvider ?? 'openai');
-          setImageProvider(s.imageProvider ?? 'dalle');
           setOpenaiModel(s.openaiModel ?? 'gpt-4o');
           setAnthropicModel(s.anthropicModel ?? 'claude-sonnet-4-6');
           setGeminiLlmModel(s.geminiLlmModel ?? 'gemini-2.5-flash');
           setGeminiImageModel(s.geminiImageModel ?? 'gemini-2.0-flash-exp');
-          setDalleModel(s.dalleModel ?? 'gpt-image-latest');
           setImageSize(s.imageSize ?? '1024x1024');
           setImageStyle(s.imageStyle ?? 'vivid');
           setConcurrency(s.concurrency ?? 3);
@@ -177,13 +164,11 @@ export default function SettingsPage() {
     e.preventDefault();
     setAiSaving(true); setAiError(''); setAiSaved(false);
     const updates: Partial<AppSettings> = {
-      llmProvider, imageProvider, openaiModel, anthropicModel,
-      geminiLlmModel, geminiImageModel, dalleModel, imageSize, imageStyle, concurrency,
+      llmProvider, openaiModel, anthropicModel,
+      geminiLlmModel, geminiImageModel, imageSize, imageStyle, concurrency,
     };
     if (openaiKey) updates.openaiApiKey = openaiKey;
     if (anthropicKey) updates.anthropicApiKey = anthropicKey;
-    if (stabilityKey) updates.stabilityApiKey = stabilityKey;
-    if (replicateKey) updates.replicateApiKey = replicateKey;
     if (googleKey) updates.googleApiKey = googleKey;
     try {
       const res = await fetch('/api/settings', {
@@ -195,7 +180,7 @@ export default function SettingsPage() {
       if (!data.success) throw new Error(data.error);
       setSafeSettings(data.data);
       setAiSaved(true);
-      setOpenaiKey(''); setAnthropicKey(''); setStabilityKey(''); setReplicateKey(''); setGoogleKey('');
+      setOpenaiKey(''); setAnthropicKey(''); setGoogleKey('');
     } catch (err) {
       setAiError(err instanceof Error ? err.message : 'שגיאה');
     } finally {
@@ -363,40 +348,16 @@ export default function SettingsPage() {
                   )}
                 </div>
 
-                {/* Image Provider */}
+                {/* Image Generation (Gemini – hardcoded) */}
                 <div>
-                  <p className="text-sm font-medium mb-3">Image Generation Provider</p>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    {IMAGE_PROVIDERS.map(({ id, label }) => (
-                      <button key={id} type="button"
-                        className={`p-2.5 rounded-xl border text-xs font-medium transition-all ${imageProvider === id ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[var(--border)] bg-[var(--surface2)] text-[var(--text-muted)]'}`}
-                        onClick={() => setImageProvider(id)}>{label}</button>
-                    ))}
+                  <p className="text-sm font-medium mb-3">Image Generation (Gemini)</p>
+                  <div className="space-y-2">
+                    <KeyInput label="Google API Key" name="googleKey" placeholder="AIza..." value={googleKey} onChange={setGoogleKey} hasKey={safeSettings?.hasGoogleKey ?? false} />
+                    <div>
+                      <label className="label text-sm mb-1">מודל Gemini Image</label>
+                      <input className="input text-sm font-mono" value={geminiImageModel} onChange={e => setGeminiImageModel(e.target.value)} placeholder="gemini-2.0-flash-preview-image-generation" />
+                    </div>
                   </div>
-                  {imageProvider === 'dalle' && (
-                    <div className="space-y-2">
-                      <p className="text-xs text-[var(--text-muted)]">משתמש ב-OpenAI API Key</p>
-                      <div>
-                        <label className="label text-sm mb-1">מודל</label>
-                        <input className="input text-sm font-mono" value={dalleModel} onChange={e => setDalleModel(e.target.value)} placeholder="gpt-image-latest" />
-                      </div>
-                    </div>
-                  )}
-                  {imageProvider === 'gemini' && (
-                    <div className="space-y-2">
-                      <KeyInput label="Google API Key" name="googleKey" placeholder="AIza..." value={googleKey} onChange={setGoogleKey} hasKey={safeSettings?.hasGoogleKey ?? false} />
-                      <div>
-                        <label className="label text-sm mb-1">מודל Gemini Image</label>
-                        <input className="input text-sm font-mono" value={geminiImageModel} onChange={e => setGeminiImageModel(e.target.value)} placeholder="gemini-2.0-flash-preview-image-generation" />
-                      </div>
-                    </div>
-                  )}
-                  {imageProvider === 'stability' && (
-                    <KeyInput label="Stability AI Key" name="stabilityKey" placeholder="sk-..." value={stabilityKey} onChange={setStabilityKey} hasKey={safeSettings?.hasStabilityKey ?? false} />
-                  )}
-                  {imageProvider === 'replicate' && (
-                    <KeyInput label="Replicate Key" name="replicateKey" placeholder="r8_..." value={replicateKey} onChange={setReplicateKey} hasKey={safeSettings?.hasReplicateKey ?? false} />
-                  )}
                 </div>
 
                 {/* Image size + concurrency */}

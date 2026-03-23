@@ -32,20 +32,16 @@ function decrypt(encoded: string): string {
 /** Defaults built from env vars – used when DB is unreachable */
 function envDefaults(): AppSettings {
   return {
-    llmProvider:       (process.env.LLM_PROVIDER as LLMProvider)     ?? 'gemini',
-    imageProvider:     (process.env.IMAGE_PROVIDER as ImageProvider)  ?? 'gemini',
+    llmProvider:       (process.env.LLM_PROVIDER as LLMProvider) ?? 'openai',
+    imageProvider:     'gemini',
     openaiApiKey:      process.env.OPENAI_API_KEY,
     anthropicApiKey:   process.env.ANTHROPIC_API_KEY,
     googleApiKey:      process.env.GOOGLE_API_KEY,
-    stabilityApiKey:   process.env.STABILITY_API_KEY,
-    replicateApiKey:   process.env.REPLICATE_API_KEY,
-    openaiModel:       process.env.OPENAI_MODEL       ?? 'gpt-4o',
-    anthropicModel:    process.env.ANTHROPIC_MODEL    ?? 'claude-sonnet-4-6',
-    geminiLlmModel:    process.env.GEMINI_LLM_MODEL   ?? 'gemini-2.5-flash',
+    openaiModel:       process.env.OPENAI_MODEL      ?? 'gpt-4o',
+    anthropicModel:    process.env.ANTHROPIC_MODEL   ?? 'claude-sonnet-4-6',
+    geminiLlmModel:    process.env.GEMINI_LLM_MODEL  ?? 'gemini-2.5-flash',
     geminiImageModel:  process.env.GEMINI_IMAGE_MODEL ?? 'gemini-3.1-flash-image-preview',
-    dalleModel:        process.env.DALLE_MODEL        ?? 'dall-e-3',
     imageSize:         process.env.IMAGE_SIZE         ?? '1024x1024',
-    imageStyle:        process.env.IMAGE_STYLE        ?? 'vivid',
     imageQuality:      process.env.IMAGE_QUALITY      ?? 'medium',
     concurrency:       Number(process.env.CONCURRENCY ?? 3),
   };
@@ -66,8 +62,7 @@ export async function getSettings(): Promise<AppSettings> {
         googleApiKey:    dbSettings.googleApiKey    ?? process.env.GOOGLE_API_KEY,
         openaiApiKey:    dbSettings.openaiApiKey    ?? process.env.OPENAI_API_KEY,
         anthropicApiKey: dbSettings.anthropicApiKey ?? process.env.ANTHROPIC_API_KEY,
-        stabilityApiKey: dbSettings.stabilityApiKey ?? process.env.STABILITY_API_KEY,
-        replicateApiKey: dbSettings.replicateApiKey ?? process.env.REPLICATE_API_KEY,
+        imageProvider:   'gemini',
       };
     } catch {
       return envDefaults();
@@ -93,8 +88,6 @@ export function toSafeSettings(s: AppSettings): SafeSettings {
   const {
     openaiApiKey,
     anthropicApiKey,
-    stabilityApiKey,
-    replicateApiKey,
     googleApiKey,
     ...rest
   } = s;
@@ -102,8 +95,6 @@ export function toSafeSettings(s: AppSettings): SafeSettings {
     ...rest,
     hasOpenaiKey:    !!openaiApiKey,
     hasAnthropicKey: !!anthropicApiKey,
-    hasStabilityKey: !!stabilityApiKey,
-    hasReplicateKey: !!replicateApiKey,
     hasGoogleKey:    !!googleApiKey,
   };
 }

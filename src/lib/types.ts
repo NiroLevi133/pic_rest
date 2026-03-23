@@ -69,29 +69,22 @@ export interface AppSettings {
   imageProvider: ImageProvider;
   openaiApiKey?: string;
   anthropicApiKey?: string;
-  stabilityApiKey?: string;
-  replicateApiKey?: string;
   googleApiKey?: string;
   openaiModel?: string;         // e.g. gpt-4o
   anthropicModel?: string;      // e.g. claude-sonnet-4-6
-  dalleModel?: string;          // e.g. dall-e-3
-  stabilityModel?: string;
   geminiLlmModel?: string;      // e.g. gemini-2.5-flash
-  geminiImageModel?: string;    // e.g. gemini-2.0-flash-preview-image-generation
+  geminiImageModel?: string;    // e.g. gemini-3.1-flash-image-preview
   imageSize?: string;           // 1024x1024
-  imageStyle?: string;          // vivid | natural
-  imageQuality?: string;        // low | medium | high (gpt-image)
+  imageQuality?: string;        // low | medium | high
   concurrency?: number;         // parallel image generations
 }
 
 export type SafeSettings = Omit<
   AppSettings,
-  'openaiApiKey' | 'anthropicApiKey' | 'stabilityApiKey' | 'replicateApiKey' | 'googleApiKey'
+  'openaiApiKey' | 'anthropicApiKey' | 'googleApiKey'
 > & {
   hasOpenaiKey: boolean;
   hasAnthropicKey: boolean;
-  hasStabilityKey: boolean;
-  hasReplicateKey: boolean;
   hasGoogleKey: boolean;
 };
 
