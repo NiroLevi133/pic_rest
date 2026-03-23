@@ -98,7 +98,6 @@ export default function SettingsPage() {
   const [geminiLlmModel, setGeminiLlmModel] = useState('gemini-2.5-flash');
   const [geminiImageModel, setGeminiImageModel] = useState('gemini-2.0-flash-exp');
   const [imageSize, setImageSize] = useState('1024x1024');
-  const [imageStyle, setImageStyle] = useState('vivid');
   const [concurrency, setConcurrency] = useState(3);
 
   /* Load profile */
@@ -132,7 +131,6 @@ export default function SettingsPage() {
           setGeminiLlmModel(s.geminiLlmModel ?? 'gemini-2.5-flash');
           setGeminiImageModel(s.geminiImageModel ?? 'gemini-2.0-flash-exp');
           setImageSize(s.imageSize ?? '1024x1024');
-          setImageStyle(s.imageStyle ?? 'vivid');
           setConcurrency(s.concurrency ?? 3);
         }
       })
@@ -165,7 +163,7 @@ export default function SettingsPage() {
     setAiSaving(true); setAiError(''); setAiSaved(false);
     const updates: Partial<AppSettings> = {
       llmProvider, openaiModel, anthropicModel,
-      geminiLlmModel, geminiImageModel, imageSize, imageStyle, concurrency,
+      geminiLlmModel, geminiImageModel, imageSize, concurrency,
     };
     if (openaiKey) updates.openaiApiKey = openaiKey;
     if (anthropicKey) updates.anthropicApiKey = anthropicKey;
