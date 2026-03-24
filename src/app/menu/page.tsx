@@ -8,6 +8,21 @@ import {
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 
+function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.8): Promise<string> {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(1, maxWidth / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 function LabContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -72,7 +87,7 @@ function LabContent() {
   async function handleMenuImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const b64 = await readFile(file);
+    const b64 = await compressImage(await readFile(file));
     setMenuImage(b64);
     // Auto-scan
     setScanning(true);

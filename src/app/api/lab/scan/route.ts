@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const maxDuration = 120;
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
 import OpenAI from 'openai';
