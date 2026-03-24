@@ -10,16 +10,23 @@ import {
 import { STYLE_PRESETS } from '@/lib/style-presets';
 
 function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.8): Promise<string> {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      try {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(dataUrl); // fallback to original
+      }
     };
+    img.onerror = () => reject(new Error('Failed to load image'));
     img.src = dataUrl;
   });
 }
@@ -134,7 +141,7 @@ function DishLabModal({
             )}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={async e => { const f = e.target.files?.[0]; if (f) setDishImage(await readFile(f)); e.target.value = ''; }} />
+            onChange={async e => { const f = e.target.files?.[0]; if (f) setDishImage(await compressImage(await readFile(f))); e.target.value = ''; }} />
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
@@ -646,6 +653,7 @@ export default function MenusPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [scanModal, setScanModal] = useState<{ dishes: string[]; name: string } | null>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState('');
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const selectedCat = selectedCatId ? (categories.find(c => c.id === selectedCatId) ?? null) : null;
   const scanRef = useRef<HTMLInputElement>(null);
@@ -683,6 +691,7 @@ export default function MenusPage() {
     const reader = new FileReader();
     reader.onload = async (ev) => {
       try {
+        setScanError('');
         const menuImage = await compressImage(ev.target?.result as string);
         const res = await fetch('/api/lab/scan', {
           method: 'POST',
@@ -692,7 +701,11 @@ export default function MenusPage() {
         const data = await res.json();
         if (data.success && data.data.dishes.length > 0) {
           setScanModal({ dishes: data.data.dishes, name: 'תפריט סרוק' });
+        } else {
+          setScanError(data.error || 'לא נמצאו מנות בתמונה');
         }
+      } catch (err) {
+        setScanError(String(err));
       } finally {
         setScanning(false);
       }
@@ -728,6 +741,7 @@ export default function MenusPage() {
         </div>
         <input ref={scanRef} type="file" accept="image/*" className="hidden" onChange={handleScanMenu} />
       </div>
+      {scanError && <p className="text-red-400 text-sm text-center -mt-3">{scanError}</p>}
 
       {/* Grid */}
       {loading ? (
