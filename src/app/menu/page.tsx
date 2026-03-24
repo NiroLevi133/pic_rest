@@ -9,16 +9,23 @@ import {
 import { STYLE_PRESETS } from '@/lib/style-presets';
 
 function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.8): Promise<string> {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const scale = Math.min(1, maxWidth / img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      try {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve(dataUrl); return; }
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      } catch {
+        resolve(dataUrl);
+      }
     };
+    img.onerror = () => reject(new Error('Failed to load image'));
     img.src = dataUrl;
   });
 }
@@ -79,7 +86,7 @@ function LabContent() {
   async function handleDishImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    setDishImage(await readFile(file));
+    setDishImage(await compressImage(await readFile(file)));
     setResult(null);
     e.target.value = '';
   }
@@ -125,7 +132,9 @@ function LabContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      if (!text) throw new Error('השרת לא הגיב — נסה שוב');
+      const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
       setResult(data.data);
     } catch (err) {

@@ -89,7 +89,10 @@ function DishLabModal({
         styleKey: styleKey ?? 'atmosphere',
         dishId: dish.id,
       }),
-    }).then(r => r.json()).then(data => {
+    }).then(async r => {
+      const text = await r.text();
+      if (!text) throw new Error('השרת לא הגיב — נסה שוב');
+      const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
       return data.data.imageUrl as string;
     });
