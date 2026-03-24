@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+
+export const maxDuration = 300; // 5 minutes
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
@@ -80,8 +82,13 @@ Apply this exact photography style to the dish from the reference image. Preserv
       referenceImage,
     });
 
-    // Resize image for faster gallery loading (800px wide, JPEG 75%)
-    const storedImageUrl = await resizeForGallery(result.imageUrl);
+    // Resize image for faster gallery loading — fallback to original if sharp fails
+    let storedImageUrl = result.imageUrl;
+    try {
+      storedImageUrl = await resizeForGallery(result.imageUrl);
+    } catch {
+      console.warn('[generate] resizeForGallery failed, storing original');
+    }
 
     // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
     let savedDishId: string;
