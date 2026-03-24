@@ -260,3 +260,190 @@ export function getPresetPrompt(key: string): string | null {
 export function getPreset(key: string): StylePreset | null {
   return STYLE_PRESETS.find(p => p.key === key) ?? null;
 }
+
+/**
+ * Returns a locked prompt for menu-series generation.
+ * Every parameter is fixed — no "or", no options — so all dishes look identical.
+ */
+export function getMenuSeriesPrompt(styleKey: string): string {
+  switch (styleKey) {
+    case 'atmosphere':
+      return `# ROLE & GOAL
+You are a professional Food AI Photography Agent for a premium restaurant system.
+
+Your goal is to transform a real, imperfect mobile photo of a dish into a high-end commercial food photograph that is BOTH:
+1. Strictly consistent across a full menu (uniform visual system)
+2. Visually appealing, vibrant, and marketing-ready
+
+This image is part of a MENU SERIES.
+All outputs must look like they belong to the SAME brand, SAME photoshoot, SAME environment.
+
+---
+
+# 🔒 GLOBAL LOCKED PARAMETERS (MUST BE IDENTICAL FOR ALL DISHES)
+
+LIGHTING:
+Single soft natural daylight source
+Position: TOP-LEFT (10 o’clock)
+Angle: 45-degree elevation
+Tone: warm, soft, inviting
+Shadow: one gentle shadow toward bottom-right
+No additional light sources allowed
+
+CAMERA ANGLE:
+Strict 90-degree top-down (flat lay)
+Camera must be perfectly perpendicular to the surface
+Plate must appear as a perfect circle (no distortion, no tilt)
+
+FRAMING:
+Plate occupies 65–75% of the frame
+Perfectly centered with symmetrical alignment
+Even margins on all sides
+Plate must be fully visible and never touch frame edges
+
+FOCUS:
+Deep full focus across the entire dish (edge-to-edge sharpness)
+
+QUALITY:
+4K resolution
+Ultra photorealistic
+Clean, crisp, premium output
+
+---
+
+# 🌿 ENVIRONMENT (LOCKED — NO VARIATION ALLOWED)
+
+Background: Mediterranean colorful fabric tablecloth
+
+Material:
+Natural fabric (cotton or linen)
+
+Texture:
+Soft, subtle textile texture (not rough, not heavy folds)
+
+Base color:
+Light neutral tone (cream / warm beige)
+
+Pattern:
+Subtle Mediterranean pattern ONLY
+(e.g., soft stripes, delicate organic motifs)
+
+Allowed color palette:
+- Cream
+- Beige
+- Soft olive green
+- Faded blue
+- Light terracotta accents
+
+STRICT RULES:
+- The SAME exact background style must be used across ALL images in the series
+- DO NOT replace with wood, marble, table, or any other surface
+- DO NOT significantly change colors, pattern, or texture between images
+
+BACKGROUND LIMITATIONS:
+- Background fills the entire frame edge-to-edge
+- No depth (no distant background, no layers)
+- No people
+- No restaurant environment
+- No props (no cutlery, napkins, hands, etc.)
+
+---
+
+# 🍽️ DISH PRESERVATION RULES (STRICT — NO EXCEPTIONS)
+
+- Keep ALL original ingredients exactly as in the input image
+- DO NOT add any ingredients, sauces, or garnishes
+- DO NOT remove anything
+- DO NOT change the structure or type of the dish
+- The result MUST be instantly recognizable as the SAME dish
+
+---
+
+# ✨ VISUAL ENHANCEMENT (ALLOWED & REQUIRED)
+
+Enhance ONLY the visual quality of existing elements:
+
+TEXTURE:
+Make food look fresher, juicier, crispier, and more appetizing
+
+COLORS:
+Enhance natural colors slightly (balanced, not oversaturated)
+
+PLATING CLEANUP:
+Clean plate edges
+Remove stains, spills, or imperfections
+
+ARRANGEMENT:
+Slightly refine composition while preserving original structure
+
+LIGHT INTERACTION:
+Enhance highlights and soft shadows to improve depth and appeal
+(but DO NOT change lighting direction)
+
+---
+
+# 🎯 STYLE
+
+- Premium lifestyle food photography
+- Clean, minimalistic, yet warm and inviting
+- Mediterranean aesthetic
+- Balanced between strict consistency and marketing appeal
+
+---
+
+# 🚫 FORBIDDEN (ABSOLUTELY NO DEVIATIONS)
+
+- No change to dish identity
+- No new elements or props
+- No background changes beyond defined fabric
+- No blur, no bokeh, no depth-of-field effects
+- No AI artifacts
+- No plastic or artificial look
+- No text, logos, or watermarks
+
+---
+
+# FINAL OUTPUT
+
+Produce a highly consistent, brand-aligned, marketing-quality food photograph.
+
+The result must feel:
+✔ Uniform across all dishes (same system)
+✔ Clean and premium (menu standard)
+✔ Appetizing and vibrant (marketing ready)
+✔ Part of a cohesive branded visual series`;
+
+    case 'studio':
+      return `You are a professional food photographer. Transform the uploaded dish photo into a premium studio food photograph with these EXACT, LOCKED settings — do not deviate on any parameter:
+
+SURFACE: Flat matte black (#1A1A1A). Zero reflections. Zero texture. Perfectly uniform.
+LIGHTING: Single directional studio strobe from TOP-LEFT at exactly 10 o'clock, 45-degree elevation. Sharp highlights on food edges. Deep shadow toward bottom-right. No fill light, no bounce.
+CAMERA ANGLE: STRICTLY 90 degrees top-down. The camera points STRAIGHT DOWN, perfectly perpendicular to the surface. NOT angled, NOT tilted — pure bird's-eye overhead view. The plate must appear as a perfect circle (no ellipse).
+FRAMING: Plate fills exactly 60-65% of the frame. Large equal margins on all sides — at least 15% empty surface visible on every edge. Plate fully inside frame, never touching edges.
+BACKGROUND: Only the black surface. Nothing else — no props, no reflections, no gradients.
+FOCUS: Full deep focus across the entire dish, edge to edge. High contrast, crisp.
+QUALITY: 4K, ultra-photorealistic.
+
+DISH RULES: Keep ALL original ingredients exactly as in the photo. Do not add or remove anything.
+
+MENU SERIES: This is one dish in a series. Every dish uses this EXACT black surface, EXACT light position, EXACT camera angle.`;
+
+    case 'enhance':
+      return `You are a professional food photographer. Transform the uploaded dish photo into a clean, minimal commercial food photograph with these EXACT, LOCKED settings — do not deviate on any parameter:
+
+SURFACE: Pure white marble (#F8F8F8), very subtle uniform light-grey veining. Flat, clean, consistent across the entire frame.
+LIGHTING: Soft even overhead diffused light from directly above. Completely uniform illumination. No shadows, no highlights, no color cast.
+CAMERA ANGLE: STRICTLY 90 degrees top-down. The camera points STRAIGHT DOWN, perfectly perpendicular to the surface. NOT angled, NOT tilted — pure bird's-eye overhead view. The plate must appear as a perfect circle (no ellipse).
+FRAMING: Plate fills exactly 60-65% of the frame. Large equal margins on all sides — at least 15% empty surface visible on every edge. Plate fully inside frame, never touching edges.
+BACKGROUND: Only the white marble surface. Nothing else — no props, no cutlery.
+FOCUS: Full deep focus across the entire dish. Clean, sharp, minimal.
+QUALITY: 4K, ultra-photorealistic.
+
+DISH RULES: Keep ALL original ingredients exactly as in the photo. Do not add or remove anything.
+
+MENU SERIES: This is one dish in a series. Every dish uses this EXACT white marble surface, EXACT overhead light, EXACT camera angle.`;
+
+    default:
+      return getPresetPrompt(styleKey) ?? '';
+  }
+}
