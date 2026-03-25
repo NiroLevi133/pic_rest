@@ -8,7 +8,7 @@ import { getPresetPrompt } from '@/lib/style-presets';
 import type { GenerateAllRequest } from '@/lib/types';
 
 async function generateDish(
-  dishId: string,
+  dishId: number,
   restaurantStyle: string | null,
   openaiApiKey: string | undefined
 ): Promise<void> {

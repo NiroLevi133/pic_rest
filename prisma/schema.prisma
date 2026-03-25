@@ -33,7 +33,7 @@ model Menu {
 }
 
 model Dish {
-  id             String      @id @default(cuid())
+  id             Int         @id @default(autoincrement())
   menuId         String
   menu           Menu        @relation(fields: [menuId], references: [id], onDelete: Cascade)
   name           String
@@ -57,7 +57,7 @@ model Dish {
 
 model DishImage {
   id        String   @id @default(cuid())
-  dishId    String
+  dishId    Int
   dish      Dish     @relation(fields: [dishId], references: [id], onDelete: Cascade)
   imageUrl  String
   createdAt DateTime @default(now())

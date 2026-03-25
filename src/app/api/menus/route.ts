@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
       styleKey: m.styleKey ?? null,
       createdAt: m.createdAt.toISOString(),
       dishes: m.dishes.map((d) => ({
-        id: d.id,
+        id: String(d.id),
         name: d.name,
         status: d.status,
         hasImage: d.status === 'DONE',

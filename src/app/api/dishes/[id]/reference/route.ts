@@ -28,7 +28,7 @@ export async function POST(
     const base64 = `data:${file.type};base64,${Buffer.from(buffer).toString('base64')}`;
 
     const dish = await prisma.dish.update({
-      where: { id: params.id },
+      where: { id: parseInt(params.id) },
       data: { referenceImage: base64, status: 'PENDING' },
     });
 
@@ -47,7 +47,7 @@ export async function DELETE(
 ) {
   try {
     await prisma.dish.update({
-      where: { id: params.id },
+      where: { id: parseInt(params.id) },
       data: { referenceImage: null },
     });
     return NextResponse.json({ success: true });

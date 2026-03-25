@@ -13,6 +13,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const { id } = params;
+  const dishId = parseInt(id);
 
   const cached = cache.get(id);
 
@@ -27,7 +28,7 @@ export async function GET(
 
   // Fetch from DB
   const dish = await prisma.dish.findUnique({
-    where: { id },
+    where: { id: dishId },
     select: { imageUrl: true },
   });
 
@@ -45,7 +46,7 @@ export async function GET(
     if (url.length > RECOMPRESS_THRESHOLD) {
       try {
         serveUrl = await resizeForGallery(url);
-        await prisma.dish.update({ where: { id }, data: { imageUrl: serveUrl } });
+        await prisma.dish.update({ where: { id: dishId }, data: { imageUrl: serveUrl } });
       } catch {
         serveUrl = url; // fallback to original on error
       }
@@ -74,7 +75,7 @@ export async function GET(
 
     // Persist as base64 so the URL is never needed again
     const b64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
-    await prisma.dish.update({ where: { id }, data: { imageUrl: b64 } });
+    await prisma.dish.update({ where: { id: dishId }, data: { imageUrl: b64 } });
 
     cache.set(id, { buffer, mimeType });
     return new NextResponse(new Uint8Array(buffer), {

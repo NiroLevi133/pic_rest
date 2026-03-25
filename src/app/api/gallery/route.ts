@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     for (const dish of menu.dishes) {
       const imageUrl = `/api/images/${dish.id}`;
       groups[key].dishes.push({
-        id: dish.id,
+        id: String(dish.id),
         name: dish.name,
         category: dish.category,
         price: dish.price,

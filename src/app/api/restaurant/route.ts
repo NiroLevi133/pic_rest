@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
           id: m.id,
           name: m.name,
           dishes: m.dishes.map(d => ({
-            id: d.id,
+            id: String(d.id),
             name: d.name,
             description: d.description ?? null,
             price: d.price ?? null,

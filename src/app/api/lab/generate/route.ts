@@ -15,7 +15,8 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId, customNote } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote } = await req.json();
+    const dishId = rawDishId ? parseInt(String(rawDishId)) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
     let referenceImage = reqReferenceImage;
@@ -99,7 +100,7 @@ Apply this exact photography style to the dish from the reference image. Preserv
 
     // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
     // Run dish upsert + dishImage create in parallel to minimize post-Gemini DB time
-    let savedDishId: string;
+    let savedDishId: number;
     if (dishId) {
       savedDishId = dishId;
       const [, dishImage] = await Promise.all([
@@ -108,10 +109,10 @@ Apply this exact photography style to the dish from the reference image. Preserv
           data: { status: 'DONE', imageUrl: storedImageUrl, referenceImage },
         }),
         prisma.dishImage.create({
-          data: { dishId: savedDishId, imageUrl: storedImageUrl },
+          data: { dishId, imageUrl: storedImageUrl },
         }),
       ]);
-      return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: savedDishId, dishImageId: dishImage.id } });
+      return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: String(savedDishId), dishImageId: dishImage.id } });
     } else {
       const dish = await prisma.dish.create({
         data: {

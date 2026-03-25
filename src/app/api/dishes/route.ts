@@ -4,13 +4,14 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import type { Dish } from '@/lib/types';
 
 function mapDish(d: {
-  id: string; menuId: string; name: string; description: string | null;
+  id: number; menuId: string; name: string; description: string | null;
   price: string | null; category: string; ingredients: string; prompt: string;
   status: string; imageUrl: string | null; referenceImage?: string | null;
   errorMessage: string | null; retryCount: number; createdAt: Date; updatedAt: Date;
 }): Dish {
   return {
     ...d,
+    id: String(d.id),
     status: d.status as Dish['status'],
     ingredients: (() => { try { return JSON.parse(d.ingredients); } catch { return []; } })(),
     createdAt: d.createdAt.toISOString(),

@@ -30,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({
       success: true,
-      data: { id: dish.id, name: dish.name, status: dish.status, imageUrl: dish.imageUrl, hasReference: !!dish.referenceImage, imageIds: [] },
+      data: { id: String(dish.id), name: dish.name, status: dish.status, imageUrl: dish.imageUrl, hasReference: !!dish.referenceImage, imageIds: [] },
     });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

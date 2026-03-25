@@ -8,13 +8,14 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 import { getPresetPrompt } from '@/lib/style-presets';
 
 function mapDish(d: {
-  id: string; menuId: string; name: string; description: string | null;
+  id: number; menuId: string; name: string; description: string | null;
   price: string | null; category: string; ingredients: string; prompt: string;
   status: string; imageUrl: string | null; referenceImage?: string | null;
   errorMessage: string | null; retryCount: number; createdAt: Date; updatedAt: Date;
 }) {
   return {
     ...d,
+    id: String(d.id),
     ingredients: (() => { try { return JSON.parse(d.ingredients); } catch { return []; } })(),
     createdAt: d.createdAt.toISOString(),
     updatedAt: d.updatedAt.toISOString(),
@@ -25,7 +26,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const dishId = params.id;
+  const dishId = parseInt(params.id);
 
   try {
     const dish = await prisma.dish.findUnique({
