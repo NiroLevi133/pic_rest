@@ -69,10 +69,11 @@ function DishLabModal({
   dish: DishItem;
   styleKey: string | null;
   onClose: () => void;
-  onGenerateStart: (dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) => void;
+  onGenerateStart: (dishId: string) => void;
 }) {
   const [dishImage, setDishImage] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const preset = getPreset(styleKey);
 
@@ -84,27 +85,30 @@ function DishLabModal({
     });
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!dishImage) { setError('נא להעלות תמונת מנה'); return; }
-    // Fire generation in background, close modal immediately
-    const promise = fetch('/api/lab/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        referenceImage: dishImage,
-        dishName: dish.name,
-        styleKey: styleKey ?? 'atmosphere',
-        dishId: dish.id,
-      }),
-    }).then(async r => {
-      const text = await r.text();
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/lab/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          referenceImage: dishImage,
+          dishName: dish.name,
+          styleKey: styleKey ?? 'atmosphere',
+          dishId: dish.id,
+        }),
+      });
+      const text = await res.text();
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
       const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
-      return data.data as { imageUrl: string; dishImageId: string };
-    });
-    onGenerateStart(dish.id, promise);
-    onClose();
+      onGenerateStart(data.data.dishId);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה');
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -155,9 +159,9 @@ function DishLabModal({
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
-          <button type="button" disabled={!dishImage} onClick={handleGenerate}
+          <button type="button" disabled={!dishImage || submitting} onClick={handleGenerate}
             className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40">
-            <Zap className="w-4 h-4" /> גנרט 
+            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> שולח...</> : <><Zap className="w-4 h-4" /> גנרט</>}
           </button>
         </div>
       </div>
@@ -297,12 +301,13 @@ function RegenerateModal({
   dish: DishItem;
   styleKey: string | null;
   onClose: () => void;
-  onGenerateStart: (dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) => void;
+  onGenerateStart: (dishId: string) => void;
 }) {
   const [dishImage, setDishImage] = useState<string | null>(null);
   const [useExisting, setUseExisting] = useState(dish.hasReference);
   const [customNote, setCustomNote] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const preset = getPreset(styleKey);
 
@@ -314,29 +319,33 @@ function RegenerateModal({
     });
   }
 
-  function handleGenerate() {
+  async function handleGenerate() {
     if (!useExisting && !dishImage) { setError('נא להעלות תמונת מנה'); return; }
-    const body: Record<string, unknown> = {
-      dishName: dish.name,
-      styleKey: styleKey ?? 'atmosphere',
-      dishId: dish.id,
-    };
-    if (customNote.trim()) body.customNote = customNote.trim();
-    if (!useExisting && dishImage) body.referenceImage = dishImage;
+    setSubmitting(true);
+    try {
+      const body: Record<string, unknown> = {
+        dishName: dish.name,
+        styleKey: styleKey ?? 'atmosphere',
+        dishId: dish.id,
+      };
+      if (customNote.trim()) body.customNote = customNote.trim();
+      if (!useExisting && dishImage) body.referenceImage = dishImage;
 
-    const promise = fetch('/api/lab/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    }).then(async r => {
-      const text = await r.text();
+      const res = await fetch('/api/lab/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const text = await res.text();
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
       const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
-      return data.data as { imageUrl: string; dishImageId: string };
-    });
-    onGenerateStart(dish.id, promise);
-    onClose();
+      onGenerateStart(data.data.dishId);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'שגיאה');
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -399,9 +408,9 @@ function RegenerateModal({
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
-          <button type="button" disabled={!useExisting && !dishImage} onClick={handleGenerate}
+          <button type="button" disabled={(!useExisting && !dishImage) || submitting} onClick={handleGenerate}
             className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40">
-            <Zap className="w-4 h-4" /> גנרט מחדש
+            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> שולח...</> : <><Zap className="w-4 h-4" /> גנרט מחדש</>}
           </button>
         </div>
       </div>
@@ -673,16 +682,29 @@ function MenuDetail({
     }
   }
 
-  function handleGenerateStart(dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) {
+  function handleGenerateStart(dishId: string) {
     setGeneratingIds(prev => new Set(prev).add(dishId));
-    promise.then(({ dishImageId }) => {
-      onDishDone(dishId, dishImageId);
-      setImageIndexMap(prev => new Map(prev).set(dishId, 0));
-    }).catch(() => {
-      // generation failed — just remove from generating
-    }).finally(() => {
-      setGeneratingIds(prev => { const s = new Set(prev); s.delete(dishId); return s; });
-    });
+    (async () => {
+      try {
+        for (let i = 0; i < 60; i++) {
+          await new Promise(r => setTimeout(r, 3000));
+          const res = await fetch(`/api/dishes/${dishId}`);
+          const data = await res.json();
+          const status = data.data?.status;
+          if (status === 'DONE') {
+            const latestImageId = data.data?.latestImageId as string | null;
+            if (latestImageId) {
+              onDishDone(dishId, latestImageId);
+              setImageIndexMap(prev => new Map(prev).set(dishId, 0));
+            }
+            return;
+          }
+          if (status === 'ERROR') return;
+        }
+      } finally {
+        setGeneratingIds(prev => { const s = new Set(prev); s.delete(dishId); return s; });
+      }
+    })();
   }
 
   async function handleGenerateCarousel() {
@@ -973,7 +995,7 @@ function MenuDetail({
           dish={labDish}
           styleKey={category.styleKey}
           onClose={() => setLabDish(null)}
-          onGenerateStart={(dishId, promise) => { handleGenerateStart(dishId, promise); }}
+          onGenerateStart={(dishId) => { handleGenerateStart(dishId); }}
         />
       )}
 

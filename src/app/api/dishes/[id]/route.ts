@@ -24,9 +24,13 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const dish = await prisma.dish.findUnique({ where: { id: parseInt(params.id) } });
+    const dish = await prisma.dish.findUnique({
+      where: { id: parseInt(params.id) },
+      include: { images: { select: { id: true }, orderBy: { createdAt: 'desc' }, take: 1 } },
+    });
     if (!dish) return NextResponse.json({ success: false, error: 'not found' }, { status: 404 });
-    return NextResponse.json({ success: true, data: mapDish(dish) });
+    const { images, ...dishData } = dish;
+    return NextResponse.json({ success: true, data: { ...mapDish(dishData), latestImageId: images[0]?.id ?? null } });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }

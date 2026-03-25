@@ -8,7 +8,13 @@
       "Bash(grep '\"\"lucide-react\"\"' package.json)",
       "Bash(npx prisma:*)",
       "Bash(node -e \":*)",
-      "Bash(find c:UsersNirLeviDesktoprestorante -name serverless.yml -o -name serverless.ts -o -name template.yaml -o -name cdk.json -o -name *.lambda.*)"
+      "Bash(find c:UsersNirLeviDesktoprestorante -name serverless.yml -o -name serverless.ts -o -name template.yaml -o -name cdk.json -o -name *.lambda.*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe 2>nul & timeout /t 2 /nobreak >nul & cd /d c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante && npx prisma generate\")",
+      "Bash(cmd /c \"cd /d c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante && npx prisma generate 2>&1\")",
+      "Bash(node_modules/.bin/prisma generate:*)",
+      "Bash(del /F \"c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\")"
     ]
   }
 }

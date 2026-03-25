@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSettings } from '@/lib/settings';
-import { getImageProvider } from '@/lib/providers';
 import { generateDynamicPrompt } from '@/lib/art-director';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 import { getPresetPrompt } from '@/lib/style-presets';
 import type { GenerateAllRequest } from '@/lib/types';
 
-async function generateDish(
+function getBgBaseUrl(req: NextRequest): string {
+  const proto = req.headers.get('x-forwarded-proto') || 'https';
+  const host = req.headers.get('host') || 'localhost:3000';
+  return process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
+}
+
+// Sets dish to GENERATING with correct prompt, fires background worker
+async function queueDish(
   dishId: number,
   restaurantStyle: string | null,
-  openaiApiKey: string | undefined
+  openaiApiKey: string | undefined,
+  baseUrl: string,
 ): Promise<void> {
   const dish = await prisma.dish.findUnique({ where: { id: dishId } });
   if (!dish || !dish.referenceImage) return;
 
-  await prisma.dish.update({
-    where: { id: dishId },
-    data: { status: 'GENERATING', errorMessage: null },
-  });
-
-  const settings = await getSettings();
-  const provider = getImageProvider(settings);
-
-  // Build prompt: preset → art director → fixed fallback
   let prompt = FIXED_PROMPT;
   if (restaurantStyle) {
     const presetPrompt = getPresetPrompt(restaurantStyle);
@@ -41,28 +39,17 @@ async function generateDish(
     }
   }
 
-  try {
-    const result = await provider.generate({
-      prompt,
-      size: settings.imageSize,
-      quality: settings.imageQuality,
-      referenceImage: dish.referenceImage,
-    });
+  await prisma.dish.update({
+    where: { id: dishId },
+    data: { status: 'GENERATING', prompt, errorMessage: null },
+  });
 
-    await prisma.dish.update({
-      where: { id: dishId },
-      data: { status: 'DONE', imageUrl: result.imageUrl, prompt, errorMessage: null },
-    });
-  } catch (err) {
-    await prisma.dish.update({
-      where: { id: dishId },
-      data: {
-        status: 'ERROR',
-        errorMessage: err instanceof Error ? err.message : String(err),
-        retryCount: { increment: 1 },
-      },
-    });
-  }
+  const secret = process.env.BG_SECRET || 'restorante-internal';
+  fetch(`${baseUrl}/api/generate-bg`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
+    body: JSON.stringify({ dishId }),
+  }).catch(() => {});
 }
 
 async function batchProcess<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>): Promise<void> {
@@ -83,7 +70,6 @@ export async function POST(req: NextRequest) {
       where: { id: menuId },
       include: { user: true },
     });
-    // Prefer menu's styleKey, fallback to user's restaurantStyle
     const restaurantStyle = menu?.styleKey?.trim() || menu?.user.restaurantStyle?.trim() || null;
 
     const dishes = await prisma.dish.findMany({
@@ -95,11 +81,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: { queued: 0, message: 'אין מנות עם תמונות מקור להגנרציה' } });
     }
 
-    batchProcess(
+    const baseUrl = getBgBaseUrl(req);
+
+    // Each queueDish call is fast (DB update + HTTP fire) — await the whole batch
+    await batchProcess(
       dishes,
       concurrency,
-      (d) => generateDish(d.id, restaurantStyle, settings.openaiApiKey)
-    ).catch(console.error);
+      (d) => queueDish(d.id, restaurantStyle, settings.openaiApiKey, baseUrl),
+    );
 
     return NextResponse.json({ success: true, data: { queued: dishes.length } });
   } catch (err) {

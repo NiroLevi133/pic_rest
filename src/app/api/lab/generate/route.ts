@@ -1,14 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const maxDuration = 300; // 5 minutes
+export const maxDuration = 60;
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
-import { getImageProvider } from '@/lib/providers';
 import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
 import OpenAI from 'openai';
+
+function getBgBaseUrl(req: NextRequest): string {
+  const proto = req.headers.get('x-forwarded-proto') || 'https';
+  const host = req.headers.get('host') || 'localhost:3000';
+  return process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
+}
+
+function fireBg(baseUrl: string, dishId: number): void {
+  const secret = process.env.BG_SECRET || 'restorante-internal';
+  fetch(`${baseUrl}/api/generate-bg`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
+    body: JSON.stringify({ dishId }),
+  }).catch(() => {});
+}
 
 export async function POST(req: NextRequest) {
   const userId = getUserIdFromRequest(req);
@@ -29,7 +43,6 @@ export async function POST(req: NextRequest) {
     if (!dishName?.trim()) return NextResponse.json({ success: false, error: 'dishName required' }, { status: 400 });
 
     const settings = await getSettings();
-    const provider = getImageProvider(settings);
 
     // Find or create the "מעבדה" menu for this user
     let labMenu = await prisma.menu.findFirst({
@@ -60,11 +73,7 @@ export async function POST(req: NextRequest) {
           content: [
             {
               type: 'text',
-              text: `You are a professional food photography director. Analyze this reference photo and describe its photography style in precise technical terms so an AI image generator can replicate it exactly.
-
-Describe: camera angle, lighting style and direction, background type and color, composition framing, depth of field, color grading/mood, surface/props, and any unique stylistic elements.
-
-Return ONLY a concise photography style directive (2-4 sentences), starting with "Photography style:" — no extra commentary.`,
+              text: `You are a professional food photography director. Analyze this reference photo and describe its photography style in precise technical terms so an AI image generator can replicate it exactly.\n\nDescribe: camera angle, lighting style and direction, background type and color, composition framing, depth of field, color grading/mood, surface/props, and any unique stylistic elements.\n\nReturn ONLY a concise photography style directive (2-4 sentences), starting with "Photography style:" — no extra commentary.`,
             },
             {
               type: 'image_url',
@@ -75,9 +84,7 @@ Return ONLY a concise photography style directive (2-4 sentences), starting with
         max_tokens: 300,
       });
       const styleDescription = analysis.choices[0]?.message?.content ?? '';
-      prompt = `${styleDescription}
-
-Apply this exact photography style to the dish from the reference image. Preserve ALL original ingredients, plating, and dish structure without any changes. DO NOT add or remove any food elements. Output a photorealistic, commercial-quality food photograph.`;
+      prompt = `${styleDescription}\n\nApply this exact photography style to the dish from the reference image. Preserve ALL original ingredients, plating, and dish structure without any changes. DO NOT add or remove any food elements. Output a photorealistic, commercial-quality food photograph.`;
     } else if (dishId && styleKey) {
       // Generating from menu — use locked series prompt for consistency
       const base = getMenuSeriesPrompt(styleKey);
@@ -88,31 +95,14 @@ Apply this exact photography style to the dish from the reference image. Preserv
       prompt = (styleKey && getPresetPrompt(styleKey)) || FIXED_PROMPT;
     }
 
-    // Generate image
-    const result = await provider.generate({
-      prompt,
-      size: settings.imageSize,
-      quality: settings.imageQuality,
-      referenceImage,
-    });
-
-    const storedImageUrl = result.imageUrl;
-
-    // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
-    // Run dish upsert + dishImage create in parallel to minimize post-Gemini DB time
+    // Save dish with GENERATING status, fire background worker
     let savedDishId: number;
     if (dishId) {
       savedDishId = dishId;
-      const [, dishImage] = await Promise.all([
-        prisma.dish.update({
-          where: { id: dishId },
-          data: { status: 'DONE', imageUrl: storedImageUrl, referenceImage },
-        }),
-        prisma.dishImage.create({
-          data: { dishId, imageUrl: storedImageUrl },
-        }),
-      ]);
-      return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: String(savedDishId), dishImageId: dishImage.id } });
+      await prisma.dish.update({
+        where: { id: dishId },
+        data: { status: 'GENERATING', referenceImage, prompt, errorMessage: null },
+      });
     } else {
       const dish = await prisma.dish.create({
         data: {
@@ -123,20 +113,17 @@ Apply this exact photography style to the dish from the reference image. Preserv
           category: 'other',
           ingredients: '[]',
           prompt,
-          status: 'DONE',
-          imageUrl: storedImageUrl,
+          status: 'GENERATING',
           referenceImage,
         },
       });
       savedDishId = dish.id;
     }
 
-    // Save to DishImage history table (lab flow — dish was just created above)
-    const dishImage = await prisma.dishImage.create({
-      data: { dishId: savedDishId, imageUrl: storedImageUrl },
-    });
+    // Fire background generation — returns immediately
+    fireBg(getBgBaseUrl(req), savedDishId);
 
-    return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: savedDishId, dishImageId: dishImage.id } });
+    return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
   } catch (err) {
     console.error('[lab/generate]', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
