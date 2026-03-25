@@ -7,36 +7,26 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    // Fetch menus + dish metadata WITHOUT heavy base64 fields
+    // Single query: menus + dishes + image history (no extra queries needed)
+    // hasImage / hasReference are derived from status === 'DONE' (always set together with imageUrl/referenceImage)
     const menus = await prisma.menu.findMany({
       where: { userId, NOT: { styleKey: { startsWith: 'lab_' } } },
       orderBy: { createdAt: 'desc' },
       include: {
         dishes: {
-          select: { id: true, name: true, status: true },
+          select: {
+            id: true,
+            name: true,
+            status: true,
+            images: {
+              select: { id: true },
+              orderBy: { createdAt: 'desc' },
+            },
+          },
           orderBy: { createdAt: 'asc' },
         },
       },
     });
-
-    // Lightweight queries: just IDs of dishes that have images / references / image history
-    const allDishIds = menus.flatMap(m => m.dishes.map(d => d.id));
-    const [withImage, withRef, dishImages] = allDishIds.length > 0
-      ? await Promise.all([
-          prisma.dish.findMany({ where: { id: { in: allDishIds }, imageUrl: { not: null } }, select: { id: true } }),
-          prisma.dish.findMany({ where: { id: { in: allDishIds }, referenceImage: { not: null } }, select: { id: true } }),
-          prisma.dishImage.findMany({ where: { dishId: { in: allDishIds } }, select: { id: true, dishId: true }, orderBy: { createdAt: 'desc' } }),
-        ])
-      : [[], [], []];
-
-    const imageSet = new Set(withImage.map(d => d.id));
-    const refSet   = new Set(withRef.map(d => d.id));
-    const imageIdsMap = new Map<string, string[]>();
-    for (const img of dishImages) {
-      const arr = imageIdsMap.get(img.dishId) ?? [];
-      arr.push(img.id);
-      imageIdsMap.set(img.dishId, arr);
-    }
 
     const data = menus.map((m) => ({
       id: m.id,
@@ -47,9 +37,9 @@ export async function GET(req: NextRequest) {
         id: d.id,
         name: d.name,
         status: d.status,
-        hasImage: imageSet.has(d.id),
-        hasReference: refSet.has(d.id),
-        imageIds: imageIdsMap.get(d.id) ?? [],
+        hasImage: d.status === 'DONE',
+        hasReference: d.status === 'DONE',
+        imageIds: d.images.map(i => i.id),
       })),
     }));
 

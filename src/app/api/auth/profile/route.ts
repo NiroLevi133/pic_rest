@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { cookies } from 'next/headers';
 import { prisma } from '@/lib/prisma';
-
-async function getUserId(): Promise<string | null> {
-  const cookieStore = await cookies();
-  return cookieStore.get('userId')?.value ?? null;
-}
+import { getUserId } from '@/lib/auth';
 
 export async function GET() {
   const userId = await getUserId();

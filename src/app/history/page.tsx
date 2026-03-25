@@ -6,7 +6,7 @@ import {
   Loader2, Plus, ScanLine, CheckCircle2, AlertCircle,
   Trash2, X, Check, ArrowRight, FolderOpen, Camera, Zap,
   Download, Share2, Pencil, RefreshCw, ChevronLeft, ChevronRight,
-  GalleryHorizontal,
+  GalleryHorizontal, Store,
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 
@@ -845,8 +845,14 @@ function MenuDetail({
                                 <img
                                   src={imgSrc}
                                   alt={dish.name}
-                                  loading="lazy"
-                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                  onError={e => {
+                                    const img = e.target as HTMLImageElement;
+                                    if (!img.dataset.retried) {
+                                      img.dataset.retried = '1';
+                                      // Old images are compressed on first access — retry after 4s
+                                      setTimeout(() => { img.src = imgSrc + '?r=1'; }, 4000);
+                                    }
+                                  }}
                                   className="absolute inset-0 w-full h-full object-cover"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -1085,6 +1091,7 @@ function MenuCard({ category, onClick }: { category: Category; onClick: () => vo
 
 /* ── Main page ──────────────────────────────────────────────────── */
 export default function MenusPage() {
+  const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -1171,6 +1178,15 @@ export default function MenusPage() {
           <p className="text-[var(--text-muted)] text-sm">{categories.length} תפריטים</p>
         </div>
         <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => router.push('/restaurant')}
+            className="btn-secondary gap-2 text-sm"
+            title="עמוד מסעדה"
+          >
+            <Store className="w-4 h-4" />
+            <span className="hidden sm:inline">עמוד מסעדה</span>
+          </button>
           <button
             type="button"
             onClick={() => scanRef.current?.click()}
