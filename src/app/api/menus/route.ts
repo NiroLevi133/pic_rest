@@ -19,17 +19,24 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Lightweight second query: just IDs of dishes that have images / references
+    // Lightweight queries: just IDs of dishes that have images / references / image history
     const allDishIds = menus.flatMap(m => m.dishes.map(d => d.id));
-    const [withImage, withRef] = allDishIds.length > 0
+    const [withImage, withRef, dishImages] = allDishIds.length > 0
       ? await Promise.all([
           prisma.dish.findMany({ where: { id: { in: allDishIds }, imageUrl: { not: null } }, select: { id: true } }),
           prisma.dish.findMany({ where: { id: { in: allDishIds }, referenceImage: { not: null } }, select: { id: true } }),
+          prisma.dishImage.findMany({ where: { dishId: { in: allDishIds } }, select: { id: true, dishId: true }, orderBy: { createdAt: 'desc' } }),
         ])
-      : [[], []];
+      : [[], [], []];
 
     const imageSet = new Set(withImage.map(d => d.id));
     const refSet   = new Set(withRef.map(d => d.id));
+    const imageIdsMap = new Map<string, string[]>();
+    for (const img of dishImages) {
+      const arr = imageIdsMap.get(img.dishId) ?? [];
+      arr.push(img.id);
+      imageIdsMap.set(img.dishId, arr);
+    }
 
     const data = menus.map((m) => ({
       id: m.id,
@@ -42,6 +49,7 @@ export async function GET(req: NextRequest) {
         status: d.status,
         hasImage: imageSet.has(d.id),
         hasReference: refSet.has(d.id),
+        imageIds: imageIdsMap.get(d.id) ?? [],
       })),
     }));
 

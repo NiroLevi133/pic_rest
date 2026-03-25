@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npm install:*)",
       "Read(//usr/local/**)",
-      "Read(//usr/**)"
+      "Read(//usr/**)",
+      "Bash(npx tsc:*)",
+      "Bash(grep '\"\"lucide-react\"\"' package.json)",
+      "Bash(npx prisma:*)",
+      "Bash(node -e \":*)"
     ]
   }
 }

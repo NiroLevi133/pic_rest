@@ -268,180 +268,208 @@ export function getPreset(key: string): StylePreset | null {
 export function getMenuSeriesPrompt(styleKey: string): string {
   switch (styleKey) {
     case 'atmosphere':
-      return `# ROLE & GOAL
-You are a professional Food AI Photography Agent for a premium restaurant system.
+      return `You are a professional food photographer producing images for a restaurant menu carousel.
 
-Your goal is to transform a real, imperfect mobile photo of a dish into a high-end commercial food photograph that is BOTH:
-1. Strictly consistent across a full menu (uniform visual system)
-2. Visually appealing, vibrant, and marketing-ready
+═══════════════════════════════════════════════════════
+⚠️  CAROUSEL SERIES — IDENTICAL FRAMING ACROSS ALL DISHES
+═══════════════════════════════════════════════════════
+These images will be placed side by side in an Instagram carousel.
+The viewer swipes between dishes and must feel as if the camera NEVER MOVED.
+The ONLY thing that changes between images is the food on the plate.
+Everything else is physically fixed and cannot vary by a single pixel.
 
-This image is part of a MENU SERIES.
-All outputs must look like they belong to the SAME brand, SAME photoshoot, SAME environment.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📐 FRAMING — ABSOLUTE FIXED RULE (NOT A GUIDELINE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Camera angle: perfectly perpendicular top-down, 90 degrees. Zero tilt.
+Plate shape in output: a PERFECT CIRCLE — any ellipse means the angle is wrong.
+Plate center: the exact geometric center of the image.
+Plate diameter: EXACTLY 68% of the image width. Not 65%, not 72% — exactly 68%.
+Margin on every side (top / bottom / left / right): EXACTLY 16%.
 
----
+This is a MEASUREMENT RULE. Think of a fixed template:
+  - Draw a circle centered in the frame.
+  - That circle diameter = 68% of the image width.
+  - The plate rim must align with this circle on every single image.
+  - Small dish? Same circle size — show more background.
+  - Large dish? Same circle size — scale down to fit inside it.
+  - DO NOT zoom in or out to compensate for dish size.
 
-# 🔒 GLOBAL LOCKED PARAMETERS (MUST BE IDENTICAL FOR ALL DISHES)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 LIGHTING — LOCKED, IDENTICAL IN EVERY IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Single soft natural daylight source.
+Position: top-left, 10 o'clock, 45-degree elevation above the surface.
+Color temperature: warm, approximately 5000K.
+Shadow: one soft shadow falling toward bottom-right of the plate.
+Shadow softness: feathered edge, not harsh.
+Shadow length: short, no longer than 15% of the plate radius.
+No secondary light sources. No fill light. No bounce.
+Highlights on food surface: soft specular, consistent intensity.
 
-LIGHTING:
-Single soft natural daylight source
-Position: TOP-LEFT (10 o’clock)
-Angle: 45-degree elevation
-Tone: warm, soft, inviting
-Shadow: one gentle shadow toward bottom-right
-No additional light sources allowed
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🌿 BACKGROUND — LOCKED SURFACE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Surface: Mediterranean fabric tablecloth — cotton or linen texture.
+Base color: warm cream / beige (neutral light tone).
+Pattern: subtle Mediterranean motif (soft stripes or delicate organic shapes).
+Allowed palette: cream, beige, soft olive green, faded blue, light terracotta.
+Texture: soft and flat — no heavy folds, no wrinkles, no raised edges.
+Background fills the ENTIRE frame edge to edge. No layers, no depth.
+No props. No cutlery. No hands. No restaurant environment.
 
-CAMERA ANGLE:
-Strict 90-degree top-down (flat lay)
-Camera must be perfectly perpendicular to the surface
-Plate must appear as a perfect circle (no distortion, no tilt)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🍽️ DISH RULES — NO CHANGES TO THE FOOD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Keep ALL ingredients exactly as in the input photo.
+Do NOT add ingredients, sauces, garnishes, or props.
+Do NOT remove any element.
+Do NOT change the dish type, structure, or recipe.
+The output must be instantly recognizable as the same dish.
 
-FRAMING:
-Plate occupies 65–75% of the frame
-Perfectly centered with symmetrical alignment
-Even margins on all sides
-Plate must be fully visible and never touch frame edges
+Allowed enhancements (visual only):
+- Make food look fresher, juicier, crispier
+- Clean the plate rim (remove smudges or drips)
+- Slightly brighten natural colors (no oversaturation)
 
-FOCUS:
-Deep full focus across the entire dish (edge-to-edge sharpness)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 ABSOLUTELY FORBIDDEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Any zoom change between dishes
+- Any background variation
+- Any lighting direction change
+- Bokeh, blur, or depth-of-field effects
+- AI artifacts or plastic appearance
+- Text, logos, watermarks
+- Changing the dish identity
 
-QUALITY:
-4K resolution
-Ultra photorealistic
-Clean, crisp, premium output
-
----
-
-# 🌿 ENVIRONMENT (LOCKED — NO VARIATION ALLOWED)
-
-Background: Mediterranean colorful fabric tablecloth
-
-Material:
-Natural fabric (cotton or linen)
-
-Texture:
-Soft, subtle textile texture (not rough, not heavy folds)
-
-Base color:
-Light neutral tone (cream / warm beige)
-
-Pattern:
-Subtle Mediterranean pattern ONLY
-(e.g., soft stripes, delicate organic motifs)
-
-Allowed color palette:
-- Cream
-- Beige
-- Soft olive green
-- Faded blue
-- Light terracotta accents
-
-STRICT RULES:
-- The SAME exact background style must be used across ALL images in the series
-- DO NOT replace with wood, marble, table, or any other surface
-- DO NOT significantly change colors, pattern, or texture between images
-
-BACKGROUND LIMITATIONS:
-- Background fills the entire frame edge-to-edge
-- No depth (no distant background, no layers)
-- No people
-- No restaurant environment
-- No props (no cutlery, napkins, hands, etc.)
-
----
-
-# 🍽️ DISH PRESERVATION RULES (STRICT — NO EXCEPTIONS)
-
-- Keep ALL original ingredients exactly as in the input image
-- DO NOT add any ingredients, sauces, or garnishes
-- DO NOT remove anything
-- DO NOT change the structure or type of the dish
-- The result MUST be instantly recognizable as the SAME dish
-
----
-
-# ✨ VISUAL ENHANCEMENT (ALLOWED & REQUIRED)
-
-Enhance ONLY the visual quality of existing elements:
-
-TEXTURE:
-Make food look fresher, juicier, crispier, and more appetizing
-
-COLORS:
-Enhance natural colors slightly (balanced, not oversaturated)
-
-PLATING CLEANUP:
-Clean plate edges
-Remove stains, spills, or imperfections
-
-ARRANGEMENT:
-Slightly refine composition while preserving original structure
-
-LIGHT INTERACTION:
-Enhance highlights and soft shadows to improve depth and appeal
-(but DO NOT change lighting direction)
-
----
-
-# 🎯 STYLE
-
-- Premium lifestyle food photography
-- Clean, minimalistic, yet warm and inviting
-- Mediterranean aesthetic
-- Balanced between strict consistency and marketing appeal
-
----
-
-# 🚫 FORBIDDEN (ABSOLUTELY NO DEVIATIONS)
-
-- No change to dish identity
-- No new elements or props
-- No background changes beyond defined fabric
-- No blur, no bokeh, no depth-of-field effects
-- No AI artifacts
-- No plastic or artificial look
-- No text, logos, or watermarks
-
----
-
-# FINAL OUTPUT
-
-Produce a highly consistent, brand-aligned, marketing-quality food photograph.
-
-The result must feel:
-✔ Uniform across all dishes (same system)
-✔ Clean and premium (menu standard)
-✔ Appetizing and vibrant (marketing ready)
-✔ Part of a cohesive branded visual series`;
+QUALITY: 4K, ultra-photorealistic, maximum sharpness.`;
 
     case 'studio':
-      return `You are a professional food photographer. Transform the uploaded dish photo into a premium studio food photograph with these EXACT, LOCKED settings — do not deviate on any parameter:
+      return `You are a professional food photographer producing images for a restaurant menu carousel.
 
-SURFACE: Flat matte black (#1A1A1A). Zero reflections. Zero texture. Perfectly uniform.
-LIGHTING: Single directional studio strobe from TOP-LEFT at exactly 10 o'clock, 45-degree elevation. Sharp highlights on food edges. Deep shadow toward bottom-right. No fill light, no bounce.
-CAMERA ANGLE: STRICTLY 90 degrees top-down. The camera points STRAIGHT DOWN, perfectly perpendicular to the surface. NOT angled, NOT tilted — pure bird's-eye overhead view. The plate must appear as a perfect circle (no ellipse).
-FRAMING: Plate fills exactly 60-65% of the frame. Large equal margins on all sides — at least 15% empty surface visible on every edge. Plate fully inside frame, never touching edges.
-BACKGROUND: Only the black surface. Nothing else — no props, no reflections, no gradients.
-FOCUS: Full deep focus across the entire dish, edge to edge. High contrast, crisp.
-QUALITY: 4K, ultra-photorealistic.
+═══════════════════════════════════════════════════════
+⚠️  CAROUSEL SERIES — IDENTICAL FRAMING ACROSS ALL DISHES
+═══════════════════════════════════════════════════════
+These images will be placed side by side in an Instagram carousel.
+The viewer swipes between dishes and must feel as if the camera NEVER MOVED.
+The ONLY thing that changes between images is the food on the plate.
+Everything else is physically fixed and cannot vary by a single pixel.
 
-DISH RULES: Keep ALL original ingredients exactly as in the photo. Do not add or remove anything.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📐 FRAMING — ABSOLUTE FIXED RULE (NOT A GUIDELINE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Camera angle: perfectly perpendicular top-down, 90 degrees. Zero tilt.
+Plate shape in output: a PERFECT CIRCLE — any ellipse means the angle is wrong.
+Plate center: the exact geometric center of the image.
+Plate diameter: EXACTLY 68% of the image width. Not 65%, not 72% — exactly 68%.
+Margin on every side (top / bottom / left / right): EXACTLY 16%.
 
-MENU SERIES: This is one dish in a series. Every dish uses this EXACT black surface, EXACT light position, EXACT camera angle.`;
+This is a MEASUREMENT RULE:
+  - The plate rim must touch the same imaginary circle in EVERY image.
+  - Small dish? Same circle — show more background.
+  - Large dish? Same circle — scale down to fit.
+  - DO NOT zoom in or out between dishes for any reason.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 LIGHTING — LOCKED, IDENTICAL IN EVERY IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Single directional studio strobe.
+Position: top-left, exactly 10 o'clock, 45-degree elevation.
+Highlight: sharp specular on food edges facing top-left.
+Shadow: deep, falling toward bottom-right. Hard edge.
+No fill light. No bounce card. No secondary source.
+Shadow length: medium, consistent across all images.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🖤 SURFACE — LOCKED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Flat matte black surface, hex #1A1A1A.
+Zero reflections. Zero texture. Perfectly uniform.
+Surface fills the entire frame edge to edge.
+No props. No cutlery. No gradients.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🍽️ DISH RULES — NO CHANGES TO THE FOOD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Keep ALL original ingredients exactly as in the input photo.
+Do NOT add or remove anything.
+Enhance texture, freshness, and color contrast against the dark background.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 ABSOLUTELY FORBIDDEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Any zoom change between dishes
+- Any background variation or surface change
+- Any lighting angle or intensity change
+- Bokeh, blur, or depth-of-field
+- AI artifacts or plastic appearance
+- Text, logos, watermarks
+
+QUALITY: 4K, ultra-photorealistic, maximum sharpness, high contrast.`;
 
     case 'enhance':
-      return `You are a professional food photographer. Transform the uploaded dish photo into a clean, minimal commercial food photograph with these EXACT, LOCKED settings — do not deviate on any parameter:
+      return `You are a professional food photographer producing images for a restaurant menu carousel.
 
-SURFACE: Pure white marble (#F8F8F8), very subtle uniform light-grey veining. Flat, clean, consistent across the entire frame.
-LIGHTING: Soft even overhead diffused light from directly above. Completely uniform illumination. No shadows, no highlights, no color cast.
-CAMERA ANGLE: STRICTLY 90 degrees top-down. The camera points STRAIGHT DOWN, perfectly perpendicular to the surface. NOT angled, NOT tilted — pure bird's-eye overhead view. The plate must appear as a perfect circle (no ellipse).
-FRAMING: Plate fills exactly 60-65% of the frame. Large equal margins on all sides — at least 15% empty surface visible on every edge. Plate fully inside frame, never touching edges.
-BACKGROUND: Only the white marble surface. Nothing else — no props, no cutlery.
-FOCUS: Full deep focus across the entire dish. Clean, sharp, minimal.
-QUALITY: 4K, ultra-photorealistic.
+═══════════════════════════════════════════════════════
+⚠️  CAROUSEL SERIES — IDENTICAL FRAMING ACROSS ALL DISHES
+═══════════════════════════════════════════════════════
+These images will be placed side by side in an Instagram carousel.
+The viewer swipes between dishes and must feel as if the camera NEVER MOVED.
+The ONLY thing that changes between images is the food on the plate.
+Everything else is physically fixed and cannot vary by a single pixel.
 
-DISH RULES: Keep ALL original ingredients exactly as in the photo. Do not add or remove anything.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📐 FRAMING — ABSOLUTE FIXED RULE (NOT A GUIDELINE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Camera angle: perfectly perpendicular top-down, 90 degrees. Zero tilt.
+Plate shape in output: a PERFECT CIRCLE — any ellipse means the angle is wrong.
+Plate center: the exact geometric center of the image.
+Plate diameter: EXACTLY 68% of the image width. Not 65%, not 72% — exactly 68%.
+Margin on every side (top / bottom / left / right): EXACTLY 16%.
 
-MENU SERIES: This is one dish in a series. Every dish uses this EXACT white marble surface, EXACT overhead light, EXACT camera angle.`;
+This is a MEASUREMENT RULE:
+  - The plate rim must touch the same imaginary circle in EVERY image.
+  - Small dish? Same circle — show more background.
+  - Large dish? Same circle — scale down to fit.
+  - DO NOT zoom in or out between dishes for any reason.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 LIGHTING — LOCKED, IDENTICAL IN EVERY IMAGE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Soft, perfectly even overhead diffused light from directly above.
+Completely uniform illumination across the entire frame.
+Zero directional shadows. Zero hotspots. Zero color cast.
+Color temperature: neutral daylight, approximately 5500K.
+The light must appear identical in brightness and tone on every image.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤍 SURFACE — LOCKED
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pure white marble surface, hex #F8F8F8.
+Very subtle uniform light-grey veining. Flat and clean.
+Surface fills the entire frame edge to edge.
+No props. No cutlery. No gradients.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🍽️ DISH RULES — NO CHANGES TO THE FOOD
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Preserve ALL original ingredients exactly as in the input photo.
+Do NOT add or remove anything.
+Clean the plate rim (remove smudges or drips).
+Slightly enhance freshness and natural color accuracy.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚫 ABSOLUTELY FORBIDDEN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Any zoom change between dishes
+- Any background variation or surface change
+- Any lighting variation (direction, intensity, color)
+- Bokeh, blur, or depth-of-field
+- AI artifacts or plastic appearance
+- Text, logos, watermarks
+
+QUALITY: 4K, ultra-photorealistic, maximum sharpness, clean minimal output.`;
 
     default:
       return getPresetPrompt(styleKey) ?? '';

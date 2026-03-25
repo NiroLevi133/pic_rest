@@ -6,9 +6,8 @@ const PUBLIC_PATHS = ['/login', '/api/auth/login'];
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow public paths and static files
+  // Allow static files
   if (
-    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon')
   ) {
@@ -17,9 +16,14 @@ export function middleware(req: NextRequest) {
 
   const userId = req.cookies.get(SESSION_COOKIE)?.value;
 
-  if (!userId) {
-    const loginUrl = new URL('/login', req.url);
-    return NextResponse.redirect(loginUrl);
+  // Redirect logged-in users away from login page
+  if (userId && (pathname === '/login' || pathname === '/')) {
+    return NextResponse.redirect(new URL('/menu', req.url));
+  }
+
+  // Redirect unauthenticated users to login
+  if (!userId && !PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return NextResponse.next();

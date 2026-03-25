@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,23 +37,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--bg)' }}>
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-10">
           <div className="text-5xl mb-4">🍽️</div>
-          <h1 className="text-3xl font-bold text-white">Restorante AI</h1>
-          <p className="text-gray-400 mt-2 text-sm">מחולל תמונות מנות חכם</p>
+          <h1 className="text-3xl font-bold" style={{ color: 'var(--text)' }}>Restorante AI</h1>
+          <p className="mt-2 text-sm" style={{ color: 'var(--text-muted)' }}>מחולל תמונות מנות חכם</p>
         </div>
 
         {/* Card */}
-        <div className="bg-gray-800 border border-gray-700 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-white text-xl font-semibold mb-1 text-right">כניסה למערכת</h2>
-          <p className="text-gray-400 text-sm mb-6 text-right">הכנס מספר טלפון כדי להתחיל</p>
+        <div className="card p-8">
+          <h2 className="text-xl font-semibold mb-1 text-right" style={{ color: 'var(--text)' }}>כניסה למערכת</h2>
+          <p className="text-sm mb-6 text-right" style={{ color: 'var(--text-muted)' }}>הכנס מספר טלפון כדי להתחיל</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-gray-300 text-sm font-medium mb-2 text-right">
+              <label className="label text-right block" style={{ color: 'var(--text-muted)' }}>
                 מספר טלפון
               </label>
               <input
@@ -61,14 +62,21 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="050-0000000"
                 dir="ltr"
-                className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-4 py-3 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-500"
+                className="input text-center text-lg tracking-widest"
                 disabled={loading}
                 autoFocus
               />
             </div>
 
             {error && (
-              <div className="bg-red-900/40 border border-red-700 text-red-300 rounded-lg px-4 py-3 text-sm text-right">
+              <div
+                className="rounded-lg px-4 py-3 text-sm text-right"
+                style={{
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '1px solid rgba(239,68,68,0.3)',
+                  color: 'var(--error)',
+                }}
+              >
                 {error}
               </div>
             )}
@@ -76,24 +84,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || phone.replace(/\D/g, '').length < 9}
-              className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors text-base"
+              className="btn-primary w-full justify-center py-3 text-base"
             >
               {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
                   מתחבר...
-                </span>
+                </>
               ) : (
                 'כניסה'
               )}
             </button>
           </form>
 
-          <p className="text-gray-500 text-xs text-center mt-6">
-            אין צורך בסיסמה – המספר שלך הוא המזהה שלך
+          <p className="text-xs text-center mt-6" style={{ color: 'var(--text-muted)' }}>
+             המספר שלך הוא המזהה שלך
           </p>
         </div>
       </div>

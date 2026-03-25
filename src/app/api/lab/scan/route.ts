@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
             text: `Extract ONLY the dish/food names from this restaurant menu image.
 Return a JSON array of strings with just the dish names, nothing else.
 Example: ["שניצל", "המבורגר", "פסטה קרבונרה"]
-If there is Hebrew text keep it in Hebrew. Return only the JSON array, no explanation.`,
+Keep Hebrew text in Hebrew. Return only the JSON array, no explanation.`,
           },
           { type: 'image_url', image_url: { url: menuImage, detail: 'high' } },
         ],

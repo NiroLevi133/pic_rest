@@ -8,7 +8,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name } = await req.json();
+    const { name, ingredients } = await req.json();
     if (!name?.trim()) return NextResponse.json({ success: false, error: 'name required' }, { status: 400 });
 
     const menu = await prisma.menu.findFirst({ where: { id: params.id, userId } });
@@ -19,7 +19,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         menuId: params.id,
         name: name.trim(),
         category: 'other',
-        ingredients: '[]',
+        ingredients: Array.isArray(ingredients) && ingredients.length > 0
+          ? JSON.stringify(ingredients)
+          : '[]',
         prompt: FIXED_PROMPT,
         status: 'PENDING',
       },
@@ -28,7 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({
       success: true,
-      data: { id: dish.id, name: dish.name, status: dish.status, imageUrl: dish.imageUrl, hasReference: !!dish.referenceImage },
+      data: { id: dish.id, name: dish.name, status: dish.status, imageUrl: dish.imageUrl, hasReference: !!dish.referenceImage, imageIds: [] },
     });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

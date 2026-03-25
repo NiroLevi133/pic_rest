@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Loader2, Plus, ScanLine, CheckCircle2, AlertCircle,
   Trash2, X, Check, ArrowRight, FolderOpen, Camera, Zap,
-  Download, Share2,
+  Download, Share2, Pencil, RefreshCw, ChevronLeft, ChevronRight,
+  GalleryHorizontal,
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 
@@ -37,6 +38,12 @@ interface DishItem {
   status: string;
   hasImage?: boolean;
   hasReference: boolean;
+  imageIds: string[];
+}
+
+interface ScannedDish {
+  name: string;
+  ingredients: string[];
 }
 
 interface Category {
@@ -62,7 +69,7 @@ function DishLabModal({
   dish: DishItem;
   styleKey: string | null;
   onClose: () => void;
-  onGenerateStart: (dishId: string, promise: Promise<string>) => void;
+  onGenerateStart: (dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) => void;
 }) {
   const [dishImage, setDishImage] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -94,7 +101,7 @@ function DishLabModal({
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
       const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
-      return data.data.imageUrl as string;
+      return data.data as { imageUrl: string; dishImageId: string };
     });
     onGenerateStart(dish.id, promise);
     onClose();
@@ -195,6 +202,213 @@ function DishLightbox({ dish, onClose }: { dish: DishItem; onClose: () => void }
   );
 }
 
+/* ── Edit dish modal ─────────────────────────────────────────────── */
+function EditDishModal({
+  dish,
+  onClose,
+  onSaved,
+}: {
+  dish: DishItem;
+  onClose: () => void;
+  onSaved: (dishId: string, newName: string) => void;
+}) {
+  const [name, setName] = useState(dish.name);
+  const [ingredients, setIngredients] = useState<string[]>([]);
+  const [loadingDish, setLoadingDish] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/dishes/${dish.id}`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) setIngredients(Array.isArray(data.data.ingredients) ? data.data.ingredients : []);
+      })
+      .finally(() => setLoadingDish(false));
+  }, [dish.id]);
+
+  async function handleSave() {
+    setSaving(true);
+    await fetch(`/api/dishes/${dish.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name.trim(), ingredients: ingredients.filter(i => i.trim()) }),
+    });
+    onSaved(dish.id, name.trim());
+    onClose();
+    setSaving(false);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--surface)] rounded-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()} dir="rtl">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text)]"><ArrowRight className="w-5 h-5" /></button>
+          <p className="font-semibold text-sm flex-1">עריכת מנה</p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <label className="label text-xs mb-1.5">שם המנה</label>
+            <input className="input" value={name} onChange={e => setName(e.target.value)} dir="rtl" />
+          </div>
+          {loadingDish ? (
+            <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-[var(--accent)]" /></div>
+          ) : (
+            <div>
+              <label className="label text-xs mb-1.5">מרכיבים</label>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {ingredients.map((ing, i) => (
+                  <div key={i} className="flex gap-2">
+                    <input
+                      className="input flex-1 text-sm py-1.5"
+                      value={ing}
+                      onChange={e => setIngredients(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                      dir="rtl"
+                    />
+                    <button type="button" onClick={() => setIngredients(prev => prev.filter((_, j) => j !== i))}
+                      className="text-[var(--text-muted)] hover:text-red-400 p-1 shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+                <button type="button" onClick={() => setIngredients(prev => [...prev, ''])}
+                  className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors">
+                  <Plus className="w-3.5 h-3.5" /> הוסף מרכיב
+                </button>
+              </div>
+            </div>
+          )}
+          <button type="button" onClick={handleSave} disabled={saving || !name.trim()}
+            className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40">
+            {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</> : <><Check className="w-4 h-4" /> שמור</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Regenerate dish modal ───────────────────────────────────────── */
+function RegenerateModal({
+  dish,
+  styleKey,
+  onClose,
+  onGenerateStart,
+}: {
+  dish: DishItem;
+  styleKey: string | null;
+  onClose: () => void;
+  onGenerateStart: (dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) => void;
+}) {
+  const [dishImage, setDishImage] = useState<string | null>(null);
+  const [useExisting, setUseExisting] = useState(dish.hasReference);
+  const [customNote, setCustomNote] = useState('');
+  const [error, setError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const preset = getPreset(styleKey);
+
+  function readFile(file: File): Promise<string> {
+    return new Promise(res => {
+      const reader = new FileReader();
+      reader.onload = e => res(e.target?.result as string);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function handleGenerate() {
+    if (!useExisting && !dishImage) { setError('נא להעלות תמונת מנה'); return; }
+    const body: Record<string, unknown> = {
+      dishName: dish.name,
+      styleKey: styleKey ?? 'atmosphere',
+      dishId: dish.id,
+    };
+    if (customNote.trim()) body.customNote = customNote.trim();
+    if (!useExisting && dishImage) body.referenceImage = dishImage;
+
+    const promise = fetch('/api/lab/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(async r => {
+      const text = await r.text();
+      if (!text) throw new Error('השרת לא הגיב — נסה שוב');
+      const data = JSON.parse(text);
+      if (!data.success) throw new Error(data.error);
+      return data.data as { imageUrl: string; dishImageId: string };
+    });
+    onGenerateStart(dish.id, promise);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[var(--surface)] rounded-2xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()} dir="rtl">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text)]"><ArrowRight className="w-5 h-5" /></button>
+          <div className="flex-1">
+            <p className="font-semibold text-sm">{dish.name}</p>
+            {preset && <p className="text-xs text-[var(--text-muted)]">{preset.emoji} {preset.label}</p>}
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Photo selection */}
+          {dish.hasReference ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button type="button" onClick={() => setUseExisting(true)}
+                className={`py-2 text-xs rounded-lg border-2 transition-all ${useExisting ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10' : 'border-[var(--border)] text-[var(--text-muted)]'}`}>
+                תמונה קיימת ✓
+              </button>
+              <button type="button" onClick={() => { setUseExisting(false); fileRef.current?.click(); }}
+                className={`py-2 text-xs rounded-lg border-2 transition-all ${!useExisting ? 'border-[var(--accent)] text-[var(--accent)] bg-[var(--accent)]/10' : 'border-[var(--border)] text-[var(--text-muted)]'}`}>
+                {dishImage ? '✓ תמונה חדשה' : 'העלה חדשה'}
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={() => fileRef.current?.click()}
+              className={`relative w-full aspect-square rounded-xl border-2 overflow-hidden transition-all ${dishImage ? 'border-[var(--accent)]' : 'border-dashed border-[var(--border)] hover:border-[var(--accent)]'}`}>
+              {dishImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={dishImage} alt="מנה" className="w-full h-full object-cover" />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--text-muted)]">
+                  <Camera className="w-8 h-8" />
+                  <span className="text-xs">העלה תמונת מנה</span>
+                </div>
+              )}
+            </button>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            onChange={async e => {
+              const f = e.target.files?.[0];
+              if (f) { setDishImage(await compressImage(await readFile(f))); setUseExisting(false); }
+              e.target.value = '';
+            }}
+          />
+
+          {/* Custom note */}
+          <div>
+            <label className="label text-xs mb-1.5">בקשה מיוחדת (אופציונלי)</label>
+            <textarea
+              className="input text-sm resize-none"
+              rows={2}
+              placeholder="לדוגמה: תעשה את הרוטב יותר בולט, שהצלחת תהיה לבנה..."
+              value={customNote}
+              onChange={e => setCustomNote(e.target.value)}
+              dir="rtl"
+            />
+          </div>
+
+          {error && <p className="text-red-400 text-xs">{error}</p>}
+
+          <button type="button" disabled={!useExisting && !dishImage} onClick={handleGenerate}
+            className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40">
+            <Zap className="w-4 h-4" /> גנרט מחדש
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Create/Scan modal (2-step for scan, 1-step for new) ────────── */
 function CreateMenuModal({
   onClose,
@@ -235,7 +449,7 @@ function CreateMenuModal({
           body: JSON.stringify({ name: dishName }),
         });
         const dData = await dRes.json();
-        if (dData.success) dishes.push(dData.data);
+        if (dData.success) dishes.push({ ...dData.data, imageIds: dData.data.imageIds ?? [] });
       }
       onCreated({ ...data.data, styleKey, dishes });
       if (isScan) router.push('/history');
@@ -416,18 +630,29 @@ function MenuDetail({
   onDelete,
   onAddDish,
   onDishDone,
+  onDishDeleted,
+  onDishNameChange,
 }: {
   category: Category;
   onClose: () => void;
   onDelete: () => void;
   onAddDish: (dish: DishItem) => void;
-  onDishDone: (dishId: string) => void;
+  onDishDone: (dishId: string, dishImageId: string) => void;
+  onDishDeleted: (dishId: string) => void;
+  onDishNameChange: (dishId: string, newName: string) => void;
 }) {
   const [newDishName, setNewDishName] = useState('');
   const [addingDish, setAddingDish] = useState(false);
   const [lightboxDish, setLightboxDish] = useState<DishItem | null>(null);
   const [labDish, setLabDish] = useState<DishItem | null>(null);
+  const [editDish, setEditDish] = useState<DishItem | null>(null);
+  const [regenerateDish, setRegenerateDish] = useState<DishItem | null>(null);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
+  // imageIndexMap tracks which history image is shown per dish (0 = newest)
+  const [imageIndexMap, setImageIndexMap] = useState<Map<string, number>>(new Map());
+  // carousel
+  const [carouselSlides, setCarouselSlides] = useState<string[] | null>(null);
+  const [generatingCarousel, setGeneratingCarousel] = useState(false);
 
   const done = category.dishes.filter(d => d.status === 'DONE').length;
   const total = category.dishes.length;
@@ -448,10 +673,11 @@ function MenuDetail({
     }
   }
 
-  function handleGenerateStart(dishId: string, promise: Promise<string>) {
+  function handleGenerateStart(dishId: string, promise: Promise<{ imageUrl: string; dishImageId: string }>) {
     setGeneratingIds(prev => new Set(prev).add(dishId));
-    promise.then(() => {
-      onDishDone(dishId);
+    promise.then(({ dishImageId }) => {
+      onDishDone(dishId, dishImageId);
+      setImageIndexMap(prev => new Map(prev).set(dishId, 0));
     }).catch(() => {
       // generation failed — just remove from generating
     }).finally(() => {
@@ -459,11 +685,72 @@ function MenuDetail({
     });
   }
 
+  async function handleGenerateCarousel() {
+    const doneDishes = category.dishes.filter(d => d.status === 'DONE' && d.hasImage);
+    if (doneDishes.length < 2) return;
+    setGeneratingCarousel(true);
+    try {
+      const SLIDE_W = 1080;
+      const SLIDE_H = 1350;
+      const n = doneDishes.length;
+
+      // Load all images
+      const images = await Promise.all(
+        doneDishes.map(dish => new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error(`Failed to load: ${dish.name}`));
+          img.src = `/api/images/${dish.id}`;
+        }))
+      );
+
+      // Create wide canvas (width = n × 1080)
+      const canvas = document.createElement('canvas');
+      canvas.width = n * SLIDE_W;
+      canvas.height = SLIDE_H;
+      const ctx = canvas.getContext('2d')!;
+
+      // Draw each image in its 1080×1350 slot (object-fit: cover centered)
+      images.forEach((img, i) => {
+        const x = i * SLIDE_W;
+        const scale = Math.max(SLIDE_W / img.naturalWidth, SLIDE_H / img.naturalHeight);
+        const sw = SLIDE_W / scale;
+        const sh = SLIDE_H / scale;
+        const sx = (img.naturalWidth - sw) / 2;
+        const sy = (img.naturalHeight - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, x, 0, SLIDE_W, SLIDE_H);
+      });
+
+      // Slice into individual 1080×1350 slides
+      const slides: string[] = [];
+      for (let i = 0; i < n; i++) {
+        const slideCanvas = document.createElement('canvas');
+        slideCanvas.width = SLIDE_W;
+        slideCanvas.height = SLIDE_H;
+        const slideCtx = slideCanvas.getContext('2d')!;
+        slideCtx.drawImage(canvas, i * SLIDE_W, 0, SLIDE_W, SLIDE_H, 0, 0, SLIDE_W, SLIDE_H);
+        slides.push(slideCanvas.toDataURL('image/jpeg', 0.92));
+      }
+
+      setCarouselSlides(slides);
+    } catch (err) {
+      alert(`שגיאה ביצירת הקרוסלה: ${err}`);
+    } finally {
+      setGeneratingCarousel(false);
+    }
+  }
+
   async function deleteMenu() {
     if (!confirm(`למחוק את "${category.name}"?`)) return;
     await fetch(`/api/menus/${category.id}`, { method: 'DELETE' });
     onDelete();
     onClose();
+  }
+
+  async function deleteDish(dishId: string, dishName: string) {
+    if (!confirm(`למחוק את "${dishName}"?`)) return;
+    await fetch(`/api/dishes/${dishId}`, { method: 'DELETE' });
+    onDishDeleted(dishId);
   }
 
   return (
@@ -487,6 +774,16 @@ function MenuDetail({
               <span className="text-xs text-[var(--text-muted)]">{done}/{total} הושלמו</span>
             </div>
           </div>
+          <button
+            onClick={handleGenerateCarousel}
+            disabled={generatingCarousel || category.dishes.filter(d => d.status === 'DONE' && d.hasImage).length < 2}
+            title="קרוסלה לאינסטגרם"
+            className="text-[var(--text-muted)] hover:text-[var(--accent)] disabled:opacity-30 transition-colors"
+          >
+            {generatingCarousel
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <GalleryHorizontal className="w-4 h-4" />}
+          </button>
           <button onClick={deleteMenu} className="text-[var(--text-muted)] hover:text-red-400">
             <Trash2 className="w-4 h-4" />
           </button>
@@ -512,52 +809,125 @@ function MenuDetail({
                 const isDone = dish.status === 'DONE';
                 const isGenerating = generatingIds.has(dish.id);
                 return (
-                  <button
-                    key={dish.id}
-                    type="button"
-                    onClick={() => {
-                      if (isGenerating) return;
-                      if (isDone) setLightboxDish(dish);
-                      else setLabDish(dish);
-                    }}
-                    className={`relative rounded-xl border-2 overflow-hidden aspect-square flex flex-col items-center justify-center gap-1 p-2 text-center transition-all ${
-                      isGenerating
-                        ? 'border-[var(--accent)]/50 bg-[var(--accent)]/5'
-                        : isDone
-                          ? 'border-green-500/40 bg-green-500/5 hover:border-green-500'
-                          : 'border-orange-500/30 bg-orange-500/5 hover:border-orange-500'
-                    }`}
-                  >
-                    {isGenerating ? (
-                      <div className="flex flex-col items-center gap-1">
-                        <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
-                        <span className="text-[10px] text-[var(--accent)]">מייצר...</span>
-                        <span className="text-[10px] text-[var(--text-muted)] leading-tight" dir="rtl">{dish.name}</span>
-                      </div>
-                    ) : isDone && dish.hasImage ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={`/api/images/${dish.id}`}
-                          alt={dish.name}
-                          loading="lazy"
-                          onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                        <div className="absolute bottom-0 left-0 right-0 p-1.5">
-                          <span className="text-[10px] text-white font-medium leading-tight block" dir="rtl">{dish.name}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        {isDone
-                          ? <CheckCircle2 className="w-5 h-5 text-green-400" />
-                          : <AlertCircle className="w-5 h-5 text-orange-400" />}
-                        <span className="text-[10px] font-medium leading-tight" dir="rtl">{dish.name}</span>
+                  <div key={dish.id} className="flex flex-col gap-1">
+                    {/* Image area */}
+                    <div className="relative aspect-square">
+                      {(() => {
+                        const imgIdx = imageIndexMap.get(dish.id) ?? 0;
+                        const imgSrc = dish.imageIds.length > 0
+                          ? `/api/dish-images/${dish.imageIds[imgIdx]}`
+                          : `/api/images/${dish.id}`;
+                        return (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (isGenerating) return;
+                              if (isDone) setLightboxDish(dish);
+                              else setLabDish(dish);
+                            }}
+                            className={`w-full h-full rounded-xl border-2 overflow-hidden flex flex-col items-center justify-center gap-1 p-2 text-center transition-all ${
+                              isGenerating
+                                ? 'border-[var(--accent)]/50 bg-[var(--accent)]/5'
+                                : isDone
+                                  ? 'border-green-500/40 bg-green-500/5 hover:border-green-500'
+                                  : 'border-orange-500/30 bg-orange-500/5 hover:border-orange-500'
+                            }`}
+                          >
+                            {isGenerating ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <Loader2 className="w-5 h-5 text-[var(--accent)] animate-spin" />
+                                <span className="text-[10px] text-[var(--accent)]">מייצר...</span>
+                                <span className="text-[10px] text-[var(--text-muted)] leading-tight" dir="rtl">{dish.name}</span>
+                              </div>
+                            ) : isDone && dish.hasImage ? (
+                              <>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={imgSrc}
+                                  alt={dish.name}
+                                  loading="lazy"
+                                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                  className="absolute inset-0 w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                                <div className="absolute bottom-0 left-0 right-0 p-1.5">
+                                  <span className="text-[10px] text-white font-medium leading-tight block" dir="rtl">{dish.name}</span>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                {isDone
+                                  ? <CheckCircle2 className="w-5 h-5 text-green-400" />
+                                  : <AlertCircle className="w-5 h-5 text-orange-400" />}
+                                <span className="text-[10px] font-medium leading-tight" dir="rtl">{dish.name}</span>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })()}
+                      {/* History arrows — shown when dish has multiple generated images */}
+                      {!isGenerating && dish.imageIds.length > 1 && (() => {
+                        const imgIdx = imageIndexMap.get(dish.id) ?? 0;
+                        return (
+                          <>
+                            {imgIdx < dish.imageIds.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setImageIndexMap(prev => new Map(prev).set(dish.id, imgIdx + 1)); }}
+                                className="absolute left-0.5 top-1/2 -translate-y-1/2 z-10 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/90"
+                              >
+                                <ChevronLeft className="w-3 h-3" />
+                              </button>
+                            )}
+                            {imgIdx > 0 && (
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); setImageIndexMap(prev => new Map(prev).set(dish.id, imgIdx - 1)); }}
+                                className="absolute right-0.5 top-1/2 -translate-y-1/2 z-10 bg-black/60 text-white rounded-full p-0.5 hover:bg-black/90"
+                              >
+                                <ChevronRight className="w-3 h-3" />
+                              </button>
+                            )}
+                            {/* Dots indicator */}
+                            <div className="absolute top-1 left-1/2 -translate-x-1/2 z-10 flex gap-0.5">
+                              {dish.imageIds.map((_, i) => (
+                                <div key={i} className={`rounded-full transition-all ${i === imgIdx ? 'w-2 h-1.5 bg-white' : 'w-1 h-1 bg-white/50'}`} />
+                              ))}
+                            </div>
+                          </>
+                        );
+                      })()}
+                      {/* X delete button */}
+                      {!isGenerating && (
+                        <button
+                          type="button"
+                          onClick={() => deleteDish(dish.id, dish.name)}
+                          className="absolute top-1 right-1 z-10 bg-black/60 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                    {/* Action buttons */}
+                    {!isGenerating && (
+                      <div className="grid grid-cols-2 gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => setEditDish(dish)}
+                          className="flex items-center justify-center gap-0.5 py-1 rounded-lg text-[9px] font-medium bg-[var(--surface2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                        >
+                          <Pencil className="w-2.5 h-2.5" /> ערוך
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRegenerateDish(dish)}
+                          className="flex items-center justify-center gap-0.5 py-1 rounded-lg text-[9px] font-medium bg-[var(--surface2)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:border-[var(--accent)] transition-colors"
+                        >
+                          <RefreshCw className="w-2.5 h-2.5" /> גינרוט
+                        </button>
                       </div>
                     )}
-                  </button>
+                  </div>
                 );
               })}
             </div>
@@ -603,6 +973,70 @@ function MenuDetail({
 
       {lightboxDish && (
         <DishLightbox dish={lightboxDish} onClose={() => setLightboxDish(null)} />
+      )}
+
+      {editDish && (
+        <EditDishModal
+          dish={editDish}
+          onClose={() => setEditDish(null)}
+          onSaved={(dishId, newName) => { onDishNameChange(dishId, newName); setEditDish(null); }}
+        />
+      )}
+
+      {regenerateDish && (
+        <RegenerateModal
+          dish={regenerateDish}
+          styleKey={category.styleKey}
+          onClose={() => setRegenerateDish(null)}
+          onGenerateStart={(dishId, promise) => { handleGenerateStart(dishId, promise); setRegenerateDish(null); }}
+        />
+      )}
+
+      {/* Carousel modal */}
+      {carouselSlides && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-end sm:items-center justify-center p-4" onClick={() => setCarouselSlides(null)}>
+          <div className="bg-[var(--surface)] rounded-2xl w-full max-w-lg overflow-hidden" onClick={e => e.stopPropagation()} dir="rtl">
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
+              <button onClick={() => setCarouselSlides(null)} className="text-[var(--text-muted)] hover:text-[var(--text)]"><X className="w-5 h-5" /></button>
+              <div className="flex-1">
+                <p className="font-semibold text-sm">קרוסלה לאינסטגרם</p>
+                <p className="text-xs text-[var(--text-muted)]">{carouselSlides.length} שקופיות · 1080×1350 כל אחת</p>
+              </div>
+            </div>
+            {/* Preview */}
+            <div className="flex gap-2 overflow-x-auto p-4">
+              {carouselSlides.map((slide, i) => (
+                <div key={i} className="shrink-0 flex flex-col items-center gap-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={slide} alt={`שקופית ${i + 1}`} className="w-24 h-32 object-cover rounded-lg border border-[var(--border)]" />
+                  <span className="text-[10px] text-[var(--text-muted)]">{i + 1}</span>
+                </div>
+              ))}
+            </div>
+            <div className="p-4 pt-0 space-y-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  for (let i = 0; i < carouselSlides.length; i++) {
+                    const a = document.createElement('a');
+                    a.href = carouselSlides[i];
+                    a.download = `carousel_${String(i + 1).padStart(2, '0')}_of_${carouselSlides.length}.jpg`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    await new Promise(r => setTimeout(r, 300));
+                  }
+                }}
+                className="btn-primary w-full justify-center py-3"
+              >
+                <Download className="w-4 h-4" /> הורד את כל השקופיות
+              </button>
+              <p className="text-[10px] text-center text-[var(--text-muted)]">
+                העלה לאינסטגרם לפי הסדר ← שקופית 1 ראשונה
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -683,6 +1117,18 @@ export default function MenusPage() {
   function addDishToCategory(catId: string, dish: DishItem) {
     setCategories(prev => prev.map(c =>
       c.id === catId ? { ...c, dishes: [...c.dishes, dish] } : c
+    ));
+  }
+
+  function deleteDishFromCategory(catId: string, dishId: string) {
+    setCategories(prev => prev.map(c =>
+      c.id === catId ? { ...c, dishes: c.dishes.filter(d => d.id !== dishId) } : c
+    ));
+  }
+
+  function updateDishName(catId: string, dishId: string, newName: string) {
+    setCategories(prev => prev.map(c =>
+      c.id === catId ? { ...c, dishes: c.dishes.map(d => d.id === dishId ? { ...d, name: newName } : d) } : c
     ));
   }
 
@@ -794,8 +1240,12 @@ export default function MenusPage() {
           onClose={() => setSelectedCatId(null)}
           onDelete={() => deleteCategory(selectedCat.id)}
           onAddDish={(dish) => addDishToCategory(selectedCat.id, dish)}
-          onDishDone={(dishId) => {
-            const update = (d: DishItem) => d.id === dishId ? { ...d, status: 'DONE', hasImage: true } : d;
+          onDishDeleted={(dishId) => deleteDishFromCategory(selectedCat.id, dishId)}
+          onDishNameChange={(dishId, newName) => updateDishName(selectedCat.id, dishId, newName)}
+          onDishDone={(dishId, dishImageId) => {
+            const update = (d: DishItem) => d.id === dishId
+              ? { ...d, status: 'DONE', hasImage: true, imageIds: [dishImageId, ...d.imageIds] }
+              : d;
             setCategories(prev => prev.map(c => c.id === selectedCat.id ? {
               ...c, dishes: c.dishes.map(update),
             } : c));

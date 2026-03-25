@@ -5,9 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
 import { getImageProvider } from '@/lib/providers';
-import { getPresetPrompt } from '@/lib/style-presets';
+import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
-import { resizeForGallery } from '@/lib/image-resize';
 import OpenAI from 'openai';
 
 export async function POST(req: NextRequest) {
@@ -15,7 +14,14 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { referenceImage, dishName, styleKey, styleRefImage, dishId } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId, customNote } = await req.json();
+
+    // Fall back to stored reference image if none provided (used for "regenerate" flow)
+    let referenceImage = reqReferenceImage;
+    if (!referenceImage && dishId) {
+      const existing = await prisma.dish.findUnique({ where: { id: dishId }, select: { referenceImage: true } });
+      referenceImage = existing?.referenceImage ?? null;
+    }
 
     if (!referenceImage) return NextResponse.json({ success: false, error: 'referenceImage required' }, { status: 400 });
     if (!dishName?.trim()) return NextResponse.json({ success: false, error: 'dishName required' }, { status: 400 });
@@ -70,6 +76,12 @@ Return ONLY a concise photography style directive (2-4 sentences), starting with
       prompt = `${styleDescription}
 
 Apply this exact photography style to the dish from the reference image. Preserve ALL original ingredients, plating, and dish structure without any changes. DO NOT add or remove any food elements. Output a photorealistic, commercial-quality food photograph.`;
+    } else if (dishId && styleKey) {
+      // Generating from menu — use locked series prompt for consistency
+      const base = getMenuSeriesPrompt(styleKey);
+      prompt = customNote?.trim()
+        ? `${base}\n\n---\n\n# SPECIAL USER REQUEST (apply if possible, locked parameters take priority):\n${customNote.trim()}`
+        : base;
     } else {
       prompt = (styleKey && getPresetPrompt(styleKey)) || FIXED_PROMPT;
     }
@@ -82,13 +94,7 @@ Apply this exact photography style to the dish from the reference image. Preserv
       referenceImage,
     });
 
-    // Resize image for faster gallery loading — fallback to original if sharp fails
-    let storedImageUrl = result.imageUrl;
-    try {
-      storedImageUrl = await resizeForGallery(result.imageUrl);
-    } catch {
-      console.warn('[generate] resizeForGallery failed, storing original');
-    }
+    const storedImageUrl = result.imageUrl;
 
     // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
     let savedDishId: string;
@@ -116,7 +122,12 @@ Apply this exact photography style to the dish from the reference image. Preserv
       savedDishId = dish.id;
     }
 
-    return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: savedDishId } });
+    // Save to DishImage history table
+    const dishImage = await prisma.dishImage.create({
+      data: { dishId: savedDishId, imageUrl: storedImageUrl },
+    });
+
+    return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: savedDishId, dishImageId: dishImage.id } });
   } catch (err) {
     console.error('[lab/generate]', err);
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
