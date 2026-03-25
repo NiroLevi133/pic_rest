@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { dishId } = await req.json() as { dishId: number };
+  const { dishId } = await req.json() as { dishId: string };
 
   try {
     const dish = await prisma.dish.findUnique({ where: { id: dishId } });

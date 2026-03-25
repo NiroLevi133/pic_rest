@@ -9,7 +9,7 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
 import OpenAI from 'openai';
 
-function fireBg(dishId: number): void {
+function fireBg(dishId: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
   const secret = process.env.BG_SECRET || '';
   if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote } = await req.json();
-    const dishId = rawDishId ? parseInt(String(rawDishId)) : null;
+    const dishId = rawDishId ? String(rawDishId) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
     let referenceImage = reqReferenceImage;
@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Save dish with GENERATING status, fire background worker
-    let savedDishId: number;
+    let savedDishId: string;
     if (dishId) {
       savedDishId = dishId;
       await prisma.dish.update({

@@ -4,14 +4,13 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import type { Dish } from '@/lib/types';
 
 function mapDish(d: {
-  id: number; menuId: string; name: string; description: string | null;
+  id: string; menuId: string; name: string; description: string | null;
   price: string | null; category: string; ingredients: string; prompt: string;
   status: string; imageUrl: string | null; errorMessage: string | null;
   retryCount: number; createdAt: Date; updatedAt: Date;
 }): Dish {
   return {
     ...d,
-    id: String(d.id),
     status: d.status as Dish['status'],
     ingredients: (() => { try { return JSON.parse(d.ingredients); } catch { return []; } })(),
     createdAt: d.createdAt.toISOString(),
@@ -25,7 +24,7 @@ export async function GET(
 ) {
   try {
     const dish = await prisma.dish.findUnique({
-      where: { id: parseInt(params.id) },
+      where: { id: params.id },
       include: { images: { select: { id: true }, orderBy: { createdAt: 'desc' }, take: 1 } },
     });
     if (!dish) return NextResponse.json({ success: false, error: 'not found' }, { status: 404 });
@@ -51,7 +50,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: 'No fields to update' }, { status: 400 });
     }
 
-    const dish = await prisma.dish.update({ where: { id: parseInt(params.id) }, data: updateData });
+    const dish = await prisma.dish.update({ where: { id: params.id }, data: updateData });
     return NextResponse.json({ success: true, data: mapDish(dish) });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
@@ -67,11 +66,11 @@ export async function DELETE(
 
   try {
     const dish = await prisma.dish.findFirst({
-      where: { id: parseInt(params.id), menu: { userId } },
+      where: { id: params.id, menu: { userId } },
     });
     if (!dish) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
-    await prisma.dish.delete({ where: { id: parseInt(params.id) } });
+    await prisma.dish.delete({ where: { id: params.id } });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

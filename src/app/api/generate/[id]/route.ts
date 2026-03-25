@@ -4,7 +4,7 @@ import { getPresetPrompt } from '@/lib/style-presets';
 import { generateDynamicPrompt } from '@/lib/art-director';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
-function fireBg(dishId: number): void {
+function fireBg(dishId: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
   const secret = process.env.BG_SECRET || '';
   if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
