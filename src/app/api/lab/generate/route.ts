@@ -7,7 +7,7 @@ import { getSettings } from '@/lib/settings';
 import { getImageProvider } from '@/lib/providers';
 import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
-import { resizeForGallery } from '@/lib/image-resize';
+
 import OpenAI from 'openai';
 
 export async function POST(req: NextRequest) {
@@ -95,20 +95,23 @@ Apply this exact photography style to the dish from the reference image. Preserv
       referenceImage,
     });
 
-    // Compress large base64 images before saving to DB (speeds up gallery loading)
-    let storedImageUrl = result.imageUrl;
-    if (storedImageUrl.startsWith('data:') && storedImageUrl.length > 150_000) {
-      try { storedImageUrl = await resizeForGallery(storedImageUrl); } catch { /* fallback to original */ }
-    }
+    const storedImageUrl = result.imageUrl;
 
     // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
+    // Run dish upsert + dishImage create in parallel to minimize post-Gemini DB time
     let savedDishId: string;
     if (dishId) {
-      await prisma.dish.update({
-        where: { id: dishId },
-        data: { status: 'DONE', imageUrl: storedImageUrl, referenceImage },
-      });
       savedDishId = dishId;
+      const [, dishImage] = await Promise.all([
+        prisma.dish.update({
+          where: { id: dishId },
+          data: { status: 'DONE', imageUrl: storedImageUrl, referenceImage },
+        }),
+        prisma.dishImage.create({
+          data: { dishId: savedDishId, imageUrl: storedImageUrl },
+        }),
+      ]);
+      return NextResponse.json({ success: true, data: { imageUrl: `/api/images/${savedDishId}`, dishId: savedDishId, dishImageId: dishImage.id } });
     } else {
       const dish = await prisma.dish.create({
         data: {
@@ -127,7 +130,7 @@ Apply this exact photography style to the dish from the reference image. Preserv
       savedDishId = dish.id;
     }
 
-    // Save to DishImage history table
+    // Save to DishImage history table (lab flow — dish was just created above)
     const dishImage = await prisma.dishImage.create({
       data: { dishId: savedDishId, imageUrl: storedImageUrl },
     });
