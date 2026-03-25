@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { resizeForGallery } from '@/lib/image-resize';
 
+const RECOMPRESS_THRESHOLD = 150_000;
 const cache = new Map<string, { buffer: Buffer; mimeType: string }>();
 
 export async function GET(
@@ -28,9 +30,17 @@ export async function GET(
     return new NextResponse('Not found', { status: 404 });
   }
 
-  const url = record.imageUrl;
+  let url = record.imageUrl;
 
   if (url.startsWith('data:')) {
+    // Re-compress oversized images and save back to DB
+    if (url.length > RECOMPRESS_THRESHOLD) {
+      try {
+        url = await resizeForGallery(url);
+        await prisma.dishImage.update({ where: { id }, data: { imageUrl: url } });
+      } catch { /* fallback to original */ }
+    }
+
     const [header, data] = url.split(',');
     const mimeType = header.replace('data:', '').replace(';base64', '');
     const buffer = Buffer.from(data, 'base64');

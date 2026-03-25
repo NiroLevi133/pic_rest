@@ -32,7 +32,7 @@ Return a JSON array of strings with just the dish names, nothing else.
 Example: ["שניצל", "המבורגר", "פסטה קרבונרה"]
 Keep Hebrew text in Hebrew. Return only the JSON array, no explanation.`,
           },
-          { type: 'image_url', image_url: { url: menuImage, detail: 'high' } },
+          { type: 'image_url', image_url: { url: menuImage, detail: 'auto' } },
         ],
       }],
       max_tokens: 1000,

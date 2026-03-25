@@ -7,6 +7,7 @@ import { getSettings } from '@/lib/settings';
 import { getImageProvider } from '@/lib/providers';
 import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
+import { resizeForGallery } from '@/lib/image-resize';
 import OpenAI from 'openai';
 
 export async function POST(req: NextRequest) {
@@ -94,7 +95,11 @@ Apply this exact photography style to the dish from the reference image. Preserv
       referenceImage,
     });
 
-    const storedImageUrl = result.imageUrl;
+    // Compress large base64 images before saving to DB (speeds up gallery loading)
+    let storedImageUrl = result.imageUrl;
+    if (storedImageUrl.startsWith('data:') && storedImageUrl.length > 150_000) {
+      try { storedImageUrl = await resizeForGallery(storedImageUrl); } catch { /* fallback to original */ }
+    }
 
     // If dishId provided, update the existing dish (from menus page); otherwise create a new lab dish
     let savedDishId: string;

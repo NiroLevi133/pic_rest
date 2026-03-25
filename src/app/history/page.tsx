@@ -151,7 +151,7 @@ function DishLabModal({
             )}
           </button>
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
-            onChange={async e => { const f = e.target.files?.[0]; if (f) setDishImage(await compressImage(await readFile(f))); e.target.value = ''; }} />
+            onChange={async e => { const f = e.target.files?.[0]; if (f) setDishImage(await compressImage(await readFile(f), 800, 0.7)); e.target.value = ''; }} />
 
           {error && <p className="text-red-400 text-xs">{error}</p>}
 
@@ -379,7 +379,7 @@ function RegenerateModal({
           <input ref={fileRef} type="file" accept="image/*" className="hidden"
             onChange={async e => {
               const f = e.target.files?.[0];
-              if (f) { setDishImage(await compressImage(await readFile(f))); setUseExisting(false); }
+              if (f) { setDishImage(await compressImage(await readFile(f), 800, 0.7)); setUseExisting(false); }
               e.target.value = '';
             }}
           />
@@ -1141,7 +1141,7 @@ export default function MenusPage() {
     reader.onload = async (ev) => {
       try {
         setScanError('');
-        const menuImage = await compressImage(ev.target?.result as string);
+        const menuImage = await compressImage(ev.target?.result as string, 1024, 0.75);
         const res = await fetch('/api/lab/scan', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1167,7 +1167,7 @@ export default function MenusPage() {
       {/* Top bar */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">ניהול הקטלוג</h1>
+          <h1 className="text-2xl font-bold">ניהול תפריטים</h1>
           <p className="text-[var(--text-muted)] text-sm">{categories.length} תפריטים</p>
         </div>
         <div className="flex gap-2">
