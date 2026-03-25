@@ -9,19 +9,15 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
 import OpenAI from 'openai';
 
-function getBgBaseUrl(req: NextRequest): string {
-  const proto = req.headers.get('x-forwarded-proto') || 'https';
-  const host = req.headers.get('host') || 'localhost:3000';
-  return process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
-}
-
-function fireBg(baseUrl: string, dishId: number): void {
-  const secret = process.env.BG_SECRET || 'restorante-internal';
-  fetch(`${baseUrl}/api/generate-bg`, {
+function fireBg(dishId: number): void {
+  const url = process.env.LAMBDA_GENERATE_URL;
+  const secret = process.env.BG_SECRET || '';
+  if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
     body: JSON.stringify({ dishId }),
-  }).catch(() => {});
+  }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
 export async function POST(req: NextRequest) {
@@ -121,7 +117,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fire background generation — returns immediately
-    fireBg(getBgBaseUrl(req), savedDishId);
+    fireBg(savedDishId);
 
     return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
   } catch (err) {

@@ -4,10 +4,15 @@ import { getPresetPrompt } from '@/lib/style-presets';
 import { generateDynamicPrompt } from '@/lib/art-director';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
-function getBgBaseUrl(req: NextRequest): string {
-  const proto = req.headers.get('x-forwarded-proto') || 'https';
-  const host = req.headers.get('host') || 'localhost:3000';
-  return process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
+function fireBg(dishId: number): void {
+  const url = process.env.LAMBDA_GENERATE_URL;
+  const secret = process.env.BG_SECRET || '';
+  if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
+    body: JSON.stringify({ dishId }),
+  }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
 export async function POST(
@@ -60,13 +65,7 @@ export async function POST(
       data: { status: 'GENERATING', prompt, errorMessage: null, retryCount: 0 },
     });
 
-    const baseUrl = getBgBaseUrl(req);
-    const secret = process.env.BG_SECRET || 'restorante-internal';
-    fetch(`${baseUrl}/api/generate-bg`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-      body: JSON.stringify({ dishId }),
-    }).catch(() => {});
+    fireBg(dishId);
 
     return NextResponse.json({ success: true });
   } catch (err) {

@@ -6,10 +6,15 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 import { getPresetPrompt } from '@/lib/style-presets';
 import type { GenerateAllRequest } from '@/lib/types';
 
-function getBgBaseUrl(req: NextRequest): string {
-  const proto = req.headers.get('x-forwarded-proto') || 'https';
-  const host = req.headers.get('host') || 'localhost:3000';
-  return process.env.NEXT_PUBLIC_SITE_URL || `${proto}://${host}`;
+function fireBg(dishId: number): void {
+  const url = process.env.LAMBDA_GENERATE_URL;
+  const secret = process.env.BG_SECRET || '';
+  if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
+    body: JSON.stringify({ dishId }),
+  }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
 // Sets dish to GENERATING with correct prompt, fires background worker
@@ -17,7 +22,6 @@ async function queueDish(
   dishId: number,
   restaurantStyle: string | null,
   openaiApiKey: string | undefined,
-  baseUrl: string,
 ): Promise<void> {
   const dish = await prisma.dish.findUnique({ where: { id: dishId } });
   if (!dish || !dish.referenceImage) return;
@@ -44,12 +48,7 @@ async function queueDish(
     data: { status: 'GENERATING', prompt, errorMessage: null },
   });
 
-  const secret = process.env.BG_SECRET || 'restorante-internal';
-  fetch(`${baseUrl}/api/generate-bg`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId }),
-  }).catch(() => {});
+  fireBg(dishId);
 }
 
 async function batchProcess<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>): Promise<void> {
@@ -81,13 +80,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, data: { queued: 0, message: 'אין מנות עם תמונות מקור להגנרציה' } });
     }
 
-    const baseUrl = getBgBaseUrl(req);
-
     // Each queueDish call is fast (DB update + HTTP fire) — await the whole batch
     await batchProcess(
       dishes,
       concurrency,
-      (d) => queueDish(d.id, restaurantStyle, settings.openaiApiKey, baseUrl),
+      (d) => queueDish(d.id, restaurantStyle, settings.openaiApiKey),
     );
 
     return NextResponse.json({ success: true, data: { queued: dishes.length } });
