@@ -127,6 +127,7 @@ function LabContent() {
     setGenerating(true);
     setResult(null);
     try {
+      // Step 1: create dish and start background generation (returns immediately)
       const res = await fetch('/api/lab/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +137,23 @@ function LabContent() {
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
       const data = JSON.parse(text);
       if (!data.success) throw new Error(data.error);
-      setResult(data.data);
+      const dishId = data.data.dishId as string;
+
+      // Step 2: poll until done
+      for (let i = 0; i < 60; i++) {
+        await new Promise(r => setTimeout(r, 3000));
+        const statusRes = await fetch(`/api/dishes/${dishId}`);
+        const statusData = await statusRes.json();
+        const status = statusData.data?.status;
+        if (status === 'DONE') {
+          setResult({ imageUrl: `/api/images/${dishId}`, dishId });
+          return;
+        }
+        if (status === 'ERROR') {
+          throw new Error(statusData.data?.errorMessage || 'שגיאה בייצור תמונה');
+        }
+      }
+      throw new Error('פג זמן הגנרציה — נסה שוב');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בייצור תמונה');
     } finally {

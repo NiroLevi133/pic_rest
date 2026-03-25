@@ -1016,7 +1016,7 @@ function MenuDetail({
           dish={regenerateDish}
           styleKey={category.styleKey}
           onClose={() => setRegenerateDish(null)}
-          onGenerateStart={(dishId, promise) => { handleGenerateStart(dishId, promise); setRegenerateDish(null); }}
+          onGenerateStart={(dishId) => { handleGenerateStart(dishId); setRegenerateDish(null); }}
         />
       )}
 
