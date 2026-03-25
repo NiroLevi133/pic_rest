@@ -48,6 +48,7 @@ export class GeminiImageProvider implements ImageProvider {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(240_000), // 4 min — allows Lambda 5min timeout to work
     });
 
     if (!res.ok) {

@@ -7,7 +7,8 @@
       "Bash(npx tsc:*)",
       "Bash(grep '\"\"lucide-react\"\"' package.json)",
       "Bash(npx prisma:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(find c:UsersNirLeviDesktoprestorante -name serverless.yml -o -name serverless.ts -o -name template.yaml -o -name cdk.json -o -name *.lambda.*)"
     ]
   }
 }
