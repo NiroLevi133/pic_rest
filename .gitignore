@@ -1,3 +1,8 @@
+# Lambda deployment packages
+lanbda-bg/
+lambda-bg/
+*.zip
+
 # Dependencies
 node_modules/
 .pnp
@@ -32,6 +37,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# lanbda-bg
-lambda-bg/node_modules/
-lambda-bg/function.zip
