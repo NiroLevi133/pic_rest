@@ -15,7 +15,7 @@ function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl, secret }),
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
