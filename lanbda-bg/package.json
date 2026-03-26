@@ -1,0 +1,8 @@
+{
+  "name": "generate-image-bg",
+  "version": "1.0.0",
+  "dependencies": {
+    "@prisma/client": "5.10.0",
+    "prisma": "5.10.0"
+  }
+}
