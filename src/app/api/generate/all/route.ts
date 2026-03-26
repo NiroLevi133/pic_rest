@@ -19,7 +19,7 @@ function fireBg(dishId: string): void {
 
 // Sets dish to GENERATING with correct prompt, fires background worker
 async function queueDish(
-  dishId: number,
+  dishId: string,
   restaurantStyle: string | null,
   openaiApiKey: string | undefined,
 ): Promise<void> {

@@ -19,7 +19,7 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const dishId = parseInt(params.id);
+  const dishId = params.id;
 
   try {
     const dish = await prisma.dish.findUnique({
