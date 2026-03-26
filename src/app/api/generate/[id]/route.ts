@@ -8,6 +8,7 @@ function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
   const appUrl = process.env.APP_URL || '';
   const secret = process.env.BG_SECRET || '';
+  console.log('[fireBg] BG_SECRET set:', !!secret, '| value length:', secret.length);
   if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
   const callbackUrl = `${appUrl}/api/generate-callback`;
   fetch(url, {

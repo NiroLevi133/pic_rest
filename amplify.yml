@@ -16,6 +16,8 @@ frontend:
         - echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env.production
         - echo "SETTINGS_ENCRYPTION_KEY=$SETTINGS_ENCRYPTION_KEY" >> .env.production
         - echo "LAMBDA_GENERATE_URL=$LAMBDA_GENERATE_URL" >> .env.production
+        - echo "BG_SECRET=$BG_SECRET" >> .env.production
+        - echo "APP_URL=$APP_URL" >> .env.production
 
     build:
       commands:
