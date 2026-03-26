@@ -31,3 +31,7 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# lanbda-bg
+lambda-bg/node_modules/
+lambda-bg/function.zip

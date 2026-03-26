@@ -6,14 +6,16 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 import { getPresetPrompt } from '@/lib/style-presets';
 import type { GenerateAllRequest } from '@/lib/types';
 
-function fireBg(dishId: string): void {
+function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
+  const appUrl = process.env.APP_URL || '';
   const secret = process.env.BG_SECRET || '';
   if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  const callbackUrl = `${appUrl}/api/generate-callback`;
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId }),
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
@@ -48,7 +50,7 @@ async function queueDish(
     data: { status: 'GENERATING', prompt, errorMessage: null },
   });
 
-  fireBg(dishId);
+  fireBg(dishId, dish.referenceImage, prompt);
 }
 
 async function batchProcess<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>): Promise<void> {

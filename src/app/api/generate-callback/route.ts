@@ -1,0 +1,45 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+
+const BG_SECRET = process.env.BG_SECRET || 'restorante-internal';
+
+export async function POST(req: NextRequest) {
+  if (req.headers.get('x-bg-secret') !== BG_SECRET) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { dishId, imageUrl, error } = await req.json() as {
+    dishId: string;
+    imageUrl?: string;
+    error?: string;
+  };
+
+  if (!dishId) {
+    return NextResponse.json({ error: 'dishId required' }, { status: 400 });
+  }
+
+  try {
+    if (imageUrl) {
+      await Promise.all([
+        prisma.dish.update({
+          where: { id: dishId },
+          data: { status: 'DONE', imageUrl, errorMessage: null },
+        }),
+        prisma.dishImage.create({ data: { dishId, imageUrl } }),
+      ]);
+    } else {
+      await prisma.dish.update({
+        where: { id: dishId },
+        data: {
+          status: 'ERROR',
+          errorMessage: error ?? 'Unknown error',
+          retryCount: { increment: 1 },
+        },
+      });
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
+}

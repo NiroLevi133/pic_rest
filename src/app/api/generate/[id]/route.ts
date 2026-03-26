@@ -4,36 +4,17 @@ import { getPresetPrompt } from '@/lib/style-presets';
 import { generateDynamicPrompt } from '@/lib/art-director';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
-function fireBg(dishId: string): void {
+function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
+  const appUrl = process.env.APP_URL || '';
   const secret = process.env.BG_SECRET || '';
-
-  console.log('[fireBg] entered');
-  console.log('[fireBg] url =', url);
-  console.log('[fireBg] dishId =', dishId);
-  console.log('[fireBg] secret set =', !!secret);
-
-  if (!url) {
-    console.error('[fireBg] LAMBDA_GENERATE_URL not set');
-    return;
-  }
-
+  if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  const callbackUrl = `${appUrl}/api/generate-callback`;
   fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-bg-secret': secret,
-    },
-    body: JSON.stringify({ dishId }),
-  })
-    .then(async (r) => {
-      const text = await r.text();
-      console.log('[fireBg] response status =', r.status);
-      console.log('[fireBg] response body =', text);
-    })
-    .catch((err) => {
-      console.error('[fireBg] invoke failed =', err);
-    });
+    headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
+  }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
 export async function POST(
@@ -126,7 +107,7 @@ export async function POST(
     console.log('[POST] dish updated to GENERATING');
     console.log('[POST] calling fireBg');
 
-    fireBg(dishId);
+    fireBg(dishId, dish.referenceImage, prompt);
 
     console.log('[POST] returning success');
     return NextResponse.json({ success: true });

@@ -9,14 +9,16 @@ import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
 import OpenAI from 'openai';
 
-function fireBg(dishId: string): void {
+function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   const url = process.env.LAMBDA_GENERATE_URL;
+  const appUrl = process.env.APP_URL || '';
   const secret = process.env.BG_SECRET || '';
   if (!url) { console.error('[fireBg] LAMBDA_GENERATE_URL not set'); return; }
+  const callbackUrl = `${appUrl}/api/generate-callback`;
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId }),
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
@@ -117,7 +119,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Fire background generation — returns immediately
-    fireBg(savedDishId);
+    fireBg(savedDishId, referenceImage, prompt);
 
     return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
   } catch (err) {
