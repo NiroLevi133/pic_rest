@@ -4,31 +4,10 @@ import { useState, useRef, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2, Zap, X, Camera, ScanLine,
-  Download, Check, ImagePlus,
+  Download, Check, ImagePlus, ChevronDown, MessageSquare, Copy,
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
-
-function compressImage(dataUrl: string, maxWidth = 1200, quality = 0.8): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      try {
-        const scale = Math.min(1, maxWidth / img.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { resolve(dataUrl); return; }
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      } catch {
-        resolve(dataUrl);
-      }
-    };
-    img.onerror = () => reject(new Error('Failed to load image'));
-    img.src = dataUrl;
-  });
-}
+import { compressImage } from '@/lib/image-utils';
 
 function LabContent() {
   const router = useRouter();
@@ -69,10 +48,25 @@ function LabContent() {
   const [saveMenuStyle, setSaveMenuStyle] = useState<string | null>(null);
   const [savingMenu, setSavingMenu] = useState(false);
 
+  /* ── advanced options ── */
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [angle, setAngle] = useState<'top' | 'side'>('top');
+  const [showPrice, setShowPrice] = useState(false);
+  const [festive, setFestive] = useState(false);
+  const [hands, setHands] = useState(false);
+  const [action, setAction] = useState(false);
+  const [preparation, setPreparation] = useState(false);
+
   /* ── generation ── */
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ imageUrl: string; dishId: string } | null>(null);
   const [error, setError] = useState('');
+
+  /* ── caption ── */
+  const [caption, setCaption] = useState('');
+  const [generatingCaption, setGeneratingCaption] = useState(false);
+  const [captionCopied, setCaptionCopied] = useState(false);
 
   /* ── helpers ── */
   function readFile(file: File): Promise<string> {
@@ -125,13 +119,24 @@ function LabContent() {
     if (!selectedDish.trim()) { setError('נא להזין שם מנה'); return; }
     setError('');
     setGenerating(true);
+    setProgress(0);
     setResult(null);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 95) return prev;
+        const inc = prev < 50 ? 2 : prev < 80 ? 1 : 0.5;
+        return Math.min(95, prev + inc);
+      });
+    }, 1000);
+
     try {
       // Step 1: create dish and start background generation (returns immediately)
       const res = await fetch('/api/lab/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage }),
+        body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage, advancedOptions: { angle, showPrice, festive, hands, action, preparation } }),
       });
       const text = await res.text();
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
@@ -146,7 +151,10 @@ function LabContent() {
         const statusData = await statusRes.json();
         const status = statusData.data?.status;
         if (status === 'DONE') {
+          clearInterval(progressInterval);
+          setProgress(100);
           setResult({ imageUrl: `/api/images/${dishId}`, dishId });
+          setCaption('');
           return;
         }
         if (status === 'ERROR') {
@@ -157,8 +165,32 @@ function LabContent() {
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בייצור תמונה');
     } finally {
+      clearInterval(progressInterval);
       setGenerating(false);
+      setProgress(0);
     }
+  }
+
+  async function handleGenerateCaption() {
+    if (!selectedDish.trim()) return;
+    setGeneratingCaption(true);
+    try {
+      const res = await fetch('/api/lab/caption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dishName: selectedDish, styleKey }),
+      });
+      const data = await res.json();
+      if (data.success) setCaption(data.data.caption);
+    } catch {/* ignore */} finally {
+      setGeneratingCaption(false);
+    }
+  }
+
+  async function handleCopyCaption() {
+    await navigator.clipboard.writeText(caption);
+    setCaptionCopied(true);
+    setTimeout(() => setCaptionCopied(false), 2000);
   }
 
   async function handleSaveMenu() {
@@ -374,10 +406,80 @@ function LabContent() {
         )}
       </div>}
 
+      {/* ── Advanced options ── */}
+      <div className="card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(p => !p)}
+          className="w-full flex items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+        >
+          <span>אפשרויות מתקדמות</span>
+          <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-4 space-y-4" dir="rtl">
+
+            {/* Camera angle */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs text-[var(--text-muted)]">זווית צילום</p>
+                <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full text-[var(--text-muted)]">בקרוב</span>
+              </div>
+              <div className="flex gap-2 opacity-50 pointer-events-none">
+                {([['top', '⬆️ מבט עליון'], ['side', '↔️ מהצד']] as const).map(([val, label]) => (
+                  <button
+                    key={val}
+                    type="button"
+                    className={`flex-1 py-2 rounded-xl border text-xs font-medium ${angle === val ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[var(--border)] text-[var(--text-muted)]'}`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* Toggles */}
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                ['💰', 'סכום ומזל'],
+                ['🤲', 'ידים ומבע'],
+                ['🌪️', 'תמונת פעולה'],
+                ['👨‍🍳', 'בזמן הכנה'],
+                ['🎉', 'חגיגי'],
+              ] as [string, string][]).map(([emoji, label]) => (
+                <div
+                  key={label}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--text-muted)] opacity-50 cursor-not-allowed text-right"
+                >
+                  <span>{emoji}</span>
+                  <span className="flex-1">{label}</span>
+                  <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full">בקרוב</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Error ── */}
       {error && (
         <div className="rounded-lg bg-red-900/20 border border-red-900/50 px-4 py-3 text-red-400 text-sm">
           {error}
+        </div>
+      )}
+
+      {/* ── Progress bar ── */}
+      {generating && (
+        <div className="space-y-1.5">
+          <div className="flex justify-between text-xs text-[var(--text-muted)]">
+            <span>מייצר תמונה...</span>
+            <span>{Math.round(progress)}%</span>
+          </div>
+          <div className="w-full bg-[var(--surface2)] rounded-full h-2 overflow-hidden">
+            <div
+              className="h-2 rounded-full bg-[var(--accent)] transition-all duration-1000"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
       )}
 
@@ -425,6 +527,53 @@ function LabContent() {
                 לגלריה ←
               </button>
             </div>
+          </div>
+
+          {/* Caption generator */}
+          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+            {!caption ? (
+              <button
+                type="button"
+                onClick={handleGenerateCaption}
+                disabled={generatingCaption}
+                className="btn-secondary w-full justify-center gap-2 text-sm disabled:opacity-50"
+              >
+                {generatingCaption
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> יוצר כיתוב...</>
+                  : <><MessageSquare className="w-4 h-4" /> צור כיתוב לאינסטגרם</>}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-[var(--text-muted)]">כיתוב לאינסטגרם</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={handleCopyCaption}
+                      className="btn-ghost p-1.5 text-xs gap-1 flex items-center"
+                    >
+                      {captionCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      {captionCopied ? 'הועתק' : 'העתק'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleGenerateCaption}
+                      disabled={generatingCaption}
+                      className="btn-ghost p-1.5 text-xs"
+                      title="צור כיתוב חדש"
+                    >
+                      {generatingCaption ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className="text-sm leading-relaxed whitespace-pre-wrap bg-[var(--surface2)] rounded-xl p-3 border border-[var(--border)]"
+                  dir="rtl"
+                >
+                  {caption}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

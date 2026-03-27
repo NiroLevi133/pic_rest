@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-const BG_SECRET = process.env.BG_SECRET || 'restorante-internal';
+const BG_SECRET = process.env.BG_SECRET;
 
 export async function POST(req: NextRequest) {
+  if (!BG_SECRET) {
+    console.error('[generate-callback] BG_SECRET env var is not set');
+    return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
+  }
   if (req.headers.get('x-bg-secret') !== BG_SECRET) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }

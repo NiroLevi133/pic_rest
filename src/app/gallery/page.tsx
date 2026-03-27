@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Loader2, Download, ImageOff, Images, Share2, X } from 'lucide-react';
 
 interface GalleryDish {
@@ -181,26 +181,33 @@ export default function GalleryPage() {
 
   useEffect(() => { fetchGallery(); }, [fetchGallery]);
 
-  // Build filter options from menu names
-  const menuNames = Array.from(new Set(
-    groups.flatMap(g => g.dishes.map(d => d.menuName))
-  ));
+  const menuNames = useMemo(() =>
+    Array.from(new Set(groups.flatMap(g => g.dishes.map(d => d.menuName)))),
+    [groups]
+  );
 
-  const allDishes = groups.flatMap(g => g.dishes)
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  const allDishes = useMemo(() =>
+    groups.flatMap(g => g.dishes)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
+    [groups]
+  );
 
-  const visibleDishes = activeFilter === 'all'
-    ? allDishes
-    : allDishes.filter(d => d.menuName === activeFilter);
+  const visibleDishes = useMemo(() =>
+    activeFilter === 'all' ? allDishes : allDishes.filter(d => d.menuName === activeFilter),
+    [allDishes, activeFilter]
+  );
 
   async function downloadAll() {
-    for (const dish of visibleDishes) {
-      const a = document.createElement('a');
-      a.href = dish.imageUrl;
-      a.download = `${dish.name.replace(/\s+/g, '-')}.png`;
-      a.target = '_blank';
-      a.click();
-      await new Promise(r => setTimeout(r, 300));
+    const BATCH = 5;
+    for (let i = 0; i < visibleDishes.length; i += BATCH) {
+      visibleDishes.slice(i, i + BATCH).forEach(dish => {
+        const a = document.createElement('a');
+        a.href = dish.imageUrl;
+        a.download = `${dish.name.replace(/\s+/g, '-')}.jpg`;
+        a.target = '_blank';
+        a.click();
+      });
+      if (i + BATCH < visibleDishes.length) await new Promise(r => setTimeout(r, 150));
     }
   }
 

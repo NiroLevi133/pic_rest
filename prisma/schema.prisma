@@ -30,6 +30,7 @@ model Menu {
   dishes    Dish[]
 
   @@index([userId])
+  @@index([userId, createdAt])
 }
 
 model Dish {
@@ -53,6 +54,7 @@ model Dish {
 
   @@index([menuId])
   @@index([status])
+  @@index([menuId, status])
 }
 
 model DishImage {

@@ -9,18 +9,22 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try {
     const { name, styleKey } = await req.json();
 
-    const menu = await prisma.menu.findFirst({ where: { id: params.id, userId } });
-    if (!menu) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
-
-    const updated = await prisma.menu.update({
-      where: { id: params.id },
+    // Single query: update only if owned by this user
+    const updated = await prisma.menu.updateMany({
+      where: { id: params.id, userId },
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(styleKey !== undefined && { styleKey: styleKey || null }),
       },
     });
 
-    return NextResponse.json({ success: true, data: { id: updated.id, name: updated.name, styleKey: updated.styleKey } });
+    if (updated.count === 0) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+
+    const result = await prisma.menu.findUnique({
+      where: { id: params.id },
+      select: { id: true, name: true, styleKey: true },
+    });
+    return NextResponse.json({ success: true, data: result });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }
@@ -31,10 +35,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const menu = await prisma.menu.findFirst({ where: { id: params.id, userId } });
-    if (!menu) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
-
-    await prisma.menu.delete({ where: { id: params.id } });
+    // Single query: delete only if owned by this user
+    const deleted = await prisma.menu.deleteMany({ where: { id: params.id, userId } });
+    if (deleted.count === 0) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });

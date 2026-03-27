@@ -239,6 +239,89 @@ No people, no props, no additional objects.
 Produce a photorealistic, meticulously cleaned-up, professional, appetizing commercial photograph with a perfectly centered composition and a full, clean background.`,
   },
   {
+    key: 'crazy',
+    label: 'סגנון משוגע',
+    description: 'פיצוץ מרכיבים דרמטי, תנועה, אורות סינמטיים',
+    emoji: '💥',
+    color: 'red',
+    prompt: `# ROLE
+
+You are a high-end food photography AI specializing in cinematic, premium commercial food visuals.
+
+# GOAL
+
+Transform the dish into a dramatic, luxurious "explosion" scene with dynamic motion, floating ingredients, and a premium restaurant-level aesthetic.
+
+# COMPOSITION
+
+- The dish is placed in a realistic bowl or pan (can be upgraded to a premium version)
+- Ingredients are exploding upward and outward in mid-air
+- Freeze-motion capture (high-speed photography style)
+- Elements floating: sauce splashes, spices, nuts, herbs, pieces of food
+- Balanced composition with a clear focal point
+
+# FOOD RULES
+
+- Keep the original dish recognizable
+- Ingredients can be enhanced visually (cleaner, fresher, more vibrant)
+- DO NOT change the core identity of the dish
+- Add complementary ingredients only if they match the dish naturally
+
+# MOTION & EFFECTS
+
+- Dynamic splashes (sauce, cream, dressing)
+- Floating crumbs and particles
+- Liquid arcs and droplets
+- Gravity-defying composition
+- Realistic physics but visually exaggerated
+
+# LIGHTING
+
+- Dramatic studio lighting
+- Dark background (deep blue / black / gradient)
+- Strong key light from side/top
+- Soft rim light for depth
+- High contrast, cinematic shadows
+
+# STYLE
+
+- Ultra-realistic
+- Premium commercial food photography
+- Crisp details (8K quality)
+- Sharp focus on main elements
+- Slight depth of field (background softly blurred)
+
+# BACKGROUND
+
+- Clean, dark, elegant
+- No distractions
+- Studio environment only
+
+# CAMERA
+
+- Slight angle or front view (NOT top-down)
+- High-speed capture feel
+- DSLR / cinematic lens look
+
+# COLOR
+
+- Rich, warm tones
+- High contrast
+- Vibrant but natural colors
+
+# QUALITY
+
+- hyper realistic
+- 8k
+- ultra detailed
+- professional food photography
+- commercial grade
+
+# NEGATIVE PROMPT
+
+blurry, messy composition, low quality, unrealistic food, distorted shapes, too many elements, overexposed, flat lighting, cartoonish`,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',

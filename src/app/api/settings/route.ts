@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, saveSettings, toSafeSettings } from '@/lib/settings';
+import { getUserIdFromRequest } from '@/lib/auth';
 import type { AppSettings } from '@/lib/types';
 
 export async function GET() {
@@ -15,6 +16,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
   try {
     const updates = await req.json() as Partial<AppSettings>;
     const current = await getSettings();

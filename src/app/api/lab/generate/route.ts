@@ -18,7 +18,7 @@ function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl, secret }),
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote, advancedOptions } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
@@ -91,6 +91,18 @@ export async function POST(req: NextRequest) {
         : base;
     } else {
       prompt = (styleKey && getPresetPrompt(styleKey)) || FIXED_PROMPT;
+    }
+
+    // Append advanced options to prompt
+    if (advancedOptions) {
+      const mods: string[] = [];
+      if (advancedOptions.angle === 'side') mods.push('Shoot from a direct side angle, eye-level perspective.');
+      if (advancedOptions.hands)       mods.push('Include elegant hands presenting or holding the dish with expressive, graceful gestures.');
+      if (advancedOptions.action)      mods.push('Dynamic action shot: ingredients dramatically falling or being sprinkled onto the dish mid-air, freeze-frame moment.');
+      if (advancedOptions.preparation) mods.push("Show a chef's hands actively plating the dish — pouring sauce or adding final touches in a professional kitchen.");
+      if (advancedOptions.festive)     mods.push('Add a festive, celebratory atmosphere with subtle warm bokeh and decorative elements.');
+      if (advancedOptions.showPrice)   mods.push('Display the dish price elegantly in the corner of the image.');
+      if (mods.length > 0) prompt += `\n\n# ADVANCED DIRECTIVES:\n${mods.map(m => `- ${m}`).join('\n')}`;
     }
 
     // Save dish with GENERATING status, fire background worker

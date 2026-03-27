@@ -19,43 +19,20 @@ function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
-// Sets dish to GENERATING with correct prompt, fires background worker
-async function queueDish(
-  dishId: string,
+async function buildPrompt(
+  dish: { id: string; name: string; ingredients: string },
   restaurantStyle: string | null,
   openaiApiKey: string | undefined,
-): Promise<void> {
-  const dish = await prisma.dish.findUnique({ where: { id: dishId } });
-  if (!dish || !dish.referenceImage) return;
-
-  let prompt = FIXED_PROMPT;
-  if (restaurantStyle) {
-    const presetPrompt = getPresetPrompt(restaurantStyle);
-    if (presetPrompt) {
-      prompt = presetPrompt;
-    } else if (openaiApiKey) {
-      try {
-        const ingredients: string[] = (() => {
-          try { return JSON.parse(dish.ingredients); } catch { return []; }
-        })();
-        prompt = await generateDynamicPrompt(restaurantStyle, dish.name, ingredients, openaiApiKey);
-      } catch {
-        prompt = FIXED_PROMPT;
-      }
-    }
-  }
-
-  await prisma.dish.update({
-    where: { id: dishId },
-    data: { status: 'GENERATING', prompt, errorMessage: null },
-  });
-
-  fireBg(dishId, dish.referenceImage, prompt);
-}
-
-async function batchProcess<T>(items: T[], batchSize: number, fn: (item: T) => Promise<void>): Promise<void> {
-  for (let i = 0; i < items.length; i += batchSize) {
-    await Promise.allSettled(items.slice(i, i + batchSize).map(fn));
+): Promise<string> {
+  if (!restaurantStyle) return FIXED_PROMPT;
+  const presetPrompt = getPresetPrompt(restaurantStyle);
+  if (presetPrompt) return presetPrompt;
+  if (!openaiApiKey) return FIXED_PROMPT;
+  try {
+    const ingredients: string[] = (() => { try { return JSON.parse(dish.ingredients); } catch { return []; } })();
+    return await generateDynamicPrompt(restaurantStyle, dish.name, ingredients, openaiApiKey);
+  } catch {
+    return FIXED_PROMPT;
   }
 }
 
@@ -64,30 +41,52 @@ export async function POST(req: NextRequest) {
     const { menuId } = await req.json() as GenerateAllRequest;
     if (!menuId) return NextResponse.json({ success: false, error: 'menuId required' }, { status: 400 });
 
-    const settings = await getSettings();
-    const concurrency = settings.concurrency ?? 2;
-
-    const menu = await prisma.menu.findUnique({
-      where: { id: menuId },
-      include: { user: true },
-    });
-    const restaurantStyle = menu?.styleKey?.trim() || menu?.user.restaurantStyle?.trim() || null;
-
-    const dishes = await prisma.dish.findMany({
-      where: { menuId, referenceImage: { not: null }, status: { in: ['PENDING', 'ERROR'] } },
-      select: { id: true },
-    });
+    // Fetch settings + menu + dishes in parallel
+    const [settings, menu, dishes] = await Promise.all([
+      getSettings(),
+      prisma.menu.findUnique({
+        where: { id: menuId },
+        select: { styleKey: true, user: { select: { restaurantStyle: true } } },
+      }),
+      prisma.dish.findMany({
+        where: { menuId, referenceImage: { not: null }, status: { in: ['PENDING', 'ERROR'] } },
+        select: { id: true, name: true, ingredients: true, referenceImage: true },
+      }),
+    ]);
 
     if (dishes.length === 0) {
       return NextResponse.json({ success: true, data: { queued: 0, message: 'אין מנות עם תמונות מקור להגנרציה' } });
     }
 
-    // Each queueDish call is fast (DB update + HTTP fire) — await the whole batch
-    await batchProcess(
-      dishes,
-      concurrency,
-      (d) => queueDish(d.id, restaurantStyle, settings.openaiApiKey),
+    const restaurantStyle = menu?.styleKey?.trim() || menu?.user.restaurantStyle?.trim() || null;
+    const concurrency = settings.concurrency ?? 2;
+
+    // Build all prompts in parallel (batched to avoid OpenAI rate limits)
+    const promptResults: string[] = new Array(dishes.length).fill(FIXED_PROMPT);
+    for (let i = 0; i < dishes.length; i += concurrency) {
+      const batch = dishes.slice(i, i + concurrency);
+      const prompts = await Promise.allSettled(
+        batch.map(d => buildPrompt(d, restaurantStyle, settings.openaiApiKey))
+      );
+      prompts.forEach((r, j) => {
+        if (r.status === 'fulfilled') promptResults[i + j] = r.value;
+      });
+    }
+
+    // Batch-update all dishes to GENERATING in one transaction
+    await prisma.$transaction(
+      dishes.map((d, i) =>
+        prisma.dish.update({
+          where: { id: d.id },
+          data: { status: 'GENERATING', prompt: promptResults[i], errorMessage: null },
+        })
+      )
     );
+
+    // Fire all background workers (non-blocking)
+    dishes.forEach((d, i) => {
+      if (d.referenceImage) fireBg(d.id, d.referenceImage, promptResults[i]);
+    });
 
     return NextResponse.json({ success: true, data: { queued: dishes.length } });
   } catch (err) {

@@ -12,15 +12,21 @@ export async function GET(req: NextRequest) {
     const menus = await prisma.menu.findMany({
       where: { userId, NOT: { styleKey: { startsWith: 'lab_' } } },
       orderBy: { createdAt: 'desc' },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        styleKey: true,
+        createdAt: true,
         dishes: {
           select: {
             id: true,
             name: true,
             status: true,
+            referenceImage: true,
             images: {
               select: { id: true },
               orderBy: { createdAt: 'desc' },
+              take: 20,
             },
           },
           orderBy: { createdAt: 'asc' },
@@ -38,7 +44,7 @@ export async function GET(req: NextRequest) {
         name: d.name,
         status: d.status,
         hasImage: d.status === 'DONE',
-        hasReference: d.status === 'DONE',
+        hasReference: !!d.referenceImage,
         imageIds: d.images.map(i => i.id),
       })),
     }));

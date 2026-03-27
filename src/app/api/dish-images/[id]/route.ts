@@ -3,7 +3,24 @@ import { prisma } from '@/lib/prisma';
 import { resizeForGallery } from '@/lib/image-resize';
 
 const RECOMPRESS_THRESHOLD = 150_000;
-const cache = new Map<string, { buffer: Buffer; mimeType: string }>();
+
+interface CacheEntry { buffer: Buffer; mimeType: string; lastAccessed: number; }
+const cache = new Map<string, CacheEntry>();
+const MAX_CACHE_BYTES = 80 * 1024 * 1024;  // 80 MB
+const CACHE_TTL_MS   = 60 * 60 * 1000;    // 1 hour
+
+function pruneCache() {
+  const now = Date.now();
+  for (const [id, e] of cache) {
+    if (now - e.lastAccessed > CACHE_TTL_MS) cache.delete(id);
+  }
+  let total = 0;
+  const sorted = [...cache.entries()].sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+  for (const [id, e] of sorted) {
+    total += e.buffer.length;
+    if (total > MAX_CACHE_BYTES) cache.delete(id);
+  }
+}
 
 export async function GET(
   _req: NextRequest,
@@ -11,8 +28,10 @@ export async function GET(
 ) {
   const { id } = params;
 
+  pruneCache();
   const cached = cache.get(id);
   if (cached) {
+    cached.lastAccessed = Date.now();
     return new NextResponse(new Uint8Array(cached.buffer), {
       headers: {
         'Content-Type': cached.mimeType,
@@ -44,7 +63,7 @@ export async function GET(
     const [header, data] = url.split(',');
     const mimeType = header.replace('data:', '').replace(';base64', '');
     const buffer = Buffer.from(data, 'base64');
-    cache.set(id, { buffer, mimeType });
+    cache.set(id, { buffer, mimeType, lastAccessed: Date.now() });
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': mimeType,

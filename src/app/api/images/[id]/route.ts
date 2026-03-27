@@ -2,11 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resizeForGallery } from '@/lib/image-resize';
 
-// base64 byte size threshold — images larger than this will be re-compressed
-const RECOMPRESS_THRESHOLD = 150_000; // ~150 KB base64
+// Compress anything above ~80 KB binary (~107 KB base64)
+const RECOMPRESS_THRESHOLD = 107_000;
 
-// In-memory cache: id → { buffer, mimeType }
-const cache = new Map<string, { buffer: Buffer; mimeType: string }>();
+// In-memory cache with LRU eviction: id → { buffer, mimeType, lastAccessed }
+interface CacheEntry { buffer: Buffer; mimeType: string; lastAccessed: number; }
+const cache = new Map<string, CacheEntry>();
+const MAX_CACHE_BYTES = 100 * 1024 * 1024; // 100 MB
+const CACHE_TTL_MS = 60 * 60 * 1000;       // 1 hour
+
+function pruneCache() {
+  const now = Date.now();
+  // Remove expired entries
+  for (const [id, entry] of cache) {
+    if (now - entry.lastAccessed > CACHE_TTL_MS) cache.delete(id);
+  }
+  // Enforce size limit (evict LRU first)
+  let totalBytes = 0;
+  const sorted = [...cache.entries()].sort(([, a], [, b]) => a.lastAccessed - b.lastAccessed);
+  for (const [id, entry] of sorted) {
+    totalBytes += entry.buffer.length;
+    if (totalBytes > MAX_CACHE_BYTES) cache.delete(id);
+  }
+}
 
 export async function GET(
   _req: NextRequest,
@@ -14,9 +32,11 @@ export async function GET(
 ) {
   const { id } = params;
 
+  pruneCache();
   const cached = cache.get(id);
 
   if (cached) {
+    cached.lastAccessed = Date.now();
     return new NextResponse(new Uint8Array(cached.buffer), {
       headers: {
         'Content-Type': cached.mimeType,
@@ -54,7 +74,7 @@ export async function GET(
     const [header, data] = serveUrl.split(',');
     const mimeType = header.replace('data:', '').replace(';base64', '');
     const buffer = Buffer.from(data, 'base64');
-    cache.set(id, { buffer, mimeType });
+    cache.set(id, { buffer, mimeType, lastAccessed: Date.now() });
     return new NextResponse(buffer, {
       headers: {
         'Content-Type': mimeType,
@@ -63,20 +83,20 @@ export async function GET(
     });
   }
 
-  // External URL → fetch it, convert to base64, save back to DB
+  // External URL → fetch, compress, persist as base64, serve
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
-    const arrayBuf = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuf);
-    const contentType = res.headers.get('content-type') ?? 'image/jpeg';
-    const mimeType = contentType.split(';')[0];
+    const rawB64 = `data:image/jpeg;base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`;
 
-    // Persist as base64 so the URL is never needed again
-    const b64 = `data:${mimeType};base64,${buffer.toString('base64')}`;
-    await prisma.dish.update({ where: { id: id }, data: { imageUrl: b64 } });
+    // Always compress external images before storing
+    const compressed = await resizeForGallery(rawB64);
+    await prisma.dish.update({ where: { id: id }, data: { imageUrl: compressed } });
 
-    cache.set(id, { buffer, mimeType });
+    const [header, data] = compressed.split(',');
+    const mimeType = header.replace('data:', '').replace(';base64', '');
+    const buffer = Buffer.from(data, 'base64');
+    cache.set(id, { buffer, mimeType, lastAccessed: Date.now() });
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
         'Content-Type': mimeType,
