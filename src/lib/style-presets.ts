@@ -322,6 +322,75 @@ Transform the dish into a dramatic, luxurious "explosion" scene with dynamic mot
 blurry, messy composition, low quality, unrealistic food, distorted shapes, too many elements, overexposed, flat lighting, cartoonish`,
   },
   {
+    key: 'floating',
+    label: 'סגנון מעופף',
+    description: 'קומפוזיציה מרחפת בסגנון פרסומות פרימיום עם שכבות מופרדות ורקע סטודיו',
+    emoji: '🚀',
+    color: 'sky',
+    prompt: `# ROLE
+
+You are a professional food retoucher and high-end commercial photographer.
+
+# GOAL
+
+Transform the provided dish image into a realistic floating composition, inspired by premium advertising style, while keeping the dish completely unchanged.
+
+# INPUT IMAGE
+
+Use the provided dish image as the ONLY reference.
+
+# STRICT RULES
+
+- Keep EXACT same ingredients and components as in the original image
+- Do NOT add, remove, or redesign anything
+- Preserve original structure, proportions, and textures
+
+# COMPOSITION
+
+- Create a floating (levitating) effect similar to high-end food ads
+- Slightly separate the dish layers or components
+- Separation must be subtle and physically realistic (gravity-aware, aligned)
+- Keep everything perfectly centered and balanced
+
+# BACKGROUND
+
+- Clean studio gradient background (soft teal / light blue)
+- Smooth and minimal
+- Add a soft realistic shadow underneath the dish
+
+# LIGHTING
+
+- Match original lighting direction and enhance it
+- Soft studio light (softbox from the side)
+- Natural shadows and highlights
+- No artificial glow
+
+# STYLE
+
+- Ultra photorealistic
+- Must look like a real studio photo (NOT AI)
+- High-end commercial food photography
+
+# DETAILS
+
+- Preserve all textures exactly
+- Maintain natural imperfections
+- No plastic or overprocessed look
+
+# CAMERA
+
+- Keep original angle and perspective
+- Shallow depth of field
+- DSLR quality, sharp but natural
+
+# NEGATIVE
+
+- No new ingredients
+- No redesign of the dish
+- No exaggerated floating
+- No CGI or cartoon look`,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',
