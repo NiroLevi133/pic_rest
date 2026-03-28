@@ -22,6 +22,7 @@ frontend:
     build:
       commands:
         - npm run build
+        - cp .env.production .next/.env.production
 
   artifacts:
     baseDirectory: .next
