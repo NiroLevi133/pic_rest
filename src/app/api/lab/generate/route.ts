@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
 import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
+import { getImageProvider } from '@/lib/providers';
+import { resizeForGallery } from '@/lib/image-resize';
 
 import OpenAI from 'openai';
 
@@ -130,8 +132,29 @@ export async function POST(req: NextRequest) {
       savedDishId = dish.id;
     }
 
-    // Fire background generation — returns immediately
-    fireBg(savedDishId, referenceImage, prompt);
+    // If Lambda is configured — fire-and-forget (async worker)
+    if (process.env.LAMBDA_GENERATE_URL) {
+      fireBg(savedDishId, referenceImage, prompt);
+      return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
+    }
+
+    // No Lambda — generate directly in this request (synchronous fallback)
+    try {
+      const imageProvider = getImageProvider(settings);
+      const result = await imageProvider.generate({ prompt, referenceImage });
+      const compressed = await resizeForGallery(result.imageUrl);
+      await prisma.dish.update({
+        where: { id: savedDishId },
+        data: { status: 'DONE', imageUrl: compressed, errorMessage: null },
+      });
+      // Also create a DishImage record for history
+      await prisma.dishImage.create({ data: { dishId: savedDishId, imageUrl: compressed } });
+    } catch (genErr) {
+      await prisma.dish.update({
+        where: { id: savedDishId },
+        data: { status: 'ERROR', errorMessage: String(genErr) },
+      });
+    }
 
     return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
   } catch (err) {
