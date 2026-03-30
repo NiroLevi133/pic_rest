@@ -246,80 +246,71 @@ Produce a photorealistic, meticulously cleaned-up, professional, appetizing comm
     color: 'red',
     prompt: `# ROLE
 
-You are a high-end food photography AI specializing in cinematic, premium commercial food visuals.
+You are a world-class commercial food photographer specializing in high-speed freeze-motion photography for premium restaurant campaigns.
 
 # GOAL
 
-Transform the dish into a dramatic, luxurious "explosion" scene with dynamic motion, floating ingredients, and a premium restaurant-level aesthetic.
+Transform the dish into a dramatic yet fully photorealistic freeze-motion shot — ingredients caught mid-air with natural physics, real textures, and studio-grade lighting. The result must look like an actual high-budget photo shoot, not AI-generated or CGI.
 
 # COMPOSITION
 
-- The dish is placed in a realistic bowl or pan (can be upgraded to a premium version)
-- Ingredients are exploding upward and outward in mid-air
-- Freeze-motion capture (high-speed photography style)
-- Elements floating: sauce splashes, spices, nuts, herbs, pieces of food
-- Balanced composition with a clear focal point
+- The dish sits in a premium bowl or plate at the bottom center of the frame
+- A small number of key ingredients are lifted naturally above the dish (2–4 elements maximum)
+- Motion is subtle and believable — a gentle toss, not an explosion
+- Composition is clean, balanced, and intentional
+- Clear focal point on the dish
 
 # FOOD RULES
 
-- Keep the original dish recognizable
-- Ingredients can be enhanced visually (cleaner, fresher, more vibrant)
-- DO NOT change the core identity of the dish
-- Add complementary ingredients only if they match the dish naturally
+- Keep ALL original ingredients exactly as in the input photo
+- DO NOT add ingredients that were not in the original
+- DO NOT remove any element from the dish
+- The dish must be instantly recognizable as the same dish
 
-# MOTION & EFFECTS
+# MOTION & PHYSICS
 
-- Dynamic splashes (sauce, cream, dressing)
-- Floating crumbs and particles
-- Liquid arcs and droplets
-- Gravity-defying composition
-- Realistic physics but visually exaggerated
+- Ingredients float with realistic gravity — slight upward arc, natural rotation
+- If sauce or liquid is present: small controlled splash with accurate fluid physics
+- No exaggerated explosions or particle chaos
+- Motion must feel captured at 1/8000s shutter speed — sharp, frozen, real
 
 # LIGHTING
 
-- Dramatic studio lighting
-- Dark background (deep blue / black / gradient)
-- Strong key light from side/top
-- Soft rim light for depth
-- High contrast, cinematic shadows
-
-# STYLE
-
-- Ultra-realistic
-- Premium commercial food photography
-- Crisp details (8K quality)
-- Sharp focus on main elements
-- Slight depth of field (background softly blurred)
+- Professional studio strobe lighting
+- Single key light from top-left at 45 degrees
+- Soft fill from the right to reduce harsh shadows
+- Rim light behind the dish for depth separation
+- No lens flare, no artificial glow
 
 # BACKGROUND
 
-- Clean, dark, elegant
-- No distractions
-- Studio environment only
+- Deep matte black (#0D0D0D) — completely uniform, no gradients
+- Zero distractions, no props, no surface texture visible
 
 # CAMERA
 
-- Slight angle or front view (NOT top-down)
-- High-speed capture feel
-- DSLR / cinematic lens look
+- Slight elevated front angle (approximately 30–40 degrees above horizontal)
+- NOT top-down
+- 85mm–100mm equivalent focal length
+- Full sharp focus on all elements (deep focus, f/8)
+- No bokeh, no depth-of-field blur
 
-# COLOR
+# STYLE
 
-- Rich, warm tones
-- High contrast
-- Vibrant but natural colors
+- 100% photorealistic — must look like a real photograph
+- No painterly effects, no AI artifacts, no plastic textures
+- Every ingredient must have real, accurate texture (crispy, juicy, matte, glossy as appropriate)
+- Commercial food photography grade
 
 # QUALITY
 
-- hyper realistic
-- 8k
-- ultra detailed
-- professional food photography
-- commercial grade
+- 4K ultra-sharp
+- Maximum detail on every ingredient
+- Accurate color temperature (neutral to warm, not oversaturated)
 
 # NEGATIVE PROMPT
 
-blurry, messy composition, low quality, unrealistic food, distorted shapes, too many elements, overexposed, flat lighting, cartoonish`,
+CGI look, cartoon, painting, over-saturated, too many floating elements, chaotic composition, blurry, low quality, AI artifacts, plastic food, distorted shapes, unrealistic physics`,
   },
   {
     key: 'floating',
