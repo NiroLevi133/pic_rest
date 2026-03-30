@@ -9,6 +9,12 @@ import {
 import { STYLE_PRESETS } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
 
+const CAPTION_STYLES = [
+  { key: 'elegant',   label: 'אלגנטי',    emoji: '✦',  description: 'סריף לבן עדין' },
+  { key: 'lifestyle', label: 'לייף סטייל', emoji: '✍️', description: 'כתב יד חם' },
+  { key: 'bold',      label: 'מודרני',     emoji: '◼',  description: 'פונט עבה ובולט' },
+];
+
 function LabContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,7 +69,12 @@ function LabContent() {
   const [result, setResult] = useState<{ imageUrl: string; dishId: string } | null>(null);
   const [error, setError] = useState('');
 
-  /* ── caption ── */
+  /* ── caption overlay (before generation) ── */
+  const [captionOverlay, setCaptionOverlay] = useState(false);
+  const [captionText, setCaptionText] = useState('');
+  const [captionStyle, setCaptionStyle] = useState('elegant');
+
+  /* ── caption (after generation, for Instagram) ── */
   const [caption, setCaption] = useState('');
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
@@ -136,7 +147,7 @@ function LabContent() {
       const res = await fetch('/api/lab/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage, advancedOptions: { angle, showPrice, festive, hands, action, preparation } }),
+        body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage, captionOverlay: captionOverlay ? { enabled: true, text: captionText || selectedDish, style: captionStyle } : null, advancedOptions: { angle, showPrice, festive, hands, action, preparation } }),
       });
       const text = await res.text();
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
@@ -455,6 +466,59 @@ function LabContent() {
                   <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full">בקרוב</span>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Caption overlay ── */}
+      <div className="card">
+        <label className="flex items-center gap-3 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={captionOverlay}
+            onChange={e => {
+              setCaptionOverlay(e.target.checked);
+              if (e.target.checked && !captionText) setCaptionText(selectedDish);
+            }}
+            className="w-4 h-4 rounded accent-[var(--accent)]"
+          />
+          <span className="text-sm font-medium">הוסף כיתוב על התמונה</span>
+        </label>
+
+        {captionOverlay && (
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="label text-xs mb-1.5">טקסט הכיתוב</label>
+              <input
+                className="input text-sm"
+                value={captionText}
+                onChange={e => setCaptionText(e.target.value)}
+                placeholder={selectedDish || 'שם המנה'}
+                dir="rtl"
+              />
+              <p className="text-[11px] text-[var(--text-muted)] mt-1">ברירת מחדל: שם המנה. לחץ לשינוי.</p>
+            </div>
+            <div>
+              <label className="label text-xs mb-2">סגנון כיתוב</label>
+              <div className="grid grid-cols-3 gap-2">
+                {CAPTION_STYLES.map(s => (
+                  <button
+                    key={s.key}
+                    type="button"
+                    onClick={() => setCaptionStyle(s.key)}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
+                      captionStyle === s.key
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                        : 'border-[var(--border)] hover:border-[var(--accent)]/50'
+                    }`}
+                  >
+                    <span className="text-xl">{s.emoji}</span>
+                    <span className={`text-[11px] font-semibold leading-tight ${captionStyle === s.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{s.label}</span>
+                    <span className="text-[10px] text-[var(--text-muted)] leading-tight">{s.description}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

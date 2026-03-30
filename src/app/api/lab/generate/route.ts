@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote, advancedOptions } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote, advancedOptions, captionOverlay } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
@@ -105,6 +105,18 @@ export async function POST(req: NextRequest) {
       if (advancedOptions.festive)     mods.push('Add a festive, celebratory atmosphere with subtle warm bokeh and decorative elements.');
       if (advancedOptions.showPrice)   mods.push('Display the dish price elegantly in the corner of the image.');
       if (mods.length > 0) prompt += `\n\n# ADVANCED DIRECTIVES:\n${mods.map(m => `- ${m}`).join('\n')}`;
+    }
+
+    // Append caption overlay directive
+    if (captionOverlay?.enabled && captionOverlay.text?.trim()) {
+      const text = captionOverlay.text.trim();
+      const captionDirectives: Record<string, string> = {
+        elegant:   `Render the text "${text}" as an elegant caption on the image. Use a thin white serif font with generous letter-spacing. Position at the bottom center. Add a very subtle dark gradient at the bottom (10% opacity) only where needed for readability. Keep it refined, minimal, and high-end.`,
+        lifestyle: `Render the text "${text}" as a warm handwritten-style caption on the image. Use a natural script/cursive font in white or soft cream. Position organically at the bottom or lower-third area. It should feel like an authentic Instagram food influencer's overlay — casual but tasteful.`,
+        bold:      `Render the text "${text}" as a bold modern caption on the image. Use a thick, clean sans-serif font in solid white. High contrast. Position at the bottom center with strong visual impact. Clean, commercial, advertising-grade typography.`,
+      };
+      const directive = captionDirectives[captionOverlay.style] ?? captionDirectives.elegant;
+      prompt += `\n\n# TEXT CAPTION (render directly on the image):\n${directive}`;
     }
 
     // Save dish with GENERATING status, fire background worker

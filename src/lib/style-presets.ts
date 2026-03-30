@@ -382,6 +382,54 @@ Use the provided dish image as the ONLY reference.
 - No CGI or cartoon look`,
   },
   {
+    key: 'drinks',
+    label: 'שתייה',
+    description: 'צילום משקאות פרימיום עם תאורת סטודיו, זכוכית ועיבוי',
+    emoji: '🥂',
+    color: 'cyan',
+    prompt: `Transform the provided drink image into a high-end professional studio photograph while strictly preserving the original drink, glass shape, proportions, and composition.
+
+Do not redesign or replace the drink — enhance it.
+
+Enhancement goals:
+- Improve lighting to a clean, controlled studio setup (soft side lighting + subtle backlight)
+- Increase sharpness and micro-detail, especially on glass, liquid, and ice
+- Enhance realism: accurate reflections, refraction, and transparency
+- Add subtle realistic condensation droplets if the drink is cold
+- Make ice cubes look crystal clear and well-defined
+- Improve color accuracy and vibrancy while keeping it natural
+
+If the drink is a cocktail:
+- Refine garnish details (clean edges, elegant placement, realistic texture)
+- Enhance liquid clarity and richness
+- Emphasize premium, luxury bar presentation
+
+If the drink is cold:
+- Add realistic cold visual cues (condensation, slight fogging, freshness feel)
+
+Background & composition:
+- Replace background with a clean, minimal studio background (preferably dark or gradient)
+- Optionally add a subtle reflective surface under the glass
+- Keep the drink centered and isolated
+
+Lighting:
+- Cinematic studio lighting with soft highlights and controlled shadows
+- Subtle rim light to define glass edges
+
+Strict constraints:
+- No new objects
+- No floating elements
+- No text, labels, logos, or decorations
+- No change to drink type or ingredients
+- No surreal or artificial look
+
+Style:
+Ultra-realistic, commercial beverage photography, premium brand quality, clean, elegant, minimalistic, 8K detail
+
+Avoid:
+cartoon, illustration, CGI look, plastic textures, over-editing`,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',
