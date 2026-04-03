@@ -3,7 +3,10 @@ import { getSettings, saveSettings, toSafeSettings } from '@/lib/settings';
 import { getUserIdFromRequest } from '@/lib/auth';
 import type { AppSettings } from '@/lib/types';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
   try {
     const settings = await getSettings();
     return NextResponse.json({ success: true, data: toSafeSettings(settings) });

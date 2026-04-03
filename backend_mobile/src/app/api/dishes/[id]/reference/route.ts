@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 
 // Max 10MB
 const MAX_SIZE = 10 * 1024 * 1024;
@@ -8,7 +9,14 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
   try {
+    // Verify the dish belongs to this user before accepting the upload
+    const existing = await prisma.dish.findFirst({ where: { id: params.id, menu: { userId } } });
+    if (!existing) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+
     const formData = await req.formData();
     const file = formData.get('image') as File | null;
 
@@ -42,10 +50,16 @@ export async function POST(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
   try {
+    const existing = await prisma.dish.findFirst({ where: { id: params.id, menu: { userId } } });
+    if (!existing) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
+
     await prisma.dish.update({
       where: { id: params.id },
       data: { referenceImage: null },

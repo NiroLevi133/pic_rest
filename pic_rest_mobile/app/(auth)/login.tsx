@@ -30,8 +30,13 @@ export default function LoginScreen() {
       const result = await login(cleaned);
       await saveToken(result.token, result.phone);
       router.replace('/(app)/menu');
-    } catch (err) {
-      Alert.alert('שגיאה', 'לא ניתן להתחבר. בדוק את החיבור לאינטרנט.');
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 400) {
+        Alert.alert('שגיאה', 'מספר הטלפון אינו תקין');
+      } else {
+        Alert.alert('שגיאה', 'לא ניתן להתחבר. בדוק את החיבור לאינטרנט.');
+      }
     } finally {
       setLoading(false);
     }

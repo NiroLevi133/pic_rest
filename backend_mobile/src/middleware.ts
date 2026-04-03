@@ -22,10 +22,16 @@ export function middleware(req: NextRequest) {
   const res = NextResponse.next();
 
   if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
-    res.headers.set('Access-Control-Allow-Origin', origin || '*');
+    if (origin) {
+      // Specific origin: allow credentials (needed for cookie-based web sessions)
+      res.headers.set('Access-Control-Allow-Origin', origin);
+      res.headers.set('Access-Control-Allow-Credentials', 'true');
+    } else {
+      // No Origin header (native mobile app, curl, etc.): use wildcard, no credentials header
+      res.headers.set('Access-Control-Allow-Origin', '*');
+    }
     res.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
     res.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    res.headers.set('Access-Control-Allow-Credentials', 'true');
   }
 
   // Handle preflight

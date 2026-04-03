@@ -8,8 +8,12 @@ const client = axios.create({ baseURL: BASE_URL });
 
 // Attach token to every request
 client.interceptors.request.use(async (config) => {
-  const token = await getToken();
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  try {
+    const token = await getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  } catch {
+    // SecureStore unavailable (e.g. device locked) — proceed without token; server will 401
+  }
   return config;
 });
 
