@@ -1,8 +1,10 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 export default function AppLayout() {
   return (
+    <SafeAreaProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -40,5 +42,6 @@ export default function AppLayout() {
         }}
       />
     </Tabs>
+    </SafeAreaProvider>
   );
 }
