@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 import { prisma } from '@/lib/prisma';
 
 const BG_SECRET = process.env.BG_SECRET;
@@ -8,7 +9,16 @@ export async function POST(req: NextRequest) {
     console.error('[generate-callback] BG_SECRET env var is not set');
     return NextResponse.json({ error: 'Server misconfigured' }, { status: 500 });
   }
-  if (req.headers.get('x-bg-secret') !== BG_SECRET) {
+  const incoming = req.headers.get('x-bg-secret') ?? '';
+  let secretMatch = false;
+  try {
+    // Use constant-time comparison to prevent timing attacks
+    secretMatch = timingSafeEqual(Buffer.from(incoming), Buffer.from(BG_SECRET));
+  } catch {
+    // Buffer lengths differ — definitely not equal
+    secretMatch = false;
+  }
+  if (!secretMatch) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

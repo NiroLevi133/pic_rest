@@ -31,21 +31,26 @@ export async function PUT(req: NextRequest) {
   const userId = getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Not logged in' }, { status: 401 });
 
-  const body = await req.json();
-  const { restaurantName, restaurantLogo, restaurantStyle } = body;
+  try {
+    const body = await req.json();
+    const { restaurantName, restaurantLogo, restaurantStyle } = body;
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: {
-      ...(restaurantName !== undefined && { restaurantName: restaurantName || null }),
-      ...(restaurantLogo !== undefined && { restaurantLogo: restaurantLogo || null }),
-      ...(restaurantStyle !== undefined && { restaurantStyle: restaurantStyle || null }),
-    },
-  });
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(restaurantName !== undefined && { restaurantName: restaurantName || null }),
+        ...(restaurantLogo !== undefined && { restaurantLogo: restaurantLogo || null }),
+        ...(restaurantStyle !== undefined && { restaurantStyle: restaurantStyle || null }),
+      },
+    });
 
-  return NextResponse.json({ success: true, data: {
-    restaurantName: user.restaurantName ?? '',
-    restaurantLogo: user.restaurantLogo ?? null,
-    restaurantStyle: user.restaurantStyle ?? '',
-  }});
+    return NextResponse.json({ success: true, data: {
+      restaurantName: user.restaurantName ?? '',
+      restaurantLogo: user.restaurantLogo ?? null,
+      restaurantStyle: user.restaurantStyle ?? '',
+    }});
+  } catch (err) {
+    console.error('[auth/profile PUT]', err);
+    return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
+  }
 }
