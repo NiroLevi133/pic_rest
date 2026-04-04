@@ -35,6 +35,20 @@ export default function AppLayout() {
         }}
       />
       <Tabs.Screen
+        name="history"
+        options={{
+          title: 'היסטוריה',
+          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="restaurant"
+        options={{
+          title: 'מסעדה',
+          tabBarIcon: ({ color, size }) => <Ionicons name="storefront-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'הגדרות',
