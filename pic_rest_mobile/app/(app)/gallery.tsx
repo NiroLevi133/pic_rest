@@ -118,12 +118,12 @@ export default function GalleryScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             onPress={() => setLightbox({ imageUrl: getImageUrl(item.id), name: item.name })}
-            style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
+            style={{ width: thumbSize, height: thumbSize }}
             className="rounded-xl overflow-hidden bg-zinc-900"
           >
             <Image
               source={{ uri: getImageUrl(item.id) }}
-              style={{ width: THUMB_SIZE, height: THUMB_SIZE }}
+              style={{ width: thumbSize, height: thumbSize }}
               resizeMode="cover"
             />
           </TouchableOpacity>
@@ -151,7 +151,7 @@ export default function GalleryScreen() {
             <>
               <Image
                 source={{ uri: lightbox.imageUrl }}
-                style={{ width: SCREEN_WIDTH - 32, height: SCREEN_WIDTH - 32 }}
+                style={{ width: screenWidth - 32, height: screenWidth - 32 }}
                 resizeMode="contain"
                 className="rounded-2xl"
               />
