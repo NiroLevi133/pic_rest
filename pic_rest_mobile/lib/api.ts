@@ -110,12 +110,18 @@ export async function deleteDish(dishId: string): Promise<void> {
   await client.delete(`/api/dishes/${dishId}`);
 }
 
-export async function uploadReferenceImage(dishId: string, imageUri: string, mimeType = 'image/jpeg'): Promise<void> {
+export async function uploadReferenceImage(
+  dishId: string,
+  imageUri: string,
+  mimeType = 'image/jpeg',
+): Promise<{ referenceImage: string }> {
   const formData = new FormData();
   formData.append('image', { uri: imageUri, name: 'reference.jpg', type: mimeType } as unknown as Blob);
-  await client.post(`/api/dishes/${dishId}/reference`, formData, {
+  const { data } = await client.post(`/api/dishes/${dishId}/reference`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
+  // Return the server-persisted base64 so callers don't keep a transient local URI
+  return data.data as { referenceImage: string };
 }
 
 export async function deleteReferenceImage(dishId: string): Promise<void> {

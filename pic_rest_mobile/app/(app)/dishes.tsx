@@ -73,13 +73,21 @@ export default function DishesScreen() {
 
   // Poll while any dish is generating
   useEffect(() => {
+    // Always clear any existing interval before (re-)evaluating
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
     const hasGenerating = dishes.some(d => d.status === 'GENERATING');
     if (hasGenerating) {
       pollingRef.current = setInterval(() => loadDishes(), 3000);
-    } else {
-      if (pollingRef.current) clearInterval(pollingRef.current);
     }
-    return () => { if (pollingRef.current) clearInterval(pollingRef.current); };
+    return () => {
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+      }
+    };
   }, [dishes, loadDishes]);
 
   const handleUploadReference = useCallback(async (dish: Dish) => {
@@ -89,9 +97,10 @@ export default function DishesScreen() {
     });
     if (result.canceled || !result.assets[0]) return;
     try {
-      await uploadReferenceImage(dish.id, result.assets[0].uri);
+      // Use the server-returned base64 so the stored URI stays valid across sessions
+      const { referenceImage } = await uploadReferenceImage(dish.id, result.assets[0].uri);
       setDishes(prev => prev.map(d =>
-        d.id === dish.id ? { ...d, referenceImage: result.assets[0].uri } : d
+        d.id === dish.id ? { ...d, referenceImage } : d
       ));
     } catch {
       Alert.alert('שגיאה', 'לא ניתן להעלות תמונה');

@@ -48,10 +48,25 @@ export async function GET(req: NextRequest) {
     const menus = await prisma.menu.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { dishes: true } } },
+      select: {
+        id: true,
+        name: true,
+        styleKey: true,
+        createdAt: true,
+        _count: { select: { dishes: true } },
+      },
     });
 
-    return NextResponse.json({ success: true, data: menus });
+    return NextResponse.json({
+      success: true,
+      data: menus.map(m => ({
+        id: m.id,
+        name: m.name,
+        styleKey: m.styleKey ?? null,
+        createdAt: m.createdAt.toISOString(),
+        dishCount: m._count.dishes,
+      })),
+    });
   } catch (err) {
     return NextResponse.json({ success: false, error: String(err) }, { status: 500 });
   }

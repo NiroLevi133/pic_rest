@@ -42,7 +42,12 @@ export default function MenuScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setMenuImage(`data:image/jpeg;base64,${asset.base64}`);
+      if (!asset.base64) {
+        Alert.alert('שגיאה', 'לא ניתן לקרוא את התמונה');
+        return;
+      }
+      const mime = asset.mimeType ?? 'image/jpeg';
+      setMenuImage(`data:${mime};base64,${asset.base64}`);
     }
   }, []);
 
@@ -58,7 +63,12 @@ export default function MenuScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setMenuImage(`data:image/jpeg;base64,${asset.base64}`);
+      if (!asset.base64) {
+        Alert.alert('שגיאה', 'לא ניתן לקרוא את התמונה');
+        return;
+      }
+      const mime = asset.mimeType ?? 'image/jpeg';
+      setMenuImage(`data:${mime};base64,${asset.base64}`);
     }
   }, []);
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, FlatList,
-  Image, ActivityIndicator, Modal, Share, Dimensions,
+  Image, ActivityIndicator, Modal, Share, useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -9,11 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { getGallery, getImageUrl } from '@/lib/api';
 import type { GalleryGroup } from '@/lib/types';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const THUMB_SIZE = (SCREEN_WIDTH - 48) / 3; // 3 columns with gaps
-
 export default function GalleryScreen() {
   const router = useRouter();
+  const { width: screenWidth } = useWindowDimensions();
+  const thumbSize = (screenWidth - 48) / 3; // 3 columns with gaps
   const [groups, setGroups] = useState<GalleryGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -37,9 +36,11 @@ export default function GalleryScreen() {
 
   const handleShare = useCallback(async (imageUrl: string, name: string) => {
     try {
-      await Share.share({ message: `${name}\n${imageUrl}`, url: imageUrl });
+      // On iOS `url` drives the share sheet; `message` is the accompanying text.
+      // On Android `url` is ignored so we include the URL in `message` there.
+      await Share.share({ message: name, url: imageUrl });
     } catch {
-      // user cancelled
+      // user cancelled or share sheet dismissed
     }
   }, []);
 
