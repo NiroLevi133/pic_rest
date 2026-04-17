@@ -470,6 +470,14 @@ Absolute photorealism. No logos, no text, no watermarks.
 The final result must look like a raw, high-quality photograph, avoiding any "AI-generated" over-saturated or exaggerated look.`,
   },
   {
+    key: 'marble',
+    label: 'שיש לבן',
+    description: 'צילום על שיש לבן יוקרתי עם תאורה עדינה',
+    emoji: '🤍',
+    color: 'white',
+    prompt: `aaa`,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',
