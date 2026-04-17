@@ -435,7 +435,7 @@ cartoon, illustration, CGI look, plastic textures, over-editing`,
     description: 'נתח בשר על בוצר, רקע שחור יוקרתי, תאורת סטודיו מחמיאה – מותאם לקצביות',
     emoji: '🥩',
     color: 'red',
-    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the source image (image_0.png) into a 4K, hyper-realistic, luxurious photograph. The focus is on extreme photorealism and a clean, premium composition.
+    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the provided reference image into a 4K, hyper-realistic, luxurious photograph. The focus is on extreme photorealism and a clean, premium composition.
 
 1. Subject & Rack Handling (STRICT RULES):
 
@@ -475,15 +475,15 @@ The final result must look like a raw, high-quality photograph, avoiding any "AI
     description: 'צילום על שיש לבן יוקרתי עם תאורה עדינה',
     emoji: '🤍',
     color: 'white',
-    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the new source image (which may contain multiple meat cuts, e.g., image_1.png) into a 4K resolution, hyper-realistic, luxurious culinary photograph. The focus is on extreme photorealism and a clean, premium composition for a mobile-ad format, strictly using only the meat subjects and the new lighter marble background.
+    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the provided reference image into a 4K resolution, hyper-realistic, luxurious culinary photograph. The focus is on extreme photorealism and a clean, premium composition for a mobile-ad format, strictly using only the meat subjects and the lighter marble background.
 
 1. Subject Handling (STRICT RULES):
 
-Identity: Identify and include ALL meat cuts present in the source image (e.g., if there are two cuts in image_1.png, both must be included). Maintain the EXACT shape, structure, and type of each raw beef cut.
+Identity: Identify and include ALL meat cuts present in the provided image. Maintain the EXACT shape, structure, and type of each raw beef cut.
 
 Calculated Enhancement: Enhance the raw meat with a calculated and subtle +20% 'richness' or vibrancy compared to its original state. The meat must look naturally fresh and premium, with the deep red and white fat marbling colors gently intensified, but absolutely not over-saturated or artificially "plastic." The goal is a realistic, not exaggerated, improvement.
 
-No Additions/Removals: Do NOT add any garnishes, herbs, sauces, or seasonings (no salt, no pepper). Do NOT use the cooling rack, the pepper bowl, or the fork from image_1.png. The scene is pristine and clean, consisting only of the identified beef cuts.
+No Additions/Removals: Do NOT add any garnishes, herbs, sauces, or seasonings (no salt, no pepper). The scene is pristine and clean, consisting only of the meat cuts from the provided image.
 
 State: Keep the EXACT identity, fibers, shape, and structure of each piece. Do NOT change its state (e.g., from raw to cooked). Do NOT remove fat, bones, or any natural elements.
 
