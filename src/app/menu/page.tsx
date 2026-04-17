@@ -17,6 +17,44 @@ const CAPTION_STYLES = [
   { key: 'bold',      label: 'מודרני',     icon: Minus,     description: 'פונט עבה ובולט' },
 ];
 
+function StyleButton({ preset, selected, onSelect, wide, fullWidth }: {
+  preset: import('@/lib/style-presets').StylePreset;
+  selected: boolean;
+  onSelect: () => void;
+  wide?: boolean;
+  fullWidth?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={!!preset.comingSoon}
+      onClick={() => { if (!preset.comingSoon) onSelect(); }}
+      className={`relative flex ${fullWidth ? 'flex-row gap-3' : 'flex-col'} items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200 ${fullWidth ? 'text-right' : 'text-center'} cursor-pointer w-full ${
+        preset.comingSoon
+          ? 'border-[var(--border)] opacity-35 cursor-not-allowed'
+          : selected
+            ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+            : 'border-[var(--border)] hover:bg-[var(--surface2)] bg-[var(--surface)]'
+      }`}
+    >
+      {selected && (
+        <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+          <Check className="w-2 h-2 text-[#0C0A09]" />
+        </div>
+      )}
+      <span className={wide || fullWidth ? 'text-2xl' : 'text-xl'}>{preset.emoji}</span>
+      <div className={fullWidth ? 'flex-1' : ''}>
+        <span className={`block text-[11px] font-semibold leading-tight ${selected ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
+          {preset.label}
+        </span>
+        {(wide || fullWidth) && (
+          <span className="block text-[10px] text-[var(--text-muted)] leading-tight mt-0.5">{preset.description}</span>
+        )}
+      </div>
+    </button>
+  );
+}
+
 function LabContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -374,38 +412,32 @@ function LabContent() {
       {!styleLockedFromMenu && (
         <div className="card">
           <label className="label text-sm mb-3">סגנון צילום</label>
+
+          {/* Main presets */}
           <div className="grid grid-cols-4 gap-2">
-            {STYLE_PRESETS.map(preset => (
-              <button
-                key={preset.key}
-                type="button"
-                disabled={!!preset.comingSoon}
-                onClick={() => {
-                  if (!preset.comingSoon) {
-                    setStyleKey(preset.key);
-                    if (!preset.isCustom) setStyleRefImage(null);
-                  }
-                }}
-                className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200 text-center cursor-pointer ${
-                  preset.comingSoon
-                    ? 'border-[var(--border)] opacity-35 cursor-not-allowed'
-                    : styleKey === preset.key
-                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                      : 'border-[var(--border)] hover:border-[var(--border)] hover:bg-[var(--surface2)] bg-[var(--surface)]'
-                }`}
-              >
-                {styleKey === preset.key && (
-                  <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[var(--accent)] flex items-center justify-center">
-                    <Check className="w-2 h-2 text-[#0C0A09]" />
-                  </div>
-                )}
-                <span className="text-xl">{preset.emoji}</span>
-                <span className={`text-[11px] font-semibold leading-tight ${
-                  styleKey === preset.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'
-                }`}>
-                  {preset.label}
-                </span>
-              </button>
+            {STYLE_PRESETS.filter(p => !['butcher', 'marble', 'custom'].includes(p.key)).map(preset => (
+              <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} />
+            ))}
+          </div>
+
+          {/* Butcher category */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">לקצביות בלבד</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {STYLE_PRESETS.filter(p => ['butcher', 'marble'].includes(p.key)).map(preset => (
+                <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} wide />
+              ))}
+            </div>
+          </div>
+
+          {/* Custom */}
+          <div className="mt-2">
+            {STYLE_PRESETS.filter(p => p.key === 'custom').map(preset => (
+              <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => setStyleKey(preset.key)} fullWidth />
             ))}
           </div>
 
