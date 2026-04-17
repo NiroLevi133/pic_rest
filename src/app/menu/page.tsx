@@ -7,6 +7,7 @@ import {
   Download, Check, ImagePlus, ChevronDown, MessageSquare, Copy,
   FlaskConical, Type, AlignLeft, Minus,
 } from 'lucide-react';
+import { downloadImage } from '@/lib/download-utils';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
 
@@ -631,13 +632,12 @@ function LabContent() {
               </p>
             </div>
             <div className="flex gap-2">
-              <a
-                href={result.imageUrl}
-                download={`${selectedDish || 'dish'}.png`}
+              <button
+                onClick={() => downloadImage(result.imageUrl, `${selectedDish || 'dish'}.jpg`)}
                 className="btn-secondary p-2.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={() => router.push('/gallery')}

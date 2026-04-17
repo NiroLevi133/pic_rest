@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
+import { downloadImage } from '@/lib/download-utils';
 
 interface DishItem {
   id: string;
@@ -168,10 +169,11 @@ function DishLightbox({ dish, onClose }: { dish: DishItem; onClose: () => void }
         <img src={imageUrl} alt={dish.name} className="w-full rounded-2xl object-contain bg-[var(--surface2)]" />
         <p className="text-center text-white font-semibold mt-3 mb-4">{dish.name}</p>
         <div className="flex gap-3">
-          <a href={imageUrl} download={`${dish.name}.jpg`}
-            className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-sm font-medium transition-all">
+          <button
+            onClick={() => downloadImage(imageUrl, `${dish.name}.jpg`)}
+            className="flex-1 flex items-center justify-center gap-2 bg-white/10 hover:bg-white/20 text-white py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer">
             <Download className="w-4 h-4" /> הורד
-          </a>
+          </button>
           <button onClick={handleShare}
             className="flex-1 flex items-center justify-center gap-2 bg-[var(--accent)] hover:opacity-90 text-black py-2.5 rounded-xl text-sm font-medium transition-all">
             <Share2 className="w-4 h-4" /> שתף

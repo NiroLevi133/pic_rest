@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Loader2, Download, ImageOff, Images, Share2, X } from 'lucide-react';
+import { downloadImage } from '@/lib/download-utils';
 
 interface GalleryDish {
   id: string;
@@ -53,11 +54,7 @@ function ImageCard({ dish, onClick }: { dish: GalleryDish; onClick: () => void }
 
   function handleDownload() {
     setShowActions(false);
-    const a = document.createElement('a');
-    a.href = dish.imageUrl;
-    a.download = `${dish.name.replace(/\s+/g, '-')}.png`;
-    a.target = '_blank';
-    a.click();
+    downloadImage(dish.imageUrl, `${dish.name.replace(/\s+/g, '-')}.jpg`);
   }
 
   return (
@@ -151,9 +148,12 @@ function Lightbox({ dish, onClose }: { dish: GalleryDish; onClose: () => void })
               <button onClick={handleShare} className="btn-secondary p-2.5 cursor-pointer">
                 <Share2 className="w-4 h-4" />
               </button>
-              <a href={dish.imageUrl} download={`${dish.name}.png`} className="btn-secondary p-2.5 cursor-pointer">
+              <button
+                onClick={() => downloadImage(dish.imageUrl, `${dish.name}.jpg`)}
+                className="btn-secondary p-2.5 cursor-pointer"
+              >
                 <Download className="w-4 h-4" />
-              </a>
+              </button>
               <button onClick={onClose} className="btn-ghost p-2.5 cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
