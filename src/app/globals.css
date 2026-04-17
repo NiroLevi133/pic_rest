@@ -1,17 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --bg: #0f0f0f;
-    --surface: #1a1a1a;
-    --surface2: #242424;
-    --border: #2e2e2e;
-    --text: #f0f0f0;
-    --text-muted: #888;
-    --accent: #e85d04;
-    --accent-hover: #f48c42;
+    --bg: #0C0A09;
+    --surface: #161210;
+    --surface2: #1E1A16;
+    --border: #2C2520;
+    --text: #F4EDE3;
+    --text-muted: #8A7A6A;
+    --accent: #C8962A;
+    --accent-hover: #DFA840;
+    --accent-dim: rgba(200, 150, 42, 0.12);
     --success: #22c55e;
     --error: #ef4444;
     --warning: #f59e0b;
@@ -24,41 +27,44 @@
     color: var(--text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     direction: ltr;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border bg-[var(--surface)] border-[var(--border)] p-6;
+    @apply rounded-2xl border bg-[var(--surface)] border-[var(--border)] p-6;
   }
 
   .btn {
-    @apply inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium
-           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium
+           transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+           cursor-pointer select-none;
   }
 
   .btn-primary {
-    @apply btn bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)];
+    @apply btn bg-[var(--accent)] text-[#0C0A09] hover:bg-[var(--accent-hover)] font-semibold;
   }
 
   .btn-secondary {
     @apply btn bg-[var(--surface2)] text-[var(--text)] border border-[var(--border)]
-           hover:border-[var(--accent)] hover:text-[var(--accent)];
+           hover:text-[var(--accent)];
   }
 
   .btn-ghost {
-    @apply btn bg-transparent text-[var(--text-muted)] hover:text-[var(--text)];
+    @apply btn bg-transparent text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface2)];
   }
 
   .btn-danger {
-    @apply btn bg-red-900/30 text-red-400 border border-red-900/50 hover:bg-red-900/50;
+    @apply btn bg-red-900/20 text-red-400 border border-red-900/40 hover:bg-red-900/40;
   }
 
   .input {
-    @apply w-full rounded-lg border border-[var(--border)] bg-[var(--surface2)]
-           px-3 py-2 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]
-           focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent
-           transition-all duration-150;
+    @apply w-full rounded-xl border border-[var(--border)] bg-[var(--surface2)]
+           px-3.5 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--text-muted)]
+           focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-[var(--accent)]
+           transition-all duration-200;
   }
 
   .label {
@@ -69,18 +75,36 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
 
-  .badge-pending  { @apply badge bg-gray-800 text-gray-400; }
-  .badge-generating { @apply badge bg-amber-900/40 text-amber-400 animate-pulse; }
-  .badge-done     { @apply badge bg-green-900/40 text-green-400; }
-  .badge-error    { @apply badge bg-red-900/40 text-red-400; }
+  .badge-pending    { @apply badge bg-[var(--surface2)] text-[var(--text-muted)]; }
+  .badge-generating { @apply badge bg-amber-900/30 text-amber-400 animate-pulse; }
+  .badge-done       { @apply badge bg-green-900/30 text-green-400; }
+  .badge-error      { @apply badge bg-red-900/30 text-red-400; }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ── Animations ───────────────────────────────────────────────────── */
+@keyframes reveal {
+  from { opacity: 0; transform: scale(0.97) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200, 150, 42, 0); }
+  50%       { box-shadow: 0 0 0 6px rgba(200, 150, 42, 0.12); }
+}
+
+.animate-reveal {
+  animation: reveal 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.result-glow {
+  animation: glow-pulse 2.5s ease-in-out 0.5s 2;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #444; }
+::-webkit-scrollbar-thumb:hover { background: #3D342C; }
 
-/* Hide scrollbar utility (for restaurant page tabs etc.) */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }

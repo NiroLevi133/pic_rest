@@ -5,14 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2, Zap, X, Camera, ScanLine,
   Download, Check, ImagePlus, ChevronDown, MessageSquare, Copy,
+  FlaskConical, Type, AlignLeft, Minus,
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
 
 const CAPTION_STYLES = [
-  { key: 'elegant',   label: 'אלגנטי',    emoji: '✦',  description: 'סריף לבן עדין' },
-  { key: 'lifestyle', label: 'לייף סטייל', emoji: '✍️', description: 'כתב יד חם' },
-  { key: 'bold',      label: 'מודרני',     emoji: '◼',  description: 'פונט עבה ובולט' },
+  { key: 'elegant',   label: 'אלגנטי',    icon: Type,      description: 'סריף לבן עדין' },
+  { key: 'lifestyle', label: 'לייף סטייל', icon: AlignLeft, description: 'כתב יד חם' },
+  { key: 'bold',      label: 'מודרני',     icon: Minus,     description: 'פונט עבה ובולט' },
 ];
 
 function LabContent() {
@@ -35,7 +36,6 @@ function LabContent() {
   const [styleRefImage, setStyleRefImage] = useState<string | null>(null);
   const styleRefFileRef = useRef<HTMLInputElement>(null);
 
-  // Prefill from URL params (when coming from Menus page)
   const [styleLockedFromMenu, setStyleLockedFromMenu] = useState(false);
   useEffect(() => {
     const dishName = searchParams.get('dishName');
@@ -47,7 +47,7 @@ function LabContent() {
     }
   }, [searchParams]);
 
-  /* ── save-to-menus modal (after scan) ── */
+  /* ── save-to-menus modal ── */
   const [saveModal, setSaveModal] = useState<{ dishes: string[] } | null>(null);
   const [saveStep, setSaveStep] = useState<1 | 2>(1);
   const [saveMenuName, setSaveMenuName] = useState('תפריט סרוק');
@@ -69,12 +69,12 @@ function LabContent() {
   const [result, setResult] = useState<{ imageUrl: string; dishId: string } | null>(null);
   const [error, setError] = useState('');
 
-  /* ── caption overlay (before generation) ── */
+  /* ── caption overlay ── */
   const [captionOverlay, setCaptionOverlay] = useState(false);
   const [captionText, setCaptionText] = useState('');
   const [captionStyle, setCaptionStyle] = useState('elegant');
 
-  /* ── caption (after generation, for Instagram) ── */
+  /* ── instagram caption ── */
   const [caption, setCaption] = useState('');
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [captionCopied, setCaptionCopied] = useState(false);
@@ -101,7 +101,6 @@ function LabContent() {
     if (!file) return;
     const b64 = await compressImage(await readFile(file));
     setMenuImage(b64);
-    // Auto-scan
     setScanning(true);
     setScannedDishes([]);
     try {
@@ -132,7 +131,6 @@ function LabContent() {
     setProgress(0);
     setResult(null);
 
-    // Simulate progress
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 95) return prev;
@@ -142,11 +140,19 @@ function LabContent() {
     }, 1000);
 
     try {
-      // Step 1: create dish and start background generation (returns immediately)
       const res = await fetch('/api/lab/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ referenceImage: dishImage, dishName: selectedDish, styleKey, styleRefImage, captionOverlay: captionOverlay ? { enabled: true, text: captionText || selectedDish, style: captionStyle } : null, advancedOptions: { angle, showPrice, festive, hands, action, preparation } }),
+        body: JSON.stringify({
+          referenceImage: dishImage,
+          dishName: selectedDish,
+          styleKey,
+          styleRefImage,
+          captionOverlay: captionOverlay
+            ? { enabled: true, text: captionText || selectedDish, style: captionStyle }
+            : null,
+          advancedOptions: { angle, showPrice, festive, hands, action, preparation },
+        }),
       });
       const text = await res.text();
       if (!text) throw new Error('השרת לא הגיב — נסה שוב');
@@ -154,7 +160,6 @@ function LabContent() {
       if (!data.success) throw new Error(data.error);
       const dishId = data.data.dishId as string;
 
-      // Step 2: poll until done
       for (let i = 0; i < 60; i++) {
         await new Promise(r => setTimeout(r, 3000));
         const statusRes = await fetch(`/api/dishes/${dishId}`);
@@ -241,57 +246,63 @@ function LabContent() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5" dir="rtl">
-      {/* Title */}
-      <div className="text-center mb-6">
-        <h1 className="text-3xl font-bold mb-1">🧪 המעבדה</h1>
+
+      {/* ── Title ── */}
+      <div className="text-center mb-8 pt-2">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[var(--surface2)] border border-[var(--border)] mb-4">
+          <FlaskConical className="w-5 h-5 text-[var(--accent)]" />
+        </div>
+        <h1 className="text-2xl font-bold text-[var(--text)] mb-1">המעבדה</h1>
         <p className="text-[var(--text-muted)] text-sm">צור תמונה מקצועית במינימום לחיצות</p>
       </div>
 
       {/* ── Dish photo upload ── */}
       <div className="flex justify-center">
-        <div className="w-1/2">
-        <label className="label text-xs mb-1.5">📸 צילום המנה</label>
-        <button
-          type="button"
-          onClick={() => dishFileRef.current?.click()}
-          className={`relative w-full aspect-square rounded-xl border-2 overflow-hidden transition-all ${
-            dishImage
-              ? 'border-[var(--accent)]'
-              : 'border-dashed border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--accent)]/5'
-          }`}
-        >
-          {dishImage ? (
-            <>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={dishImage} alt="מנה" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setDishImage(null); setResult(null); }}
-                className="absolute top-1.5 left-1.5 bg-black/60 text-white rounded-full p-1 hover:bg-red-600"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-full gap-2 text-[var(--text-muted)]">
-              <Camera className="w-8 h-8" />
-              <span className="text-xs">העלה תמונה</span>
-            </div>
-          )}
-        </button>
-        <input ref={dishFileRef} type="file" accept="image/*" className="hidden" onChange={handleDishImage} />
+        <div className="w-1/2 max-w-[220px]">
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-2 text-center">צילום המנה</p>
+          <button
+            type="button"
+            onClick={() => dishFileRef.current?.click()}
+            className={`relative w-full aspect-square rounded-2xl border-2 overflow-hidden transition-all duration-200 cursor-pointer ${
+              dishImage
+                ? 'border-[var(--accent)]/60'
+                : 'border-dashed border-[var(--border)] hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/4'
+            }`}
+          >
+            {dishImage ? (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={dishImage} alt="מנה" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setDishImage(null); setResult(null); }}
+                  className="absolute top-2 left-2 bg-black/60 text-white rounded-full p-1 hover:bg-red-600 transition-colors cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-[var(--text-muted)]">
+                <div className="w-12 h-12 rounded-xl bg-[var(--surface2)] flex items-center justify-center">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-medium">העלה תמונה</span>
+              </div>
+            )}
+          </button>
+          <input ref={dishFileRef} type="file" accept="image/*" className="hidden" onChange={handleDishImage} />
         </div>
       </div>
 
-      {/* ── Menu scan (small button) ── */}
+      {/* ── Menu scan ── */}
       <div>
         <button
           type="button"
           onClick={() => menuFileRef.current?.click()}
-          className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border transition-all text-sm ${
+          className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200 text-sm cursor-pointer ${
             menuImage
-              ? 'border-blue-500 bg-blue-500/10 text-blue-400'
-              : 'border-dashed border-[var(--border)] hover:border-blue-500 hover:bg-blue-500/5 text-[var(--text-muted)]'
+              ? 'border-blue-500/50 bg-blue-500/8 text-blue-400'
+              : 'border-dashed border-[var(--border)] hover:border-blue-400/50 hover:bg-blue-500/4 text-[var(--text-muted)]'
           }`}
         >
           {scanning ? (
@@ -303,14 +314,14 @@ function LabContent() {
             {scanning
               ? 'סורק תפריט...'
               : scannedDishes.length > 0
-                ? `✓ ${scannedDishes.length} מנות נסרקו`
+                ? `${scannedDishes.length} מנות נסרקו`
                 : 'סרוק תפריט (אופציונלי)'}
           </span>
           {menuImage && !scanning && (
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); setMenuImage(null); setScannedDishes([]); }}
-              className="bg-black/40 text-white rounded-full p-0.5 hover:bg-red-600"
+              className="bg-black/40 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors cursor-pointer"
             >
               <X className="w-3 h-3" />
             </button>
@@ -321,7 +332,10 @@ function LabContent() {
 
       {/* ── Dish name ── */}
       <div className="card">
-        <label className="label text-sm mb-2">שם המנה <span className="text-[var(--text-muted)] text-xs font-normal">(אופציונלי)</span></label>
+        <label className="label text-sm mb-2">
+          שם המנה{' '}
+          <span className="text-[var(--text-muted)] text-xs font-normal">(אופציונלי)</span>
+        </label>
         {scannedDishes.length > 0 ? (
           <select
             className="input"
@@ -346,123 +360,139 @@ function LabContent() {
         )}
       </div>
 
-      {/* ── Style selector (hidden when coming from menus with preset style) ── */}
+      {/* ── Style locked from menu ── */}
       {styleLockedFromMenu && (
-        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-sm" dir="rtl">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-sm" dir="rtl">
           <span>{STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}</span>
-          <span className="text-[var(--accent)] font-medium">{STYLE_PRESETS.find(p => p.key === styleKey)?.label}</span>
+          <span className="text-[var(--accent)] font-semibold">{STYLE_PRESETS.find(p => p.key === styleKey)?.label}</span>
           <span className="text-[var(--text-muted)] text-xs">· סגנון מהתפריט</span>
         </div>
       )}
-      {!styleLockedFromMenu && <div className="card">
-        <label className="label text-sm mb-3">סגנון צילום</label>
-        <div className="grid grid-cols-4 gap-2">
-          {STYLE_PRESETS.map(preset => (
-            <button
-              key={preset.key}
-              type="button"
-              disabled={!!preset.comingSoon}
-              onClick={() => { if (!preset.comingSoon) { setStyleKey(preset.key); if (!preset.isCustom) setStyleRefImage(null); } }}
-              className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all text-center ${
-                preset.comingSoon
-                  ? 'border-[var(--border)] opacity-40 cursor-not-allowed'
-                  : styleKey === preset.key
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                    : 'border-[var(--border)] hover:border-[var(--accent)]/50 bg-[var(--surface)]'
-              }`}
-            >
-              <span className="text-xl">{preset.emoji}</span>
-              <span className={`text-[11px] font-semibold leading-tight ${styleKey === preset.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
-                {preset.label}
-              </span>
-            </button>
-          ))}
-        </div>
 
-        {/* Custom style ref image upload */}
-        {styleKey === 'custom' && (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={() => styleRefFileRef.current?.click()}
-              className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 transition-all text-sm ${
-                styleRefImage
-                  ? 'border-pink-500 bg-pink-500/10'
-                  : 'border-dashed border-pink-500/50 hover:border-pink-500 hover:bg-pink-500/5 text-[var(--text-muted)]'
-              }`}
-            >
-              {styleRefImage ? (
-                <>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={styleRefImage} alt="סגנון" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-                  <span className="flex-1 text-right text-pink-400 text-xs">תמונת סגנון הועלתה ✓</span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setStyleRefImage(null); }}
-                    className="bg-black/40 text-white rounded-full p-0.5 hover:bg-red-600"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </>
-              ) : (
-                <>
-                  <ImagePlus className="w-4 h-4 shrink-0 text-pink-400" />
-                  <span className="flex-1 text-right text-xs">העלה תמונת השראה לסגנון</span>
-                </>
-              )}
-            </button>
-            <input ref={styleRefFileRef} type="file" accept="image/*" className="hidden" onChange={handleStyleRefImage} />
+      {/* ── Style selector ── */}
+      {!styleLockedFromMenu && (
+        <div className="card">
+          <label className="label text-sm mb-3">סגנון צילום</label>
+          <div className="grid grid-cols-4 gap-2">
+            {STYLE_PRESETS.map(preset => (
+              <button
+                key={preset.key}
+                type="button"
+                disabled={!!preset.comingSoon}
+                onClick={() => {
+                  if (!preset.comingSoon) {
+                    setStyleKey(preset.key);
+                    if (!preset.isCustom) setStyleRefImage(null);
+                  }
+                }}
+                className={`relative flex flex-col items-center gap-1.5 p-2.5 rounded-xl border-2 transition-all duration-200 text-center cursor-pointer ${
+                  preset.comingSoon
+                    ? 'border-[var(--border)] opacity-35 cursor-not-allowed'
+                    : styleKey === preset.key
+                      ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                      : 'border-[var(--border)] hover:border-[var(--border)] hover:bg-[var(--surface2)] bg-[var(--surface)]'
+                }`}
+              >
+                {styleKey === preset.key && (
+                  <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                    <Check className="w-2 h-2 text-[#0C0A09]" />
+                  </div>
+                )}
+                <span className="text-xl">{preset.emoji}</span>
+                <span className={`text-[11px] font-semibold leading-tight ${
+                  styleKey === preset.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'
+                }`}>
+                  {preset.label}
+                </span>
+              </button>
+            ))}
           </div>
-        )}
-      </div>}
+
+          {/* Custom style ref image */}
+          {styleKey === 'custom' && (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={() => styleRefFileRef.current?.click()}
+                className={`relative w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all duration-200 text-sm cursor-pointer ${
+                  styleRefImage
+                    ? 'border-[var(--accent)]/50 bg-[var(--accent)]/8'
+                    : 'border-dashed border-[var(--border)] hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/4 text-[var(--text-muted)]'
+                }`}
+              >
+                {styleRefImage ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={styleRefImage} alt="סגנון" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+                    <span className="flex-1 text-right text-[var(--accent)] text-xs font-medium">תמונת סגנון הועלתה</span>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setStyleRefImage(null); }}
+                      className="bg-black/40 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <ImagePlus className="w-4 h-4 shrink-0 text-[var(--accent)]" />
+                    <span className="flex-1 text-right text-xs">העלה תמונת השראה לסגנון</span>
+                  </>
+                )}
+              </button>
+              <input ref={styleRefFileRef} type="file" accept="image/*" className="hidden" onChange={handleStyleRefImage} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Advanced options ── */}
       <div className="card overflow-hidden">
         <button
           type="button"
           onClick={() => setShowAdvanced(p => !p)}
-          className="w-full flex items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+          className="w-full flex items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors duration-200 cursor-pointer"
         >
           <span>אפשרויות מתקדמות</span>
-          <ChevronDown className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
         </button>
 
         {showAdvanced && (
           <div className="mt-4 space-y-4" dir="rtl">
-
-            {/* Camera angle */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-xs text-[var(--text-muted)]">זווית צילום</p>
-                <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full text-[var(--text-muted)]">בקרוב</span>
+                <span className="text-[10px] bg-[var(--surface2)] px-2 py-0.5 rounded-full text-[var(--text-muted)] border border-[var(--border)]">בקרוב</span>
               </div>
-              <div className="flex gap-2 opacity-50 pointer-events-none">
-                {([['top', '⬆️ מבט עליון'], ['side', '↔️ מהצד']] as const).map(([val, label]) => (
+              <div className="flex gap-2 opacity-40 pointer-events-none">
+                {([['top', 'מבט עליון'], ['side', 'מהצד']] as const).map(([val, label]) => (
                   <button
                     key={val}
                     type="button"
-                    className={`flex-1 py-2 rounded-xl border text-xs font-medium ${angle === val ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[var(--border)] text-[var(--text-muted)]'}`}
+                    className={`flex-1 py-2 rounded-xl border text-xs font-medium ${
+                      angle === val
+                        ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                        : 'border-[var(--border)] text-[var(--text-muted)]'
+                    }`}
                   >{label}</button>
                 ))}
               </div>
             </div>
 
-            {/* Toggles */}
             <div className="grid grid-cols-2 gap-2">
               {([
-                ['💰', 'סכום ומזל'],
-                ['🤲', 'ידים ומבע'],
-                ['🌪️', 'תמונת פעולה'],
-                ['👨‍🍳', 'בזמן הכנה'],
-                ['🎉', 'חגיגי'],
-              ] as [string, string][]).map(([emoji, label]) => (
+                ['סכום ומזל', showPrice],
+                ['ידים ומבע', hands],
+                ['תמונת פעולה', action],
+                ['בזמן הכנה', preparation],
+                ['חגיגי', festive],
+              ] as [string, boolean][]).map(([label]) => (
                 <div
                   key={label}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--text-muted)] opacity-50 cursor-not-allowed text-right"
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--text-muted)] opacity-40 cursor-not-allowed text-right"
                 >
-                  <span>{emoji}</span>
                   <span className="flex-1">{label}</span>
-                  <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full">בקרוב</span>
+                  <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full border border-[var(--border)]">בקרוב</span>
                 </div>
               ))}
             </div>
@@ -480,7 +510,7 @@ function LabContent() {
               setCaptionOverlay(e.target.checked);
               if (e.target.checked && !captionText) setCaptionText(selectedDish);
             }}
-            className="w-4 h-4 rounded accent-[var(--accent)]"
+            className="w-4 h-4 rounded accent-[var(--accent)] cursor-pointer"
           />
           <span className="text-sm font-medium">הוסף כיתוב על התמונה</span>
         </label>
@@ -496,27 +526,32 @@ function LabContent() {
                 placeholder={selectedDish || 'שם המנה'}
                 dir="rtl"
               />
-              <p className="text-[11px] text-[var(--text-muted)] mt-1">ברירת מחדל: שם המנה. לחץ לשינוי.</p>
+              <p className="text-[11px] text-[var(--text-muted)] mt-1.5">ברירת מחדל: שם המנה</p>
             </div>
             <div>
               <label className="label text-xs mb-2">סגנון כיתוב</label>
               <div className="grid grid-cols-3 gap-2">
-                {CAPTION_STYLES.map(s => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    onClick={() => setCaptionStyle(s.key)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all text-center ${
-                      captionStyle === s.key
-                        ? 'border-[var(--accent)] bg-[var(--accent)]/10'
-                        : 'border-[var(--border)] hover:border-[var(--accent)]/50'
-                    }`}
-                  >
-                    <span className="text-xl">{s.emoji}</span>
-                    <span className={`text-[11px] font-semibold leading-tight ${captionStyle === s.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>{s.label}</span>
-                    <span className="text-[10px] text-[var(--text-muted)] leading-tight">{s.description}</span>
-                  </button>
-                ))}
+                {CAPTION_STYLES.map(s => {
+                  const Icon = s.icon;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setCaptionStyle(s.key)}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all duration-200 text-center cursor-pointer ${
+                        captionStyle === s.key
+                          ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                          : 'border-[var(--border)] hover:border-[var(--border)] hover:bg-[var(--surface2)]'
+                      }`}
+                    >
+                      <Icon className={`w-4 h-4 ${captionStyle === s.key ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'}`} />
+                      <span className={`text-[11px] font-semibold leading-tight ${captionStyle === s.key ? 'text-[var(--accent)]' : 'text-[var(--text)]'}`}>
+                        {s.label}
+                      </span>
+                      <span className="text-[10px] text-[var(--text-muted)] leading-tight">{s.description}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -525,22 +560,25 @@ function LabContent() {
 
       {/* ── Error ── */}
       {error && (
-        <div className="rounded-lg bg-red-900/20 border border-red-900/50 px-4 py-3 text-red-400 text-sm">
+        <div className="rounded-xl bg-red-900/15 border border-red-900/40 px-4 py-3 text-red-400 text-sm text-right">
           {error}
         </div>
       )}
 
       {/* ── Progress bar ── */}
       {generating && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <div className="flex justify-between text-xs text-[var(--text-muted)]">
-            <span>מייצר תמונה...</span>
             <span>{Math.round(progress)}%</span>
+            <span>מייצר תמונה...</span>
           </div>
-          <div className="w-full bg-[var(--surface2)] rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-[var(--surface2)] rounded-full h-1.5 overflow-hidden border border-[var(--border)]">
             <div
-              className="h-2 rounded-full bg-[var(--accent)] transition-all duration-1000"
-              style={{ width: `${progress}%` }}
+              className="h-full rounded-full transition-all duration-1000"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))',
+              }}
             />
           </div>
         </div>
@@ -551,7 +589,8 @@ function LabContent() {
         type="button"
         disabled={!canGenerate}
         onClick={handleGenerate}
-        className="btn-primary w-full justify-center py-4 text-base font-bold disabled:opacity-40"
+        className="btn-primary w-full justify-center py-4 text-[15px] font-bold disabled:opacity-30 mt-1"
+        style={canGenerate ? { boxShadow: '0 4px 24px rgba(200,150,42,0.18)' } : {}}
       >
         {generating ? (
           <><Loader2 className="w-5 h-5 animate-spin" /> מייצר תמונה...</>
@@ -562,44 +601,61 @@ function LabContent() {
 
       {/* ── Result ── */}
       {result && (
-        <div className="card overflow-hidden">
-          <div className="relative">
+        <div
+          className="card overflow-hidden animate-reveal result-glow"
+          style={{ borderColor: 'rgba(200,150,42,0.2)' }}
+        >
+          {/* Image */}
+          <div className="relative -mx-6 -mt-6 mb-5">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={result.imageUrl}
               alt={selectedDish}
-              className="w-full rounded-xl object-contain bg-[var(--surface2)] max-h-[500px]"
+              className="w-full object-contain bg-[var(--surface2)]"
+              style={{ maxHeight: '560px' }}
             />
           </div>
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-[var(--border)]">
-            <div dir="rtl">
-              <p className="font-semibold">{selectedDish}</p>
-              <p className="text-xs text-[var(--text-muted)]">
+
+          {/* Meta + actions */}
+          <div className="flex items-center justify-between" dir="rtl">
+            <div>
+              {selectedDish && (
+                <p className="font-semibold text-[var(--text)]">{selectedDish}</p>
+              )}
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}{' '}
                 {STYLE_PRESETS.find(p => p.key === styleKey)?.label}
               </p>
-              <p className="text-xs text-green-400 flex items-center gap-1 mt-0.5">
+              <p className="text-xs text-green-400 flex items-center gap-1 mt-1">
                 <Check className="w-3 h-3" /> נשמר אוטומטית בגלריה
               </p>
             </div>
             <div className="flex gap-2">
-              <a href={result.imageUrl} download={`${selectedDish}.png`} className="btn-secondary">
+              <a
+                href={result.imageUrl}
+                download={`${selectedDish || 'dish'}.png`}
+                className="btn-secondary p-2.5 cursor-pointer"
+              >
                 <Download className="w-4 h-4" />
               </a>
-              <button type="button" onClick={() => router.push('/gallery')} className="btn-secondary gap-2 text-sm">
+              <button
+                type="button"
+                onClick={() => router.push('/gallery')}
+                className="btn-secondary gap-2 text-sm cursor-pointer"
+              >
                 לגלריה ←
               </button>
             </div>
           </div>
 
-          {/* Caption generator */}
-          <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          {/* Instagram caption */}
+          <div className="mt-5 pt-5 border-t border-[var(--border)]">
             {!caption ? (
               <button
                 type="button"
                 onClick={handleGenerateCaption}
                 disabled={generatingCaption}
-                className="btn-secondary w-full justify-center gap-2 text-sm disabled:opacity-50"
+                className="btn-secondary w-full justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
               >
                 {generatingCaption
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> יוצר כיתוב...</>
@@ -607,30 +663,33 @@ function LabContent() {
               </button>
             ) : (
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between" dir="rtl">
                   <span className="text-xs font-medium text-[var(--text-muted)]">כיתוב לאינסטגרם</span>
                   <div className="flex gap-1">
                     <button
                       type="button"
                       onClick={handleCopyCaption}
-                      className="btn-ghost p-1.5 text-xs gap-1 flex items-center"
+                      className="btn-ghost p-1.5 text-xs gap-1 flex items-center cursor-pointer"
                     >
-                      {captionCopied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      {captionCopied ? 'הועתק' : 'העתק'}
+                      {captionCopied
+                        ? <><Check className="w-3.5 h-3.5 text-green-400" /> הועתק</>
+                        : <><Copy className="w-3.5 h-3.5" /> העתק</>}
                     </button>
                     <button
                       type="button"
                       onClick={handleGenerateCaption}
                       disabled={generatingCaption}
-                      className="btn-ghost p-1.5 text-xs"
+                      className="btn-ghost p-1.5 text-xs cursor-pointer"
                       title="צור כיתוב חדש"
                     >
-                      {generatingCaption ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <MessageSquare className="w-3.5 h-3.5" />}
+                      {generatingCaption
+                        ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        : <MessageSquare className="w-3.5 h-3.5" />}
                     </button>
                   </div>
                 </div>
                 <div
-                  className="text-sm leading-relaxed whitespace-pre-wrap bg-[var(--surface2)] rounded-xl p-3 border border-[var(--border)]"
+                  className="text-sm leading-relaxed whitespace-pre-wrap bg-[var(--surface2)] rounded-xl p-3.5 border border-[var(--border)]"
                   dir="rtl"
                 >
                   {caption}
@@ -641,22 +700,36 @@ function LabContent() {
         </div>
       )}
 
-      {/* ── Save-to-menus modal (2-step) ── */}
+      {/* ── Save-to-menus modal ── */}
       {saveModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setSaveModal(null)}>
-          <div className="bg-[var(--surface)] rounded-2xl w-full max-w-md overflow-hidden" onClick={e => e.stopPropagation()} dir="rtl">
-
+        <div
+          className="fixed inset-0 z-50 bg-black/75 flex items-end sm:items-center justify-center p-4"
+          onClick={() => setSaveModal(null)}
+        >
+          <div
+            className="bg-[var(--surface)] rounded-2xl w-full max-w-md overflow-hidden border border-[var(--border)]"
+            onClick={e => e.stopPropagation()}
+            dir="rtl"
+          >
             {/* Step indicator */}
             <div className="flex items-center gap-2 px-6 pt-5">
               {[1, 2].map(s => (
                 <div key={s} className="flex items-center gap-2 flex-1">
                   <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                    saveStep === s ? 'bg-[var(--accent)] text-black' : saveStep > s ? 'bg-green-500 text-black' : 'bg-[var(--surface2)] text-[var(--text-muted)]'
+                    saveStep === s
+                      ? 'bg-[var(--accent)] text-[#0C0A09]'
+                      : saveStep > s
+                        ? 'bg-green-500 text-[#0C0A09]'
+                        : 'bg-[var(--surface2)] text-[var(--text-muted)]'
                   }`}>
                     {saveStep > s ? <Check className="w-3 h-3" /> : s}
                   </div>
-                  <span className={`text-xs ${saveStep === s ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>{s === 1 ? 'תפריט' : 'סגנון'}</span>
-                  {s < 2 && <div className={`flex-1 h-px ${saveStep > s ? 'bg-green-500' : 'bg-[var(--border)]'}`} />}
+                  <span className={`text-xs ${saveStep === s ? 'text-[var(--text)]' : 'text-[var(--text-muted)]'}`}>
+                    {s === 1 ? 'תפריט' : 'סגנון'}
+                  </span>
+                  {s < 2 && (
+                    <div className={`flex-1 h-px ${saveStep > s ? 'bg-green-500' : 'bg-[var(--border)]'}`} />
+                  )}
                 </div>
               ))}
             </div>
@@ -666,10 +739,18 @@ function LabContent() {
                 <>
                   <div className="flex items-center justify-between">
                     <h2 className="text-base font-bold">תוצאות הסריקה</h2>
-                    <button onClick={() => setSaveModal(null)} className="text-[var(--text-muted)]"><X className="w-5 h-5" /></button>
+                    <button onClick={() => setSaveModal(null)} className="text-[var(--text-muted)] hover:text-[var(--text)] cursor-pointer">
+                      <X className="w-5 h-5" />
+                    </button>
                   </div>
-                  <input className="input w-full" value={saveMenuName} onChange={e => setSaveMenuName(e.target.value)}
-                    placeholder="שם התפריט" autoFocus dir="rtl" />
+                  <input
+                    className="input w-full"
+                    value={saveMenuName}
+                    onChange={e => setSaveMenuName(e.target.value)}
+                    placeholder="שם התפריט"
+                    autoFocus
+                    dir="rtl"
+                  />
                   <div className="relative">
                     <div className={`space-y-1 ${saveModal.dishes.length > 6 ? 'max-h-52 overflow-hidden' : ''}`}>
                       {saveModal.dishes.map((d, i) => (
@@ -684,30 +765,44 @@ function LabContent() {
                       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--surface)] to-transparent pointer-events-none" />
                     )}
                     {saveModal.dishes.length > 6 && (
-                      <p className="text-center text-xs text-[var(--text-muted)] mt-1">+{saveModal.dishes.length - 6} מנות נוספות</p>
+                      <p className="text-center text-xs text-[var(--text-muted)] mt-1">
+                        +{saveModal.dishes.length - 6} מנות נוספות
+                      </p>
                     )}
                   </div>
                   <div className="flex gap-2">
-                    <button onClick={() => setSaveStep(2)} disabled={!saveMenuName.trim()}
-                      className="btn-primary flex-1 justify-center py-2.5 disabled:opacity-40">הבא ←</button>
-                    <button onClick={() => setSaveModal(null)} className="btn-ghost px-4">דלג</button>
+                    <button
+                      onClick={() => setSaveStep(2)}
+                      disabled={!saveMenuName.trim()}
+                      className="btn-primary flex-1 justify-center py-2.5 disabled:opacity-40 cursor-pointer"
+                    >
+                      הבא ←
+                    </button>
+                    <button onClick={() => setSaveModal(null)} className="btn-ghost px-4 cursor-pointer">דלג</button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => setSaveStep(1)} className="text-[var(--text-muted)]">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    <button onClick={() => setSaveStep(1)} className="text-[var(--text-muted)] hover:text-[var(--text)] cursor-pointer">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </button>
                     <h2 className="text-base font-bold">בחר סגנון צילום</h2>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {STYLE_PRESETS.map(p => (
-                      <button key={p.key} type="button"
+                      <button
+                        key={p.key}
+                        type="button"
                         onClick={() => setSaveMenuStyle(prev => prev === p.key ? null : p.key)}
-                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-right ${
-                          saveMenuStyle === p.key ? 'border-[var(--accent)] bg-[var(--accent)]/10' : 'border-[var(--border)] bg-[var(--surface2)]'
-                        }`}>
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 text-right cursor-pointer ${
+                          saveMenuStyle === p.key
+                            ? 'border-[var(--accent)] bg-[var(--accent)]/10'
+                            : 'border-[var(--border)] bg-[var(--surface2)] hover:border-[var(--border)]'
+                        }`}
+                      >
                         <span className="text-2xl shrink-0">{p.emoji}</span>
                         <div className="flex-1">
                           <p className={`text-sm font-semibold ${saveMenuStyle === p.key ? 'text-[var(--accent)]' : ''}`}>{p.label}</p>
@@ -717,9 +812,14 @@ function LabContent() {
                       </button>
                     ))}
                   </div>
-                  <button onClick={handleSaveMenu} disabled={savingMenu}
-                    className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40">
-                    {savingMenu ? <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</> : <><Check className="w-4 h-4" /> שמור תפריט</>}
+                  <button
+                    onClick={handleSaveMenu}
+                    disabled={savingMenu}
+                    className="btn-primary w-full justify-center py-3 font-semibold disabled:opacity-40 cursor-pointer"
+                  >
+                    {savingMenu
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</>
+                      : <><Check className="w-4 h-4" /> שמור תפריט</>}
                   </button>
                 </>
               )}
