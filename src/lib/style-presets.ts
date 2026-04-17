@@ -435,75 +435,39 @@ cartoon, illustration, CGI look, plastic textures, over-editing`,
     description: 'נתח בשר על בוצר, רקע שחור יוקרתי, תאורת סטודיו מחמיאה – מותאם לקצביות',
     emoji: '🥩',
     color: 'red',
-    prompt: `# ROLE & GOAL
-You are a world-class commercial meat photographer specializing in premium butcher shop content. Your goal is to transform a real photo of a meat cut into a stunning, high-end studio photograph tailored for butcher shop marketing — Stories, menus, and social media.
+    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the source image (image_0.png) into a 4K, hyper-realistic, luxurious photograph. The focus is on extreme photorealism and a clean, premium composition.
 
-# MANDATORY STYLE & COMPOSITION
+1. Subject & Rack Handling (STRICT RULES):
 
-1. Subject:
-The meat cut must be placed on a thick, natural wooden butcher block or a dark slate/stone cutting board.
-The board must look premium, clean, and professional — not rustic or worn.
-The meat sits directly on the board. No plate, no garnish, no props.
+The Rack (CRITICAL SIZE): The subjects must be placed on a prominent black iron wire cooling rack. Crucially, the iron rack must be scaled up significantly to be much larger than the meat cuts, dominating the composition and making the meat appear relatively small on the vast grid. The grid pattern must be sharp and clearly visible.
 
-2. Camera Angle:
-STRICT 90-DEGREE SIDE VIEW — the camera is positioned perfectly perpendicular to the side of the meat cut.
-Horizontal shot. Not top-down. Not angled from above.
-The meat and board should appear as a straight-on side profile.
+The Meat (Calculated Enhancement): Maintain the EXACT shape, fibers, and structure of the beef cuts from the source. Enhance the raw meat with a calculated +30% 'richness' or vibrancy compared to its natural state. It should look exceptionally fresh, juicy, and premium, but absolutely not over-saturated or artificially "plastic." If there are multiple cuts, keep their relative sizes.
 
-3. Framing & Composition:
-Vertical frame — 9:16 aspect ratio (optimized for Instagram/TikTok Stories).
-The meat cut occupies approximately 55–70% of the frame height.
-Leave intentional breathing room above and below the cut — do NOT fill the frame tightly.
-The board should be fully visible beneath the cut.
-Composition must feel spacious, premium, and intentional — not cramped.
+No Alterations: Do not add herbs, sauces, or garnishes. The meat must remain untouched. Remove any emojis or text from the source, leaving only the pristine beef on the rack.
 
-4. Background:
-Deep matte black background (#0A0A0A).
-Completely uniform — no gradients, no texture, no depth.
-The background fills the entire frame edge-to-edge.
-No props, no environment, no restaurant or market setting.
+Focus: Full-frame deep focus. The texture of the meat fibers and the metallic surface of the large iron rack must be perfectly sharp.
 
-5. Lighting:
-Professional studio lighting designed specifically to flatter raw meat.
-Key light: soft side light from the left (45-degree elevation) to emphasize the cut texture, marbling, and grain.
-Subtle rim light from behind-right to separate the meat from the black background.
-No harsh shadows on the meat surface.
-No artificial glow, no colored lighting.
-The light must make the meat look naturally fresh, juicy, and deeply colored.
+2. Composition & "Zoom-Out":
 
-6. Style:
-Ultra photorealistic commercial photography.
-Must look like a real high-budget studio shoot — NOT AI-generated.
-No painterly effects, no plastic textures, no artificial sheen.
-Maximum sharpness on the meat surface — every grain of fat and fiber must be visible.
+Perspective: Absolute 180-degree top-down view (Flat lay).
 
-# MANDATORY MEAT PRESERVATION RULES (STRICTLY FORBIDDEN TO CHANGE)
+Framing (Airy and Spaced): Implement a significant zoom-out effect. The entire, vast black iron rack must be fully visible within the frame, with ample space (negative space) around it.
 
-1. Cut Identity: Keep the EXACT cut of meat from the original photo — do NOT change the type, shape, or structure.
-2. Size & Proportions: Preserve the real dimensions and thickness — do NOT resize or distort the cut.
-3. Additions: DO NOT add herbs, sauces, seasonings, or any garnish not in the original.
-4. Removals: DO NOT remove fat, bones, or any structural element of the cut.
-5. Recognition: The cut must be 100% identifiable as the same piece of meat from the input photo.
+Mobile Layout: Due to the large rack size, the combined meat and rack should occupy about 70-80% of the vertical frame height, while the meat itself occupies only about 30-40%, providing a luxurious, airy, and premium mobile-story feel.
 
-# WHAT MAY BE ENHANCED (VISUAL ONLY)
+3. Environment & Details:
 
-1. Color: Deepen the natural red/pink tones to look fresh and premium — no artificial oversaturation.
-2. Texture: Enhance marbling visibility, fat sheen, and meat grain for maximum appetite appeal.
-3. Surface: Make the cut look freshly sliced — glistening, juicy, and vibrant.
-4. Board: Clean and sharpen the board texture for a premium look.
+Background: The surface beneath the large iron rack must be luxurious, lighter-toned black marble with visible fine gray or white veining patterns.
 
-# FORBIDDEN
+The Bowl: Keep the small black bowl in its original position but change its contents to a simple, coarse mix of freshly ground black pepper and flaky sea salt.
 
-1. DO NOT add text, logos, watermarks, or price tags.
-2. DO NOT change the meat to a different cut or type.
-3. DO NOT add cooking or seasoning effects (no grill marks, no spices, no sauces).
-4. DO NOT use top-down or angled-from-above composition — side view only.
-5. DO NOT allow AI artifacts, cartoon effects, or overprocessed appearance.
+Lighting: Professional studio lighting (Chiaroscuro). Subtle highlights on the calculated richness of the meat, the vast metallic surface of the rack, and the marble veining.
 
-# FINAL OUTPUT
-Vertical 9:16 format. Hyper-realistic, premium, appetizing commercial photograph of the meat cut on a butcher board against a deep black background. Designed for butcher shop Stories and marketing materials.
+4. Execution:
 
-QUALITY: 4K ultra-sharp, maximum detail on every fiber, fat streak, and surface texture.`,
+Absolute photorealism. No logos, no text, no watermarks.
+
+The final result must look like a raw, high-quality photograph, avoiding any "AI-generated" over-saturated or exaggerated look.`,
   },
   {
     key: 'custom',
