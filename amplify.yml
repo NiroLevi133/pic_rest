@@ -1,0 +1,34 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci
+
+        # Inject env variables into Next.js
+        - echo "DATABASE_URL=$DATABASE_URL" >> .env.production
+        - echo "DIRECT_URL=$DIRECT_URL" >> .env.production
+        - echo "GEMINI_IMAGE_MODEL=$GEMINI_IMAGE_MODEL" >> .env.production
+        - echo "IMAGE_PROVIDER=$IMAGE_PROVIDER" >> .env.production
+        - echo "IMAGE_QUALITY=$IMAGE_QUALITY" >> .env.production
+        - echo "LLM_PROVIDER=$LLM_PROVIDER" >> .env.production
+        - echo "GOOGLE_API_KEY=$GOOGLE_API_KEY" >> .env.production
+        - echo "OPENAI_API_KEY=$OPENAI_API_KEY" >> .env.production
+        - echo "SETTINGS_ENCRYPTION_KEY=$SETTINGS_ENCRYPTION_KEY" >> .env.production
+        - echo "LAMBDA_GENERATE_URL=$LAMBDA_GENERATE_URL" >> .env.production
+        - echo "BG_SECRET=$BG_SECRET" >> .env.production
+        - echo "APP_URL=$APP_URL" >> .env.production
+
+    build:
+      commands:
+        - npm run build
+        - cp .env.production .next/.env.production
+
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'
+
+  cache:
+    paths:
+      - node_modules/**/*

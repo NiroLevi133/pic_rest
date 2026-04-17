@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Read(//usr/local/**)",
+      "Read(//usr/**)",
+      "Bash(npx tsc:*)",
+      "Bash(grep '\"\"lucide-react\"\"' package.json)",
+      "Bash(npx prisma:*)",
+      "Bash(node -e \":*)",
+      "Bash(find c:UsersNirLeviDesktoprestorante -name serverless.yml -o -name serverless.ts -o -name template.yaml -o -name cdk.json -o -name *.lambda.*)",
+      "Bash(taskkill /F /IM node.exe)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe 2>nul & timeout /t 2 /nobreak >nul & cd /d c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante && npx prisma generate\")",
+      "Bash(cmd /c \"cd /d c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante && npx prisma generate 2>&1\")",
+      "Bash(node_modules/.bin/prisma generate:*)",
+      "Bash(del /F \"c:\\\\Users\\\\NirLevi\\\\Desktop\\\\restorante\\\\node_modules\\\\.prisma\\\\client\\\\query_engine-windows.dll.node\")",
+      "Bash(git -C /c/Users/NirLevi/Desktop/restorante ls-tree -r --name-only HEAD)",
+      "Bash(git:*)",
+      "Bash(powershell Compress-Archive -Path index.js,node_modules,prisma -DestinationPath lambda.zip -Force)",
+      "Bash(rm node_modules/.prisma/client/libquery_engine-rhel-openssl-1.0.x.so.node)",
+      "Bash(rm node_modules/.prisma/client/query_engine-windows.dll.node)",
+      "Bash(rm -rf node_modules/@prisma/engines)",
+      "Bash(rm -rf node_modules/prisma)",
+      "Bash(powershell \"Add-Type -Assembly System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\(''lambda.zip''\\); $zip.Entries | Select-Object -First 10 FullName; $zip.Dispose\\(\\)\")",
+      "Bash(powershell \"Add-Type -Assembly System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\(''lambda.zip''\\); $zip.Entries | Where-Object { $_.FullName -notlike ''node_modules*'' } | Select-Object FullName; $zip.Dispose\\(\\)\")",
+      "Read(//tmp/ziptools/**)",
+      "Read(//c/tmp/ziptools/**)"
+    ]
+  }
+}
