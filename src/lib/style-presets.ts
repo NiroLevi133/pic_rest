@@ -430,6 +430,82 @@ Avoid:
 cartoon, illustration, CGI look, plastic textures, over-editing`,
   },
   {
+    key: 'butcher',
+    label: 'נתח בודד',
+    description: 'נתח בשר על בוצר, רקע שחור יוקרתי, תאורת סטודיו מחמיאה – מותאם לקצביות',
+    emoji: '🥩',
+    color: 'red',
+    prompt: `# ROLE & GOAL
+You are a world-class commercial meat photographer specializing in premium butcher shop content. Your goal is to transform a real photo of a meat cut into a stunning, high-end studio photograph tailored for butcher shop marketing — Stories, menus, and social media.
+
+# MANDATORY STYLE & COMPOSITION
+
+1. Subject:
+The meat cut must be placed on a thick, natural wooden butcher block or a dark slate/stone cutting board.
+The board must look premium, clean, and professional — not rustic or worn.
+The meat sits directly on the board. No plate, no garnish, no props.
+
+2. Camera Angle:
+STRICT 90-DEGREE SIDE VIEW — the camera is positioned perfectly perpendicular to the side of the meat cut.
+Horizontal shot. Not top-down. Not angled from above.
+The meat and board should appear as a straight-on side profile.
+
+3. Framing & Composition:
+Vertical frame — 9:16 aspect ratio (optimized for Instagram/TikTok Stories).
+The meat cut occupies approximately 55–70% of the frame height.
+Leave intentional breathing room above and below the cut — do NOT fill the frame tightly.
+The board should be fully visible beneath the cut.
+Composition must feel spacious, premium, and intentional — not cramped.
+
+4. Background:
+Deep matte black background (#0A0A0A).
+Completely uniform — no gradients, no texture, no depth.
+The background fills the entire frame edge-to-edge.
+No props, no environment, no restaurant or market setting.
+
+5. Lighting:
+Professional studio lighting designed specifically to flatter raw meat.
+Key light: soft side light from the left (45-degree elevation) to emphasize the cut texture, marbling, and grain.
+Subtle rim light from behind-right to separate the meat from the black background.
+No harsh shadows on the meat surface.
+No artificial glow, no colored lighting.
+The light must make the meat look naturally fresh, juicy, and deeply colored.
+
+6. Style:
+Ultra photorealistic commercial photography.
+Must look like a real high-budget studio shoot — NOT AI-generated.
+No painterly effects, no plastic textures, no artificial sheen.
+Maximum sharpness on the meat surface — every grain of fat and fiber must be visible.
+
+# MANDATORY MEAT PRESERVATION RULES (STRICTLY FORBIDDEN TO CHANGE)
+
+1. Cut Identity: Keep the EXACT cut of meat from the original photo — do NOT change the type, shape, or structure.
+2. Size & Proportions: Preserve the real dimensions and thickness — do NOT resize or distort the cut.
+3. Additions: DO NOT add herbs, sauces, seasonings, or any garnish not in the original.
+4. Removals: DO NOT remove fat, bones, or any structural element of the cut.
+5. Recognition: The cut must be 100% identifiable as the same piece of meat from the input photo.
+
+# WHAT MAY BE ENHANCED (VISUAL ONLY)
+
+1. Color: Deepen the natural red/pink tones to look fresh and premium — no artificial oversaturation.
+2. Texture: Enhance marbling visibility, fat sheen, and meat grain for maximum appetite appeal.
+3. Surface: Make the cut look freshly sliced — glistening, juicy, and vibrant.
+4. Board: Clean and sharpen the board texture for a premium look.
+
+# FORBIDDEN
+
+1. DO NOT add text, logos, watermarks, or price tags.
+2. DO NOT change the meat to a different cut or type.
+3. DO NOT add cooking or seasoning effects (no grill marks, no spices, no sauces).
+4. DO NOT use top-down or angled-from-above composition — side view only.
+5. DO NOT allow AI artifacts, cartoon effects, or overprocessed appearance.
+
+# FINAL OUTPUT
+Vertical 9:16 format. Hyper-realistic, premium, appetizing commercial photograph of the meat cut on a butcher board against a deep black background. Designed for butcher shop Stories and marketing materials.
+
+QUALITY: 4K ultra-sharp, maximum detail on every fiber, fat streak, and surface texture.`,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',
