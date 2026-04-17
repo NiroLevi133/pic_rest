@@ -40,7 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!referenceImage) return NextResponse.json({ success: false, error: 'referenceImage required' }, { status: 400 });
-    if (!dishName?.trim()) return NextResponse.json({ success: false, error: 'dishName required' }, { status: 400 });
 
     const settings = await getSettings();
 
@@ -131,7 +130,7 @@ export async function POST(req: NextRequest) {
       const dish = await prisma.dish.create({
         data: {
           menuId: labMenu.id,
-          name: dishName.trim(),
+          name: dishName?.trim() || 'ללא שם',
           description: null,
           price: null,
           category: 'other',
