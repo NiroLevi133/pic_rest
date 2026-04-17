@@ -475,7 +475,49 @@ The final result must look like a raw, high-quality photograph, avoiding any "AI
     description: 'צילום על שיש לבן יוקרתי עם תאורה עדינה',
     emoji: '🤍',
     color: 'white',
-    prompt: `aaa`,
+    prompt: `Role & Goal: Act as a master food photographer for high-end commercial ads. Your goal is to transform the new source image (which may contain multiple meat cuts, e.g., image_1.png) into a 4K resolution, hyper-realistic, luxurious culinary photograph. The focus is on extreme photorealism and a clean, premium composition for a mobile-ad format, strictly using only the meat subjects and the new lighter marble background.
+
+1. Subject Handling (STRICT RULES):
+
+Identity: Identify and include ALL meat cuts present in the source image (e.g., if there are two cuts in image_1.png, both must be included). Maintain the EXACT shape, structure, and type of each raw beef cut.
+
+Calculated Enhancement: Enhance the raw meat with a calculated and subtle +20% 'richness' or vibrancy compared to its original state. The meat must look naturally fresh and premium, with the deep red and white fat marbling colors gently intensified, but absolutely not over-saturated or artificially "plastic." The goal is a realistic, not exaggerated, improvement.
+
+No Additions/Removals: Do NOT add any garnishes, herbs, sauces, or seasonings (no salt, no pepper). Do NOT use the cooling rack, the pepper bowl, or the fork from image_1.png. The scene is pristine and clean, consisting only of the identified beef cuts.
+
+State: Keep the EXACT identity, fibers, shape, and structure of each piece. Do NOT change its state (e.g., from raw to cooked). Do NOT remove fat, bones, or any natural elements.
+
+Focus: Maintain an absolute, deep focus. Every fiber and detail of the meat and bone on all pieces must be sharp.
+
+2. Camera Angle & Composition (STRICT RULES):
+
+Perspective: Perfect 180-degree top-down view (Flat lay).
+
+Framing & Zoom-Out (CRITICAL): Do NOT make a close-up or crop any part of the meat cuts. Implement a significant zoom-out effect. The group of meat cuts should occupy approximately 40-50% of the vertical frame height, leaving substantial empty negative space of the light marble texture visible all around the cuts.
+
+No Crowding: Ensure the composition feels very 'airy' and uncrowded. Maintain the precise relative arrangement of the cuts as shown in the source within this expanded frame.
+
+3. Environment & Texture (Enhancements allowed):
+
+Background: The scene is set on the luxurious, textured lighter marble cutting board background. Enhance and intensify the intricate details of this texture to create a high-end, clean, and professional surface.
+
+Background Extension: Extend the light marble texture to fill the entire vast expanded frame from edge to edge.
+
+Color & Contrast: Deepen natural red/pink tones and brighten white fat marbling for maximum visual contrast. The subject should glisten with a natural moisture, appearing vibrant.
+
+4. Lighting (CRITICAL CHANGE):
+
+Style: Professional, soft-focus natural studio lighting. This light should be designed to flatter raw meat without creating harsh shadows or an overly dramatic "Chiaroscuro" effect.
+
+Effect: The light must emphasize the micro-texture and marbling, making the subjects look naturally fresh and juicy, not stylized. The fall-off towards the periphery should be soft and gradual. The lighting should feel tailored to highlight the symmetry and composition.
+
+5. Execution:
+
+A seamless, flawless commercial product shot.
+
+No text, logos, or watermarks.
+
+No artificial, "plastic" or AI-generated textures. Absolute photorealism.`,
   },
   {
     key: 'custom',
