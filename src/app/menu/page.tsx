@@ -415,7 +415,7 @@ function LabContent() {
 
           {/* Main presets */}
           <div className="grid grid-cols-4 gap-2">
-            {STYLE_PRESETS.filter(p => !['butcher', 'marble', 'custom'].includes(p.key)).map(preset => (
+            {STYLE_PRESETS.filter(p => !['butcher', 'skewers', 'marble', 'custom'].includes(p.key)).map(preset => (
               <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} />
             ))}
           </div>
@@ -427,8 +427,8 @@ function LabContent() {
               <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">לקצביות בלבד</span>
               <div className="flex-1 h-px bg-[var(--border)]" />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {STYLE_PRESETS.filter(p => ['butcher', 'marble'].includes(p.key)).map(preset => (
+            <div className="grid grid-cols-3 gap-2">
+              {STYLE_PRESETS.filter(p => ['butcher', 'skewers', 'marble'].includes(p.key)).map(preset => (
                 <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} wide />
               ))}
             </div>

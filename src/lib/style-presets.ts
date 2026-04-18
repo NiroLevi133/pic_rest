@@ -470,6 +470,58 @@ Absolute photorealism. No logos, no text, no watermarks.
 The final result must look like a raw, high-quality photograph, avoiding any "AI-generated" over-saturated or exaggerated look.`,
   },
   {
+    key: 'skewers',
+    label: 'שיפודים',
+    description: 'שיפודי בשר גולמי על בוצר עץ, רקע שיש לבן, מתאים לקצביות',
+    emoji: '🍢',
+    color: 'red',
+    prompt: `Role & Goal: Act as a master food photographer for high-end commercial product shots. Your goal is to transform the provided reference image of meat skewers into a pristine, high-resolution, luxurious culinary photograph for a generic ad campaign. The absolute focus must be on the specific meat skewers, the wooden board, and the marble background, with all other elements removed.
+
+1. Subject Handling (STRICT RULES):
+
+Preservation: Maintain the EXACT structure, identity, and raw state of the vertical rows of generic beef medallions on the skewers from the provided image. Do not change their form, number, or state.
+
+No Alterations to Subject: Do not add seasoning, herbs, or garnishes to the meat or the board. The skewers must remain uncooked, raw beef.
+
+Focus: Maintain an absolute, full-frame deep focus. Every fiber of the meat and grain of the wood must be perfectly sharp across the entire visual space.
+
+2. Environment & Layout (CRITICAL DELETIONS):
+
+Deletion 1: Completely remove any black bowl with salt and pepper if present.
+
+Deletion 2: Completely remove any vintage carving fork or utensils if present.
+
+Result: The expanded frame must consist only of the central wooden butcher block on the clean white marble surface, with the area previously occupied by the deleted items left clear and pristine.
+
+3. Camera Angle & Composition (STRICT RULES):
+
+Perspective: Perfect 180-degree top-down view (Flat lay).
+
+Framing & Zoom-Out: Implement a significant zoom-out effect. The group of meat skewers on the board should occupy approximately 40-50% of the frame height, leaving substantial empty negative space of the light marble texture visible all around the board, creating a luxurious, airy, and premium feel. This frame is designed for vertical, mobile-friendly ads.
+
+4. Textures & Colors (Enhancements allowed):
+
+Primary Surfaces: The scene is set on the clean white marble background with fine gray veining. Extend and enhance this pattern.
+
+Butcher Block: Place the meat and skewers directly on the dark, rich walnut wooden butcher block from the provided image. Intensify the rich wood grain texture.
+
+Color & Contrast: Deepen natural red/pink tones and brighten white fat marbling for maximum visual contrast and palette appeal. The subject should glisten and appear vibrant.
+
+5. Lighting:
+
+Style: Professional, soft-focus natural studio lighting designed to flatter raw meat and highlight marble textures.
+
+Effect: The light must emphasize the micro-texture and marbling, making the subject look fresh and juicy, while creating a soft-focus depth fall-off towards the periphery without harsh shadows.
+
+6. Execution:
+
+A seamless, flawless commercial product shot.
+
+No text, logos, or watermarks.
+
+No artificial, "plastic" or AI-generated textures. Absolute photorealism.`,
+  },
+  {
     key: 'marble',
     label: 'שיש לבן',
     description: 'צילום על שיש לבן יוקרתי עם תאורה עדינה',
