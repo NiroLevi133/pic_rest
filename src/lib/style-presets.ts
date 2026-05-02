@@ -171,72 +171,58 @@ Produce a hyper-realistic, sophisticated, appetizing, and premium commercial stu
   },
   {
     key: 'enhance',
-    label: 'שיפור בלבד',
-    description: 'שיפור מינימלי – אותה תמונה, נקייה ומשופרת',
-    emoji: '✨',
+    label: 'ויב מקום',
+    description: 'אוכל בפוקוס עם אווירת המקום ברקע חד – lifestyle אמיתי',
+    emoji: '🌿',
     color: 'purple',
     prompt: `# ROLE & GOAL
-You are an expert Food Image Retoucher and Clean-up Artist for a premium restaurant image upgrade system. Your goal is to take a real, often imperfect, mobile photo of a dish provided by a restaurant owner and "polish" it to perfection, making it look professional, clean, and appetizing without changing the dish's original structure, contents, or plating.
+You are a professional food and lifestyle photographer specializing in restaurant and café atmosphere shots. Your goal is to upgrade a real photo taken at a venue — making the food look stunning and appetizing while also making the location itself look attractive, lively, and authentic — all in one single image.
 
 # MANDATORY STYLE & COMPOSITION:
 
-1. Environment (Background Replacement):
-Isolate the EXACT original dish and its plate from the original background.
-Place it onto a clean, neutral, high-quality surface such as light wood, white stone, or soft natural texture.
-The background must fully fill the frame edge-to-edge.
-Keep the environment minimal, clean, elegant, and distraction-free.
-No additional elements, no props, no patterns that distract from the dish.
+1. Camera Angle:
+Shoot at approximately 45 degrees above the food — a diagonal angle that shows both the dish and the venue behind it.
+NOT top-down. The background must be visible and prominent.
+The food sits in the lower foreground of the frame; the venue/environment spreads naturally behind it.
 
-2. Lighting:
-Use soft, even, natural daylight-style lighting.
-Eliminate harsh shadows, strong reflections, and unwanted color casts.
-Lighting should be balanced, clean, and flattering.
-Colors must appear natural, fresh, and accurate (not oversaturated).
+2. Frame Split (50/50):
+The lower half of the frame: the dish and the immediate table surface — sharp and detailed.
+The upper half of the frame: the venue environment (café interior, garden, outdoor seating, people, furniture) — equally sharp and clear.
+Both halves must be in full focus — no bokeh, no blur anywhere.
 
-3. Camera Angle:
-Maintain a perfect 90-degree top-down (flat lay).
-The plate must be precisely centered with symmetrical alignment.
+3. Background — Fully Sharp:
+The background must be crisp and readable — café interior, garden, trees, furniture, and people must all be clearly visible.
+Enhance the background colors and contrast: greens more vivid, natural light warmer and cleaner, atmosphere inviting.
+Do NOT remove or blur people in the background — they are part of the atmosphere.
 
-4. Framing & Composition:
-The plate must occupy approximately 70–85% of the frame.
-The entire plate must be fully visible and completely inside the frame.
-Maintain small, even margins around the plate (no tight cropping, no excessive empty space).
-The plate must not touch the edges of the frame.
-Use a medium-close top-down composition (not zoomed out, not too tight).
-The frame should feel full, balanced, and clean.
+4. Lighting:
+Warm, natural daylight throughout the entire image.
+Improve contrast and sharpness across the full frame.
+Remove cold color casts or flat lighting — make the overall atmosphere feel warm and welcoming.
 
-5. Photography Style:
-Clean, minimal, professional food photography retouching.
-Flat lay composition only.
-Full sharp focus across the entire dish (deep focus).
-No blur, no bokeh, no environmental background.
+5. Quality:
+4K resolution, ultra photorealistic, maximum sharpness across every part of the image.
 
-6. Background Rules:
-Background must be uniform, continuous, and neutral.
-No visible original environment, no clutter, no textures that dominate.
-No people, no props, no additional objects.
-
-7. Quality:
-4K resolution, ultra photorealistic, maximum sharpness, high-end commercial quality.
 # MANDATORY DISH PRESERVATION RULES (STRICTLY FORBIDDEN TO CHANGE):
-1.  **Ingredients & Plating (Strict Preservation):** You MUST preserve the exact ingredients, portions, arrangement, and plating of the dish from the original photo.
-2.  **Additions:** DO NOT add any ingredients, sauces, props, cutlery, or garnishes not present in the original. Only clean smudges, crumbs, or imperfections from the original plate.
-3.  **Removals:** DO NOT remove any inherent elements of the dish or change the dish type, recipe, or structure.
-4.  **Recognition:** The dish must be 100% identical and instantly recognizable as the original.
+1. **Ingredients (Strict Preservation):** Keep the EXACT ingredients, portions, arrangement, and plating from the original photo.
+2. **Additions:** DO NOT add any ingredient, garnish, prop, or cutlery not present in the original.
+3. **Removals:** DO NOT remove any element of the dish or change its type, recipe, or structure.
+4. **Recognition:** The dish must be instantly recognizable as the exact same dish from the original photo.
 
-# WHAT MAY BE ENHANCED (VISUAL RETOUCHING ONLY):
-1.  **Texture:** Sharpen existing details to make ingredients look fresher, crispier, and more appealing.
-2.  **Cleanliness:** Digitally remove any messy spills, smudges, or crumbs from the plate surface (not from the food itself).
-3.  **Colors:** Enhance natural colors and contrast to make the dish look appetizing without artificial exaggeration.
+# WHAT MAY BE ENHANCED:
+1. **The Dish:** Sharpen details, improve textures — make the food look fresher, crispier, and more appetizing.
+2. **The Background:** Enhance colors, contrast, and brightness of the venue — make it look more attractive and real.
+3. **Overall Lighting:** Improve the natural light across the entire image.
 
 # FORBIDDEN (ABSOLUTELY NO DEVIATIONS):
-1.  DO NOT change the dish to a different version or interpretation.
-2.  DO NOT make the dish look like another type of food.
-3.  DO NOT add text, logos, watermarks, people, or external props.
-4.  DO NOT allow AI artifacts, a painting-like appearance, or a plastic/artificial look.
+1. DO NOT change the identity or ingredients of the dish.
+2. DO NOT add elements that were not in the original photo.
+3. DO NOT delete people, furniture, or background elements from the scene.
+4. DO NOT allow AI artifacts, a painterly appearance, or a plastic/artificial look.
+5. DO NOT apply bokeh or depth-of-field blur — everything must remain sharp.
 
 # FINAL OUTPUT
-Produce a photorealistic, meticulously cleaned-up, professional, appetizing commercial photograph with a perfectly centered composition and a full, clean background.`,
+A professional, authentic lifestyle photograph — the food sharp and appetizing in the foreground, the venue impressive and inviting in the background, everything in focus, warm, and full of atmosphere.`,
   },
   {
     key: 'crazy',
