@@ -13,7 +13,7 @@ export async function GET(_req: NextRequest, { params }: { params: { userId: str
         orderBy: { createdAt: 'asc' },
         include: {
           dishes: {
-            select: { id: true, name: true, description: true, price: true, status: true, ingredients: true },
+            select: { id: true, name: true, description: true, price: true, status: true, ingredients: true, hidden: true },
             orderBy: { createdAt: 'asc' },
           },
         },
@@ -31,7 +31,7 @@ export async function GET(_req: NextRequest, { params }: { params: { userId: str
         menus: menus.map(m => ({
           id: m.id,
           name: m.name,
-          dishes: m.dishes.map(d => ({
+          dishes: m.dishes.filter(d => !d.hidden).map(d => ({
             id: d.id,
             name: d.name,
             description: d.description ?? null,

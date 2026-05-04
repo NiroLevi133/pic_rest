@@ -44,6 +44,7 @@ model Dish {
   ingredients    String
   prompt         String
   status         String      @default("PENDING")
+  hidden         Boolean     @default(false)
   imageUrl       String?
   referenceImage String?
   errorMessage   String?

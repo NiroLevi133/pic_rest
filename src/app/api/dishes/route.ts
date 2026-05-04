@@ -23,8 +23,41 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   const menuId = req.nextUrl.searchParams.get('menuId');
+  const all = req.nextUrl.searchParams.get('all') === 'true';
 
   try {
+    if (all) {
+      const menus = await prisma.menu.findMany({
+        where: { userId, NOT: { styleKey: { startsWith: 'lab_' } } },
+        orderBy: { createdAt: 'asc' },
+        include: {
+          dishes: {
+            select: { id: true, name: true, price: true, ingredients: true, status: true, hidden: true },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
+      return NextResponse.json({
+        success: true,
+        data: menus.map(m => ({
+          id: m.id,
+          name: m.name,
+          dishes: m.dishes.map(d => ({
+            id: d.id,
+            menuId: m.id,
+            name: d.name,
+            price: d.price ?? '',
+            hidden: d.hidden,
+            hasImage: d.status === 'DONE',
+            ingredients: (() => {
+              try { const p = JSON.parse(d.ingredients); return Array.isArray(p) ? p.join(', ') : ''; }
+              catch { return ''; }
+            })(),
+          })),
+        })),
+      });
+    }
+
     if (menuId) {
       // Verify this menu belongs to the user
       const menu = await prisma.menu.findFirst({
