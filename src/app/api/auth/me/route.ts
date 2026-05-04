@@ -9,5 +9,5 @@ export async function GET(req: NextRequest) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return NextResponse.json({ success: false, error: 'User not found' }, { status: 404 });
 
-  return NextResponse.json({ success: true, data: { userId: user.id, phone: user.phone } });
+  return NextResponse.json({ success: true, data: { userId: user.id, phone: user.phone, restaurantName: user.restaurantName ?? null } });
 }

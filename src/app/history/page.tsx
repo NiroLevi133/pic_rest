@@ -780,30 +780,29 @@ function BulkEditModal({ menuId, menuName, onClose }: { menuId: string; menuName
   );
 }
 
-/* ── QR Code modal ───────────────────────────────────────────────── */
+/* ── QR Code modal (restaurant-level) ───────────────────────────── */
 function QrModal({
-  menuId,
-  menuName,
+  restaurantUrl,
+  restaurantName,
   onClose,
 }: {
-  menuId: string;
-  menuName: string;
+  restaurantUrl: string;
+  restaurantName: string;
   onClose: () => void;
 }) {
-  const storageKey = `qr_${menuId}`;
-  const [qrData, setQrData] = useState<string | null>(() => {
-    try { return localStorage.getItem(storageKey); } catch { return null; }
-  });
+  const storageKey = 'qr_restaurant';
+  const [qrData, setQrData] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const menuUrl = typeof window !== 'undefined' ? `${window.location.origin}/r/${menuId}` : `/r/${menuId}`;
-
   useEffect(() => {
-    if (qrData) return;
+    try {
+      const cached = localStorage.getItem(storageKey);
+      if (cached) { setQrData(cached); return; }
+    } catch { /* ignore */ }
     setGenerating(true);
     import('qrcode').then(({ default: QRCode }) =>
-      QRCode.toDataURL(menuUrl, { width: 480, margin: 2, color: { dark: '#0C0A09', light: '#FFFFFF' } })
+      QRCode.toDataURL(restaurantUrl, { width: 480, margin: 2, color: { dark: '#0C0A09', light: '#FFFFFF' } })
     ).then(dataUrl => {
       setQrData(dataUrl);
       try { localStorage.setItem(storageKey, dataUrl); } catch { /* quota */ }
@@ -812,7 +811,7 @@ function QrModal({
   }, []);
 
   async function handleCopyLink() {
-    await navigator.clipboard.writeText(menuUrl);
+    await navigator.clipboard.writeText(restaurantUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -821,7 +820,7 @@ function QrModal({
     if (!qrData) return;
     const a = document.createElement('a');
     a.href = qrData;
-    a.download = `qr-${menuName}.png`;
+    a.download = `qr-${restaurantName}.png`;
     a.click();
   }
 
@@ -832,18 +831,16 @@ function QrModal({
         onClick={e => e.stopPropagation()}
         dir="rtl"
       >
-        {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border)]">
           <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text)]">
             <X className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <p className="font-semibold text-sm">QR קוד לתפריט</p>
-            <p className="text-xs text-[var(--text-muted)] truncate">{menuName}</p>
+            <p className="font-semibold text-sm">QR קוד למסעדה</p>
+            <p className="text-xs text-[var(--text-muted)] truncate">{restaurantName}</p>
           </div>
         </div>
 
-        {/* QR content */}
         <div className="p-5 flex flex-col items-center gap-4">
           {generating ? (
             <div className="w-48 h-48 flex items-center justify-center">
@@ -857,12 +854,11 @@ function QrModal({
           ) : null}
 
           <p className="text-xs text-[var(--text-muted)] text-center">
-            סרוק לצפייה בתפריט הדיגיטלי
+            סרוק לצפייה בכל תפריטי המסעדה
           </p>
 
-          {/* URL pill */}
           <div className="flex items-center gap-2 w-full bg-[var(--surface2)] rounded-xl px-3 py-2 border border-[var(--border)]">
-            <span className="flex-1 text-xs text-[var(--text-muted)] truncate" dir="ltr">{menuUrl}</span>
+            <span className="flex-1 text-xs text-[var(--text-muted)] truncate" dir="ltr">{restaurantUrl}</span>
             <button
               onClick={handleCopyLink}
               className="text-xs text-[var(--accent)] font-medium shrink-0 transition-opacity hover:opacity-70"
@@ -871,7 +867,6 @@ function QrModal({
             </button>
           </div>
 
-          {/* Actions */}
           <button
             onClick={handleDownload}
             disabled={!qrData}
@@ -910,7 +905,6 @@ function MenuDetail({
   const [editDish, setEditDish] = useState<DishItem | null>(null);
   const [regenerateDish, setRegenerateDish] = useState<DishItem | null>(null);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
-  const [showQr, setShowQr] = useState(false);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, number>>(new Map());
   // imageIndexMap tracks which history image is shown per dish (0 = newest)
@@ -1071,13 +1065,6 @@ function MenuDetail({
               <span className="text-xs text-[var(--text-muted)]">{done}/{total} הושלמו</span>
             </div>
           </div>
-          <button
-            onClick={() => setShowQr(true)}
-            title="QR קוד לתפריט"
-            className="text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"
-          >
-            <QrCode className="w-4 h-4" />
-          </button>
           <button
             onClick={() => setShowBulkEdit(true)}
             title="עריכת תפריט"
@@ -1320,14 +1307,6 @@ function MenuDetail({
         />
       )}
 
-      {showQr && (
-        <QrModal
-          menuId={category.id}
-          menuName={category.name}
-          onClose={() => setShowQr(false)}
-        />
-      )}
-
       {/* Carousel modal */}
       {carouselSlides && (
         <div className="fixed inset-0 z-50 bg-black/90 flex items-end sm:items-center justify-center p-4" onClick={() => setCarouselSlides(null)}>
@@ -1441,6 +1420,20 @@ export default function MenusPage() {
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
   const selectedCat = selectedCatId ? (categories.find(c => c.id === selectedCatId) ?? null) : null;
   const scanRef = useRef<HTMLInputElement>(null);
+  const [showQr, setShowQr] = useState(false);
+  const [restaurantInfo, setRestaurantInfo] = useState<{ userId: string; name: string } | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) setRestaurantInfo({
+          userId: d.data.userId,
+          name: d.data.restaurantName ?? 'המסעדה שלי',
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const loadCategories = useCallback(async () => {
     setLoadError('');
@@ -1529,6 +1522,15 @@ export default function MenusPage() {
         <div className="flex gap-2">
           <button
             type="button"
+            onClick={() => setShowQr(true)}
+            className="btn-secondary gap-2 text-sm"
+            title="QR קוד למסעדה"
+          >
+            <QrCode className="w-4 h-4" />
+            <span className="hidden sm:inline">QR קוד</span>
+          </button>
+          <button
+            type="button"
             onClick={() => router.push('/restaurant')}
             className="btn-secondary gap-2 text-sm"
             title="עמוד מסעדה"
@@ -1605,6 +1607,15 @@ export default function MenusPage() {
           onCreated={handleCreated}
           initialDishes={scanModal.dishes}
           initialName={scanModal.name}
+        />
+      )}
+
+      {/* QR modal */}
+      {showQr && restaurantInfo && (
+        <QrModal
+          restaurantUrl={`${window.location.origin}/p/${restaurantInfo.userId}`}
+          restaurantName={restaurantInfo.name}
+          onClose={() => setShowQr(false)}
         />
       )}
 
