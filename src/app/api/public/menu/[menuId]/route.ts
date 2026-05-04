@@ -21,9 +21,9 @@ export async function GET(_req: NextRequest, { params }: { params: { menuId: str
       data: {
         id: menu.id,
         name: menu.name,
-        restaurantName: menu.user.restaurantName ?? 'המסעדה שלי',
-        restaurantLogo: menu.user.restaurantLogo ?? null,
-        restaurantStyle: menu.user.restaurantStyle ?? null,
+        restaurantName: menu.user?.restaurantName ?? 'המסעדה שלי',
+        restaurantLogo: menu.user?.restaurantLogo ?? null,
+        restaurantStyle: menu.user?.restaurantStyle ?? null,
         dishes: menu.dishes.map(d => ({
           id: d.id,
           name: d.name,

@@ -1384,7 +1384,10 @@ function MenuCard({ category, onClick }: { category: Category; onClick: () => vo
   const done = category.dishes.filter(d => d.status === 'DONE').length;
   const total = category.dishes.length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  const hasQr = typeof window !== 'undefined' && !!localStorage.getItem(`qr_${category.id}`);
+  const [hasQr, setHasQr] = useState(false);
+  useEffect(() => {
+    setHasQr(!!localStorage.getItem(`qr_${category.id}`));
+  }, [category.id]);
 
   return (
     <button
