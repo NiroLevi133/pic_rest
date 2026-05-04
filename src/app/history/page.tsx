@@ -1514,54 +1514,57 @@ export default function MenusPage() {
   return (
     <div className="max-w-2xl mx-auto" dir="rtl">
       {/* Top bar */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-3">
         <div>
           <h1 className="text-2xl font-bold">ניהול תפריטים</h1>
           <p className="text-[var(--text-muted)] text-sm">{categories.length} תפריטים</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowQr(true)}
-            className="btn-secondary gap-2 text-sm"
-            title="QR קוד למסעדה"
-          >
-            <QrCode className="w-4 h-4" />
-            <span className="hidden sm:inline">QR קוד</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => router.push('/restaurant')}
-            className="btn-secondary gap-2 text-sm"
-            title="עמוד מסעדה"
-          >
-            <Store className="w-4 h-4" />
-            <span className="hidden sm:inline">עמוד מסעדה</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => scanRef.current?.click()}
-            disabled={scanning}
-            className="btn-secondary gap-2 text-sm"
-          >
-            {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
-            {scanning ? 'סורק...' : 'סרוק תפריט'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowCreateModal(true)}
-            className="btn-primary gap-2 text-sm"
-          >
-            <Plus className="w-4 h-4" /> הוספת תפריט
-          </button>
-        </div>
+        {/* Primary action — always visible */}
+        <button
+          type="button"
+          onClick={() => setShowCreateModal(true)}
+          className="btn-primary gap-2 text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          <span className="hidden sm:inline">הוספת תפריט</span>
+          <span className="sm:hidden">הוסף</span>
+        </button>
+      </div>
+
+      {/* Secondary actions row */}
+      <div className="flex gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setShowQr(true)}
+          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+        >
+          <QrCode className="w-4 h-4" /> QR קוד
+        </button>
+        <button
+          type="button"
+          onClick={() => router.push('/restaurant')}
+          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+        >
+          <Store className="w-4 h-4" /> עמוד מסעדה
+        </button>
+        <button
+          type="button"
+          onClick={() => scanRef.current?.click()}
+          disabled={scanning}
+          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+        >
+          {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+          {scanning ? 'סורק...' : 'סרוק'}
+        </button>
+      </div>
+
+      <div className="hidden">
         <input ref={scanRef} type="file" accept="image/*" className="hidden" onChange={handleScanMenu} />
       </div>
-      {scanError && <p className="text-red-400 text-sm text-center -mt-3">{scanError}</p>}
 
       {/* Grid */}
       {loading ? (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="aspect-[3/4] rounded-2xl bg-[var(--surface2)] animate-pulse" />
           ))}
@@ -1581,7 +1584,7 @@ export default function MenusPage() {
           <p className="text-sm">לחץ "הוספת תפריט" או "סרוק תפריט" כדי להתחיל</p>
         </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {categories.map(cat => (
             <MenuCard
               key={cat.id}
