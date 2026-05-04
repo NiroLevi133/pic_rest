@@ -29,6 +29,18 @@ export async function POST(req: NextRequest) {
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
+    // Quota check — count total generated images for this user
+    const MAX_IMAGES = parseInt(process.env.MAX_IMAGES_PER_USER || '200');
+    const imageCount = await prisma.dishImage.count({
+      where: { dish: { menu: { userId } } },
+    });
+    if (imageCount >= MAX_IMAGES) {
+      return NextResponse.json(
+        { success: false, error: `הגעת למגבלת ${MAX_IMAGES} תמונות. צור קשר לשדרוג.` },
+        { status: 429 }
+      );
+    }
+
     const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote, advancedOptions, captionOverlay } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
 

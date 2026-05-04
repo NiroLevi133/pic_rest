@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getUserIdFromRequest } from '@/lib/auth';
 import { getPresetPrompt } from '@/lib/style-presets';
 import { generateDynamicPrompt } from '@/lib/art-director';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
@@ -22,13 +23,16 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const userId = getUserIdFromRequest(req);
+  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+
   const dishId = params.id;
   console.log('[POST /api/generate/[id]] entered');
   console.log('[POST /api/generate/[id]] dishId =', dishId);
 
   try {
     const dish = await prisma.dish.findUnique({
-      where: { id: dishId },
+      where: { id: dishId, menu: { userId } },
       include: { menu: { include: { user: true } } },
     });
 
