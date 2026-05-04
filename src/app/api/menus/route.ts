@@ -16,7 +16,6 @@ export async function GET(req: NextRequest) {
         id: true,
         name: true,
         styleKey: true,
-        qrCode: true,
         createdAt: true,
         dishes: {
           select: {
@@ -39,7 +38,6 @@ export async function GET(req: NextRequest) {
       id: m.id,
       name: m.name,
       styleKey: m.styleKey ?? null,
-      qrCode: m.qrCode ?? null,
       createdAt: m.createdAt.toISOString(),
       dishes: m.dishes.map((d) => ({
         id: String(d.id),

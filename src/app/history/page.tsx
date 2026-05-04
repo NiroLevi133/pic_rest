@@ -30,7 +30,6 @@ interface Category {
   id: string;
   name: string;
   styleKey: string | null;
-  qrCode?: string | null;
   createdAt: string;
   dishes: DishItem[];
 }
@@ -785,17 +784,16 @@ function BulkEditModal({ menuId, menuName, onClose }: { menuId: string; menuName
 function QrModal({
   menuId,
   menuName,
-  savedQr,
-  onSaved,
   onClose,
 }: {
   menuId: string;
   menuName: string;
-  savedQr: string | null | undefined;
-  onSaved: (dataUrl: string) => void;
   onClose: () => void;
 }) {
-  const [qrData, setQrData] = useState<string | null>(savedQr ?? null);
+  const storageKey = `qr_${menuId}`;
+  const [qrData, setQrData] = useState<string | null>(() => {
+    try { return localStorage.getItem(storageKey); } catch { return null; }
+  });
   const [generating, setGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -808,12 +806,7 @@ function QrModal({
       QRCode.toDataURL(menuUrl, { width: 480, margin: 2, color: { dark: '#0C0A09', light: '#FFFFFF' } })
     ).then(dataUrl => {
       setQrData(dataUrl);
-      onSaved(dataUrl);
-      fetch(`/api/menus/${menuId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrCode: dataUrl }),
-      }).catch(() => {});
+      try { localStorage.setItem(storageKey, dataUrl); } catch { /* quota */ }
     }).finally(() => setGenerating(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -918,7 +911,6 @@ function MenuDetail({
   const [regenerateDish, setRegenerateDish] = useState<DishItem | null>(null);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showQr, setShowQr] = useState(false);
-  const [savedQr, setSavedQr] = useState<string | null>(category.qrCode ?? null);
   const [generatingIds, setGeneratingIds] = useState<Set<string>>(new Set());
   const [progressMap, setProgressMap] = useState<Map<string, number>>(new Map());
   // imageIndexMap tracks which history image is shown per dish (0 = newest)
@@ -1332,8 +1324,6 @@ function MenuDetail({
         <QrModal
           menuId={category.id}
           menuName={category.name}
-          savedQr={savedQr}
-          onSaved={dataUrl => setSavedQr(dataUrl)}
           onClose={() => setShowQr(false)}
         />
       )}
@@ -1394,6 +1384,7 @@ function MenuCard({ category, onClick }: { category: Category; onClick: () => vo
   const done = category.dishes.filter(d => d.status === 'DONE').length;
   const total = category.dishes.length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+  const hasQr = typeof window !== 'undefined' && !!localStorage.getItem(`qr_${category.id}`);
 
   return (
     <button
@@ -1405,7 +1396,7 @@ function MenuCard({ category, onClick }: { category: Category; onClick: () => vo
       {/* Style emoji + QR indicator */}
       <div className="flex items-start justify-between">
         <div className="text-2xl">{preset?.emoji ?? '📂'}</div>
-        {category.qrCode && (
+        {hasQr && (
           <QrCode className="w-3.5 h-3.5 text-[var(--accent)] opacity-60" />
         )}
       </div>
