@@ -7,6 +7,7 @@ import {
   Trash2, X, Check, ArrowRight, FolderOpen, Camera, Zap,
   Download, Share2, Pencil, RefreshCw, ChevronLeft, ChevronRight,
   GalleryHorizontal, Store, TableProperties, ExternalLink, QrCode,
+  Eye, EyeOff, ListOrdered,
 } from 'lucide-react';
 import { STYLE_PRESETS } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
@@ -1357,6 +1358,188 @@ function MenuDetail({
   );
 }
 
+/* ── Edit all menus modal ────────────────────────────────────────── */
+interface EditableDish {
+  id: string;
+  menuId: string;
+  name: string;
+  ingredients: string;
+  price: string;
+  hidden: boolean;
+  hasImage: boolean;
+}
+
+interface EditableMenu {
+  id: string;
+  name: string;
+  dishes: EditableDish[];
+}
+
+function EditAllMenusModal({ onClose }: { onClose: () => void }) {
+  const [menus, setMenus] = useState<EditableMenu[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    fetch('/api/dishes?all=true')
+      .then(r => r.json())
+      .then(d => { if (d.success) setMenus(d.data); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  function updateDish(dishId: string, field: keyof EditableDish, value: string | boolean) {
+    setMenus(prev => prev.map(m => ({
+      ...m,
+      dishes: m.dishes.map(d => d.id === dishId ? { ...d, [field]: value } : d),
+    })));
+
+    // Auto-save with debounce
+    if (timers.current.has(dishId)) clearTimeout(timers.current.get(dishId)!);
+    const t = setTimeout(async () => {
+      setSavingIds(prev => new Set(prev).add(dishId));
+      const dish = menus.flatMap(m => m.dishes).find(d => d.id === dishId);
+      if (!dish) return;
+      const updated = field === 'hidden'
+        ? { hidden: value }
+        : {
+            name: field === 'name' ? value as string : dish.name,
+            price: field === 'price' ? (value as string || null) : (dish.price || null),
+            ingredients: field === 'ingredients'
+              ? (value as string).split(',').map(s => s.trim()).filter(Boolean)
+              : dish.ingredients.split(',').map(s => s.trim()).filter(Boolean),
+            hidden: dish.hidden,
+          };
+      await fetch(`/api/dishes/${dishId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      }).catch(() => {});
+      setSavingIds(prev => { const s = new Set(prev); s.delete(dishId); return s; });
+    }, field === 'hidden' ? 0 : 800);
+    timers.current.set(dishId, t);
+  }
+
+  async function deleteDish(dishId: string, dishName: string) {
+    if (!confirm(`למחוק את "${dishName}" לצמיתות? התמונה תימחק גם היא.`)) return;
+    await fetch(`/api/dishes/${dishId}`, { method: 'DELETE' });
+    setMenus(prev => prev.map(m => ({ ...m, dishes: m.dishes.filter(d => d.id !== dishId) })));
+  }
+
+  const totalDishes = menus.reduce((sum, m) => sum + m.dishes.length, 0);
+  const hiddenCount = menus.reduce((sum, m) => sum + m.dishes.filter(d => d.hidden).length, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-end sm:items-center justify-center p-0 sm:p-4" onClick={onClose}>
+      <div
+        className="bg-[var(--surface)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+        onClick={e => e.stopPropagation()}
+        dir="rtl"
+      >
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--border)] shrink-0">
+          <button onClick={onClose} className="text-[var(--text-muted)] hover:text-[var(--text)]">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="flex-1">
+            <h2 className="font-bold text-base">ערוך תפריט</h2>
+            <p className="text-xs text-[var(--text-muted)] mt-0.5">
+              {totalDishes} מנות
+              {hiddenCount > 0 && <span className="text-orange-400 me-1"> · {hiddenCount} מוסתרות</span>}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+            <EyeOff className="w-3.5 h-3.5" /> הסתר
+            <span className="mx-1">·</span>
+            <X className="w-3.5 h-3.5" /> מחק
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex justify-center py-16">
+              <Loader2 className="w-7 h-7 animate-spin text-[var(--accent)]" />
+            </div>
+          ) : menus.length === 0 ? (
+            <p className="text-center text-[var(--text-muted)] py-16 text-sm">אין תפריטים עדיין</p>
+          ) : (
+            menus.map(menu => (
+              <div key={menu.id}>
+                {/* Menu section header */}
+                <div className="sticky top-0 z-10 bg-[var(--surface2)] px-5 py-2 border-b border-[var(--border)]">
+                  <p className="text-xs font-semibold text-[var(--accent)] uppercase tracking-wide">{menu.name}</p>
+                </div>
+
+                {menu.dishes.length === 0 ? (
+                  <p className="px-5 py-3 text-xs text-[var(--text-muted)]">אין מנות</p>
+                ) : (
+                  menu.dishes.map(dish => (
+                    <div
+                      key={dish.id}
+                      className={`flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] transition-opacity ${dish.hidden ? 'opacity-40' : ''}`}
+                    >
+                      {/* Hide toggle */}
+                      <button
+                        type="button"
+                        onClick={() => updateDish(dish.id, 'hidden', !dish.hidden)}
+                        title={dish.hidden ? 'הצג בתפריט' : 'הסתר מהתפריט'}
+                        className={`shrink-0 transition-colors ${dish.hidden ? 'text-orange-400' : 'text-[var(--text-muted)] hover:text-[var(--accent)]'}`}
+                      >
+                        {dish.hidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+
+                      {/* Fields */}
+                      <div className="flex-1 grid grid-cols-1 sm:grid-cols-[1fr_1fr_80px] gap-1.5 min-w-0">
+                        <input
+                          value={dish.name}
+                          onChange={e => updateDish(dish.id, 'name', e.target.value)}
+                          placeholder="שם מנה"
+                          dir="rtl"
+                          className="bg-transparent border border-transparent hover:border-[var(--border)] focus:border-[var(--accent)] rounded-lg px-2 py-1 text-sm outline-none w-full"
+                        />
+                        <input
+                          value={dish.ingredients}
+                          onChange={e => updateDish(dish.id, 'ingredients', e.target.value)}
+                          placeholder="מרכיבים (מופרדים בפסיק)"
+                          dir="rtl"
+                          className="bg-transparent border border-transparent hover:border-[var(--border)] focus:border-[var(--accent)] rounded-lg px-2 py-1 text-sm outline-none w-full text-[var(--text-muted)]"
+                        />
+                        <input
+                          value={dish.price}
+                          onChange={e => updateDish(dish.id, 'price', e.target.value)}
+                          placeholder="מחיר"
+                          dir="ltr"
+                          className="bg-transparent border border-transparent hover:border-[var(--border)] focus:border-[var(--accent)] rounded-lg px-2 py-1 text-sm outline-none w-full text-[var(--text-muted)]"
+                        />
+                      </div>
+
+                      {/* Saving indicator */}
+                      {savingIds.has(dish.id) && (
+                        <Loader2 className="w-3 h-3 animate-spin text-[var(--accent)] shrink-0" />
+                      )}
+
+                      {/* Delete */}
+                      <button
+                        type="button"
+                        onClick={() => deleteDish(dish.id, dish.name)}
+                        className="shrink-0 text-[var(--text-muted)] hover:text-red-400 transition-colors p-1"
+                        title="מחק מנה"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Menu card (grid item) ──────────────────────────────────────── */
 function MenuCard({ category, onClick }: { category: Category; onClick: () => void }) {
   const preset = getPreset(category.styleKey);
@@ -1421,6 +1604,7 @@ export default function MenusPage() {
   const selectedCat = selectedCatId ? (categories.find(c => c.id === selectedCatId) ?? null) : null;
   const scanRef = useRef<HTMLInputElement>(null);
   const [showQr, setShowQr] = useState(false);
+  const [showEditAll, setShowEditAll] = useState(false);
   const [restaurantInfo, setRestaurantInfo] = useState<{ userId: string; name: string } | null>(null);
 
   useEffect(() => {
@@ -1531,27 +1715,34 @@ export default function MenusPage() {
         </button>
       </div>
 
-      {/* Secondary actions row */}
-      <div className="flex gap-2 mb-6">
+      {/* Secondary actions row — 2×2 on mobile, 4 across on sm+ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+        <button
+          type="button"
+          onClick={() => setShowEditAll(true)}
+          className="btn-primary gap-2 text-sm justify-center col-span-2 sm:col-span-1"
+        >
+          <ListOrdered className="w-4 h-4" /> ערוך תפריט
+        </button>
         <button
           type="button"
           onClick={() => setShowQr(true)}
-          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+          className="btn-secondary gap-2 text-sm justify-center"
         >
           <QrCode className="w-4 h-4" /> QR קוד
         </button>
         <button
           type="button"
           onClick={() => router.push('/restaurant')}
-          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+          className="btn-secondary gap-2 text-sm justify-center"
         >
-          <Store className="w-4 h-4" /> עמוד מסעדה
+          <Store className="w-4 h-4" /> מסעדה
         </button>
         <button
           type="button"
           onClick={() => scanRef.current?.click()}
           disabled={scanning}
-          className="btn-secondary flex-1 gap-2 text-sm justify-center"
+          className="btn-secondary gap-2 text-sm justify-center"
         >
           {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
           {scanning ? 'סורק...' : 'סרוק'}
@@ -1611,6 +1802,11 @@ export default function MenusPage() {
           initialDishes={scanModal.dishes}
           initialName={scanModal.name}
         />
+      )}
+
+      {/* Edit all menus modal */}
+      {showEditAll && (
+        <EditAllMenusModal onClose={() => setShowEditAll(false)} />
       )}
 
       {/* QR modal */}
