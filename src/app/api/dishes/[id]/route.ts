@@ -28,7 +28,13 @@ export async function GET(
   try {
     const dish = await prisma.dish.findFirst({
       where: { id: params.id, menu: { userId } },
-      include: { images: { select: { id: true }, orderBy: { createdAt: 'desc' }, take: 1 } },
+      select: {
+        id: true, menuId: true, name: true, description: true, price: true,
+        category: true, ingredients: true, prompt: true, status: true,
+        imageUrl: true, errorMessage: true, retryCount: true,
+        createdAt: true, updatedAt: true,
+        images: { select: { id: true }, orderBy: { createdAt: 'desc' }, take: 1 },
+      },
     });
     if (!dish) return NextResponse.json({ success: false, error: 'not found' }, { status: 404 });
     const { images, ...dishData } = dish;
@@ -46,7 +52,7 @@ export async function PATCH(
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const body = await req.json() as { prompt?: string; name?: string; ingredients?: string[]; price?: string | null; description?: string | null; category?: string };
+    const body = await req.json() as { prompt?: string; name?: string; ingredients?: string[]; price?: string | null; description?: string | null; category?: string; hidden?: boolean };
     const updateData: Record<string, unknown> = {};
     if (body.prompt !== undefined) updateData.prompt = body.prompt;
     if (body.name !== undefined) updateData.name = body.name.trim();
@@ -54,12 +60,13 @@ export async function PATCH(
     if (body.price !== undefined) updateData.price = body.price ?? null;
     if (body.description !== undefined) updateData.description = body.description ?? null;
     if (body.category !== undefined) updateData.category = body.category.trim();
+    if (body.hidden !== undefined) updateData.hidden = body.hidden;
 
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ success: false, error: 'No fields to update' }, { status: 400 });
     }
 
-    const existing = await prisma.dish.findFirst({ where: { id: params.id, menu: { userId } } });
+    const existing = await prisma.dish.findFirst({ where: { id: params.id, menu: { userId } }, select: { id: true } });
     if (!existing) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
     const dish = await prisma.dish.update({ where: { id: params.id }, data: updateData });
@@ -79,6 +86,7 @@ export async function DELETE(
   try {
     const dish = await prisma.dish.findFirst({
       where: { id: params.id, menu: { userId } },
+      select: { id: true },
     });
     if (!dish) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
