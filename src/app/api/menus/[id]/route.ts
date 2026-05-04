@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, styleKey } = await req.json();
+    const { name, styleKey, qrCode } = await req.json();
 
     // Single query: update only if owned by this user
     const updated = await prisma.menu.updateMany({
@@ -15,6 +15,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: {
         ...(name !== undefined && { name: name.trim() }),
         ...(styleKey !== undefined && { styleKey: styleKey || null }),
+        ...(qrCode !== undefined && { qrCode: qrCode || null }),
       },
     });
 
