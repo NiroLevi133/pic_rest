@@ -2,7 +2,8 @@ import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 
-export const SESSION_COOKIE = 'restorante_uid';
+import { SESSION_COOKIE } from './constants';
+export { SESSION_COOKIE };
 
 /** Get userId from cookie (server-side) */
 export async function getUserId(): Promise<string | null> {
