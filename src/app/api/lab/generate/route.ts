@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, dishId: rawDishId, customNote, advancedOptions, captionOverlay } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
@@ -95,7 +95,11 @@ export async function POST(req: NextRequest) {
         max_tokens: 300,
       });
       const styleDescription = analysis.choices[0]?.message?.content ?? '';
-      prompt = `${styleDescription}\n\nApply this exact photography style to the dish from the reference image. Preserve ALL original ingredients, plating, and dish structure without any changes. DO NOT add or remove any food elements. Output a photorealistic, commercial-quality food photograph.`;
+      const base = `${styleDescription}\n\nApply this exact photography style to the dish from the reference image. Preserve ALL original ingredients, plating, and dish structure without any changes. DO NOT add or remove any food elements. Output a photorealistic, commercial-quality food photograph.`;
+      prompt = customPrompt?.trim() ? `${base}\n\nAdditional user instructions: ${customPrompt.trim()}` : base;
+    } else if (styleKey === 'custom' && customPrompt?.trim()) {
+      // Free-text prompt only (no reference image)
+      prompt = `${customPrompt.trim()}\n\nApply this style to the dish in the reference image. Preserve ALL original ingredients and plating without changes. Output a photorealistic, commercial-quality food photograph.`;
     } else if (dishId && styleKey) {
       // Generating from menu — use locked series prompt for consistency
       const base = getMenuSeriesPrompt(styleKey);

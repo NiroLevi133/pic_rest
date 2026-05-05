@@ -73,6 +73,7 @@ function LabContent() {
   /* ── style ── */
   const [styleKey, setStyleKey] = useState('atmosphere');
   const [styleRefImage, setStyleRefImage] = useState<string | null>(null);
+  const [customPrompt, setCustomPrompt] = useState('');
   const styleRefFileRef = useRef<HTMLInputElement>(null);
 
   const [styleLockedFromMenu, setStyleLockedFromMenu] = useState(false);
@@ -187,6 +188,7 @@ function LabContent() {
           dishName: selectedDish,
           styleKey,
           styleRefImage,
+          customPrompt: styleKey === 'custom' && customPrompt.trim() ? customPrompt.trim() : undefined,
           captionOverlay: captionOverlay
             ? { enabled: true, text: captionText || selectedDish, style: captionStyle }
             : null,
@@ -281,7 +283,7 @@ function LabContent() {
   }
 
   const canGenerate = !!dishImage && !generating &&
-    (styleKey !== 'custom' || !!styleRefImage);
+    (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim());
 
   return (
     <div className="max-w-2xl mx-auto space-y-5" dir="rtl">
@@ -441,9 +443,20 @@ function LabContent() {
             ))}
           </div>
 
-          {/* Custom style ref image */}
+          {/* Custom style — prompt + image */}
           {styleKey === 'custom' && (
-            <div className="mt-3">
+            <div className="mt-3 space-y-2">
+              {/* Free-text prompt */}
+              <textarea
+                rows={3}
+                dir="rtl"
+                className="input resize-none text-sm w-full"
+                placeholder="כתוב פרומט חופשי — לדוגמה: צילום תקריב על רקע שיש לבן, תאורה טבעית, צבעים חמים..."
+                value={customPrompt}
+                onChange={e => setCustomPrompt(e.target.value)}
+              />
+
+              {/* Reference image upload */}
               <button
                 type="button"
                 onClick={() => styleRefFileRef.current?.click()}
@@ -457,7 +470,7 @@ function LabContent() {
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={styleRefImage} alt="סגנון" className="w-8 h-8 rounded-lg object-cover shrink-0" />
-                    <span className="flex-1 text-right text-[var(--accent)] text-xs font-medium">תמונת סגנון הועלתה</span>
+                    <span className="flex-1 text-right text-[var(--accent)] text-xs font-medium">תמונת סגנון הועלתה (אופציונלי)</span>
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); setStyleRefImage(null); }}
@@ -469,7 +482,7 @@ function LabContent() {
                 ) : (
                   <>
                     <ImagePlus className="w-4 h-4 shrink-0 text-[var(--accent)]" />
-                    <span className="flex-1 text-right text-xs">העלה תמונת השראה לסגנון</span>
+                    <span className="flex-1 text-right text-xs">תמונת השראה לסגנון (אופציונלי)</span>
                   </>
                 )}
               </button>
