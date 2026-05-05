@@ -13,12 +13,13 @@ export const prisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 
-// Auto-migrate: add any missing columns so the app works without running prisma db push manually
+// Auto-migrate: add any missing columns without needing prisma db push
 if (!globalForPrisma.dbMigrated) {
   globalForPrisma.dbMigrated = true;
-  prisma.$executeRaw`
-    ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "hidden" BOOLEAN NOT NULL DEFAULT false
-  `.catch(() => {
-    // Silently ignore — column already exists or DB not yet reachable at import time
-  });
+  Promise.all([
+    prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "hidden" BOOLEAN NOT NULL DEFAULT false`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantUrl" TEXT`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantDescription" TEXT`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantTheme" TEXT`,
+  ]).catch(() => {});
 }

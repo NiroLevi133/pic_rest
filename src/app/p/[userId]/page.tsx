@@ -23,14 +23,26 @@ interface RestaurantData {
   restaurantName: string;
   restaurantLogo: string | null;
   restaurantStyle: string | null;
+  restaurantDescription: string | null;
+  restaurantTheme: string | null;
   menus: MenuSection[];
 }
 
-function DishRow({ dish }: { dish: Dish }) {
+function getAccent(theme: string | null): string {
+  try {
+    if (!theme) return '#e85d04';
+    const parsed = JSON.parse(theme) as { primaryColor?: string };
+    return parsed.primaryColor || '#e85d04';
+  } catch {
+    return '#e85d04';
+  }
+}
+
+function DishRow({ dish, accent }: { dish: Dish; accent: string }) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 px-4 py-4 active:bg-gray-50 transition-colors">
+    <div className="flex items-center gap-3 px-4 py-4 transition-colors active:bg-gray-50">
       <div className="flex-1 min-w-0 py-0.5">
         <h3 className="font-semibold text-gray-900 text-base leading-snug">{dish.name}</h3>
         {dish.description && (
@@ -42,7 +54,7 @@ function DishRow({ dish }: { dish: Dish }) {
           </p>
         )}
         {dish.price && (
-          <p className="text-sm font-bold text-gray-900 mt-2">
+          <p className="text-sm font-bold mt-2" style={{ color: accent }}>
             ₪<span dir="ltr">{dish.price}</span>
           </p>
         )}
@@ -121,6 +133,7 @@ export default function PublicRestaurantPage() {
     );
   }
 
+  const accent = getAccent(data.restaurantTheme);
   const menus = data.menus;
 
   return (
@@ -131,7 +144,7 @@ export default function PublicRestaurantPage() {
       style={{ WebkitOverflowScrolling: 'touch' } as React.CSSProperties}
     >
       {/* Cover */}
-      <div className="relative h-44 sm:h-56 overflow-hidden bg-gray-900">
+      <div className="relative h-44 sm:h-56 overflow-hidden" style={{ backgroundColor: accent + '22' }}>
         {data.restaurantLogo ? (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -139,7 +152,7 @@ export default function PublicRestaurantPage() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-950" />
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-700 to-gray-950" style={{ background: `linear-gradient(135deg, ${accent}cc, ${accent}44)` }} />
         )}
       </div>
 
@@ -154,14 +167,18 @@ export default function PublicRestaurantPage() {
               className="w-20 h-20 sm:w-[82px] sm:h-[82px] rounded-2xl border-[3px] border-white shadow-xl object-cover bg-white"
             />
           ) : (
-            <div className="w-20 h-20 sm:w-[82px] sm:h-[82px] rounded-2xl border-[3px] border-white shadow-xl bg-gray-800 flex items-center justify-center">
-              <span className="text-3xl">🍽️</span>
+            <div className="w-20 h-20 sm:w-[82px] sm:h-[82px] rounded-2xl border-[3px] border-white shadow-xl flex items-center justify-center text-3xl"
+              style={{ background: `linear-gradient(135deg, ${accent}cc, ${accent}88)` }}>
+              🍽️
             </div>
           )}
         </div>
         <div className="pt-12">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">{data.restaurantName}</h1>
-          {data.restaurantStyle && (
+          {data.restaurantDescription && (
+            <p className="text-sm font-medium mt-1.5 leading-relaxed" style={{ color: accent }}>{data.restaurantDescription}</p>
+          )}
+          {data.restaurantStyle && !data.restaurantDescription && (
             <p className="text-sm text-gray-500 mt-1.5 leading-relaxed">{data.restaurantStyle}</p>
           )}
         </div>
@@ -176,9 +193,11 @@ export default function PublicRestaurantPage() {
                 key={menu.id}
                 ref={el => { tabRefs.current[idx] = el; }}
                 onClick={() => sectionRefs.current[idx]?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                className={`shrink-0 px-5 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap active:bg-gray-50 ${
-                  activeIdx === idx ? 'border-[#e85d04] text-[#e85d04]' : 'border-transparent text-gray-500'
-                }`}
+                className="shrink-0 px-5 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap active:bg-gray-50"
+                style={{
+                  borderBottomColor: activeIdx === idx ? accent : 'transparent',
+                  color: activeIdx === idx ? accent : '#6b7280',
+                }}
               >
                 {menu.name}
               </button>
@@ -195,7 +214,7 @@ export default function PublicRestaurantPage() {
               <h2 className="text-base sm:text-[17px] font-bold text-gray-900">{menu.name}</h2>
             </div>
             <div className="divide-y divide-gray-100">
-              {menu.dishes.map(dish => <DishRow key={dish.id} dish={dish} />)}
+              {menu.dishes.map(dish => <DishRow key={dish.id} dish={dish} accent={accent} />)}
             </div>
           </div>
         ))}

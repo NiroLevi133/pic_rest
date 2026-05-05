@@ -9,13 +9,16 @@ datasource db {
 }
 
 model User {
-  id               String   @id @default(cuid())
-  phone            String   @unique
-  restaurantName   String?
-  restaurantLogo   String?
-  restaurantStyle  String?
-  createdAt        DateTime @default(now())
-  menus            Menu[]
+  id                    String   @id @default(cuid())
+  phone                 String   @unique
+  restaurantName        String?
+  restaurantLogo        String?
+  restaurantStyle       String?
+  restaurantUrl         String?
+  restaurantDescription String?
+  restaurantTheme       String?
+  createdAt             DateTime @default(now())
+  menus                 Menu[]
 }
 
 model Menu {

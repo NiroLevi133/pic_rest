@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Save, Loader2, Eye, EyeOff, CheckCircle, ChevronDown, ChevronUp,
-  Store, Sparkles, User, LogOut, Camera, X, Image as ImageIcon,
+  Store, Sparkles, User, LogOut, Camera, X, Image as ImageIcon, Globe, Wand2,
 } from 'lucide-react';
 import type { SafeSettings, AppSettings, LLMProvider } from '@/lib/types';
 
@@ -76,10 +76,15 @@ export default function SettingsPage() {
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
   const [restaurantStyle, setRestaurantStyle] = useState('');
+  const [restaurantUrl, setRestaurantUrl] = useState('');
+  const [restaurantDescription, setRestaurantDescription] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [phone, setPhone] = useState('');
   const [generatedCount, setGeneratedCount] = useState(0);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState('');
+  const [generateDone, setGenerateDone] = useState(false);
   const logoRef = useRef<HTMLInputElement>(null);
 
   /* AI settings */
@@ -109,6 +114,8 @@ export default function SettingsPage() {
           setRestaurantName(d.data.restaurantName || '');
           setRestaurantLogo(d.data.restaurantLogo || null);
           setRestaurantStyle(d.data.restaurantStyle || '');
+          setRestaurantUrl(d.data.restaurantUrl || '');
+          setRestaurantDescription(d.data.restaurantDescription || '');
           setPhone(d.data.phone || '');
           setGeneratedCount(d.data.generatedCount || 0);
         }
@@ -142,11 +149,33 @@ export default function SettingsPage() {
     await fetch('/api/auth/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ restaurantName, restaurantLogo, restaurantStyle }),
+      body: JSON.stringify({ restaurantName, restaurantLogo, restaurantStyle, restaurantUrl, restaurantDescription }),
     });
     setProfileSaving(false);
     setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 2500);
+  }
+
+  async function generateStyle() {
+    if (!restaurantUrl.startsWith('http')) { setGenerateError('הכנס URL תקין (מתחיל ב-http)'); return; }
+    setGenerating(true); setGenerateError(''); setGenerateDone(false);
+    try {
+      const res = await fetch('/api/generate-restaurant-style', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: restaurantUrl }),
+      });
+      const data = await res.json() as { success: boolean; error?: string; data?: { shortDescription: string; atmosphereStyle: string } };
+      if (!data.success) throw new Error(data.error);
+      setRestaurantDescription(data.data!.shortDescription);
+      setRestaurantStyle(data.data!.atmosphereStyle);
+      setGenerateDone(true);
+      setTimeout(() => setGenerateDone(false), 3000);
+    } catch (err) {
+      setGenerateError(err instanceof Error ? err.message : 'שגיאה');
+    } finally {
+      setGenerating(false);
+    }
   }
 
   function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -239,11 +268,56 @@ export default function SettingsPage() {
           </div>
         </div>
 
+        {/* Restaurant URL + Generate */}
+        <div className="mb-5 p-4 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 space-y-3">
+          <p className="text-sm font-medium flex items-center gap-1.5">
+            <Wand2 className="w-3.5 h-3.5 text-[var(--accent)]" />
+            גנרט סגנון מהאתר שלך
+          </p>
+          <div>
+            <label className="label text-xs mb-1 flex items-center gap-1"><Globe className="w-3 h-3" /> כתובת האתר</label>
+            <input
+              className="input text-sm"
+              placeholder="https://www.hamis'ada-sheli.co.il"
+              value={restaurantUrl}
+              onChange={e => setRestaurantUrl(e.target.value)}
+              dir="ltr"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={generateStyle}
+            disabled={generating || !restaurantUrl}
+            className="btn-primary gap-2 text-sm disabled:opacity-40"
+          >
+            {generating
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> מנתח אתר...</>
+              : generateDone
+              ? <><CheckCircle className="w-4 h-4" /> הסגנון עודכן!</>
+              : <><Wand2 className="w-4 h-4" /> גנרט סגנון</>}
+          </button>
+          {generateError && <p className="text-red-400 text-xs">{generateError}</p>}
+          <p className="text-xs text-[var(--text-muted)]">AI ינתח את האתר ויחלץ צבעי ברנד + תיאור — יעדכן את השדות למטה אוטומטית</p>
+        </div>
+
+        {/* Short description */}
+        <div className="mb-4">
+          <label className="label text-sm mb-1">תיאור קצר (מוצג בעמוד הציבורי)</label>
+          <textarea
+            className="input resize-none text-sm"
+            rows={2}
+            dir="rtl"
+            placeholder="1-2 משפטים — לדוגמה: מסעדת דגים טרים על שפת הים, מתמחה במנות ים-תיכוניות."
+            value={restaurantDescription}
+            onChange={e => setRestaurantDescription(e.target.value)}
+          />
+        </div>
+
         {/* Style description */}
         <div className="mb-5">
           <label className="label text-sm mb-1 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-            סגנון הבית – תאר את האווירה של המקום
+            סגנון הבית – לתמונות AI
           </label>
           <textarea
             className="input resize-none text-sm"
@@ -254,7 +328,7 @@ export default function SettingsPage() {
             onChange={e => setRestaurantStyle(e.target.value)}
           />
           <p className="text-xs text-[var(--text-muted)] mt-1.5">
-            הסגנון הזה ישולב אוטומטית בפרומפטים של ה-AI ויצור תמונות שמתאימות לאופי המסעדה שלך
+            ישולב בפרומפטים של ה-AI לתמונות אוכל מותאמות לאופי המסעדה
           </p>
         </div>
 

@@ -6,7 +6,10 @@ export async function GET(_req: NextRequest, { params }: { params: { userId: str
     const [user, menus] = await Promise.all([
       prisma.user.findUnique({
         where: { id: params.userId },
-        select: { restaurantName: true, restaurantLogo: true, restaurantStyle: true },
+        select: {
+          restaurantName: true, restaurantLogo: true, restaurantStyle: true,
+          restaurantDescription: true, restaurantTheme: true,
+        },
       }),
       prisma.menu.findMany({
         where: { userId: params.userId, NOT: { styleKey: { startsWith: 'lab_' } } },
@@ -28,6 +31,8 @@ export async function GET(_req: NextRequest, { params }: { params: { userId: str
         restaurantName: user.restaurantName ?? 'המסעדה שלי',
         restaurantLogo: user.restaurantLogo ?? null,
         restaurantStyle: user.restaurantStyle ?? null,
+        restaurantDescription: user.restaurantDescription ?? null,
+        restaurantTheme: user.restaurantTheme ?? null,
         menus: menus.map(m => ({
           id: m.id,
           name: m.name,

@@ -1740,12 +1740,10 @@ export default function MenusPage() {
         </button>
         <button
           type="button"
-          onClick={() => scanRef.current?.click()}
-          disabled={scanning}
+          onClick={() => setShowCreateModal(true)}
           className="btn-secondary gap-2 text-sm justify-center"
         >
-          {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
-          {scanning ? 'סורק...' : 'סרוק'}
+          <Plus className="w-4 h-4" /> הוסף +
         </button>
       </div>
 
