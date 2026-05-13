@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
@@ -73,7 +73,9 @@ export async function POST(req: NextRequest) {
 
     // Get prompt
     let prompt: string;
-    if (styleKey === 'custom' && styleRefImage) {
+    if (rawPrompt && customPrompt?.trim()) {
+      prompt = customPrompt.trim();
+    } else if (styleKey === 'custom' && styleRefImage) {
       // Analyze style reference image with GPT-4o vision
       const llmKey = settings.openaiApiKey || process.env.OPENAI_API_KEY || '';
       const openai = new OpenAI({ apiKey: llmKey });
