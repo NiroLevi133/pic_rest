@@ -109,6 +109,15 @@ function LabContent() {
   const [result, setResult] = useState<{ imageUrl: string; dishId: string } | null>(null);
   const [error, setError] = useState('');
 
+  /* ── multi-generation mode ── */
+  const [multiMode, setMultiMode] = useState(false);
+  const [multiCount, setMultiCount] = useState(3);
+  const [multiPrompts, setMultiPrompts] = useState<string[]>(['', '', '']);
+  const [multiResults, setMultiResults] = useState<Array<{ imageUrl: string; dishId: string } | null>>([null, null, null]);
+  const [multiErrors, setMultiErrors] = useState<string[]>(['', '', '']);
+  const [multiGenerating, setMultiGenerating] = useState<boolean[]>([false, false, false]);
+  const [multiProgress, setMultiProgress] = useState<number[]>([0, 0, 0]);
+
   /* ── caption overlay ── */
   const [captionOverlay, setCaptionOverlay] = useState(false);
   const [captionText, setCaptionText] = useState('');
@@ -282,6 +291,79 @@ function LabContent() {
     e.target.value = '';
   }
 
+  function handleMultiCountChange(n: number) {
+    const clamped = Math.max(1, Math.min(10, n));
+    setMultiCount(clamped);
+    setMultiPrompts(prev => { const a = [...prev]; a.length = clamped; return Array.from({ length: clamped }, (_, i) => a[i] ?? ''); });
+    setMultiResults(prev => { const a = [...prev]; a.length = clamped; return Array.from({ length: clamped }, (_, i) => a[i] ?? null); });
+    setMultiErrors(prev => { const a = [...prev]; a.length = clamped; return Array.from({ length: clamped }, (_, i) => a[i] ?? ''); });
+    setMultiGenerating(prev => { const a = [...prev]; a.length = clamped; return Array.from({ length: clamped }, (_, i) => a[i] ?? false); });
+    setMultiProgress(prev => { const a = [...prev]; a.length = clamped; return Array.from({ length: clamped }, (_, i) => a[i] ?? 0); });
+  }
+
+  async function handleMultiGenerate() {
+    if (!dishImage) { setError('נא להעלות תמונת מנה'); return; }
+    setError('');
+
+    const chains = Array.from({ length: multiCount }, (_, i) => async () => {
+      setMultiGenerating(prev => { const a = [...prev]; a[i] = true; return a; });
+      setMultiProgress(prev => { const a = [...prev]; a[i] = 0; return a; });
+      setMultiErrors(prev => { const a = [...prev]; a[i] = ''; return a; });
+      setMultiResults(prev => { const a = [...prev]; a[i] = null; return a; });
+
+      const progressInterval = setInterval(() => {
+        setMultiProgress(prev => {
+          const a = [...prev];
+          const cur = a[i];
+          const inc = cur < 50 ? 2 : cur < 80 ? 1 : 0.5;
+          a[i] = Math.min(95, cur + inc);
+          return a;
+        });
+      }, 1000);
+
+      try {
+        const res = await fetch('/api/lab/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            referenceImage: dishImage,
+            dishName: selectedDish,
+            styleKey: 'custom',
+            customPrompt: multiPrompts[i],
+            rawPrompt: true,
+          }),
+        });
+        const text = await res.text();
+        if (!text) throw new Error('השרת לא הגיב — נסה שוב');
+        const data = JSON.parse(text);
+        if (!data.success) throw new Error(data.error);
+        const dishId = data.data.dishId as string;
+
+        for (let attempt = 0; attempt < 60; attempt++) {
+          await new Promise(r => setTimeout(r, 3000));
+          const statusRes = await fetch(`/api/dishes/${dishId}`);
+          const statusData = await statusRes.json();
+          const status = statusData.data?.status;
+          if (status === 'DONE') {
+            clearInterval(progressInterval);
+            setMultiProgress(prev => { const a = [...prev]; a[i] = 100; return a; });
+            setMultiResults(prev => { const a = [...prev]; a[i] = { imageUrl: `/api/images/${dishId}`, dishId }; return a; });
+            return;
+          }
+          if (status === 'ERROR') throw new Error(statusData.data?.errorMessage || 'שגיאה בייצור תמונה');
+        }
+        throw new Error('פג זמן הגנרציה — נסה שוב');
+      } catch (err) {
+        setMultiErrors(prev => { const a = [...prev]; a[i] = err instanceof Error ? err.message : 'שגיאה'; return a; });
+      } finally {
+        clearInterval(progressInterval);
+        setMultiGenerating(prev => { const a = [...prev]; a[i] = false; return a; });
+      }
+    });
+
+    chains.forEach(fn => fn());
+  }
+
   const canGenerate = !!dishImage && !generating &&
     (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim());
 
@@ -333,6 +415,32 @@ function LabContent() {
           </button>
           <input ref={dishFileRef} type="file" accept="image/*" className="hidden" onChange={handleDishImage} />
         </div>
+      </div>
+
+      {/* ── Mode toggle ── */}
+      <div className="flex gap-2 justify-center">
+        <button
+          type="button"
+          onClick={() => setMultiMode(false)}
+          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+            !multiMode
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+              : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+          }`}
+        >
+          גינרציה בודדת
+        </button>
+        <button
+          type="button"
+          onClick={() => setMultiMode(true)}
+          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+            multiMode
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+              : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+          }`}
+        >
+          בחירה מרובה
+        </button>
       </div>
 
       {/* ── Menu scan ── */}
@@ -401,8 +509,111 @@ function LabContent() {
         )}
       </div>
 
+      {/* ── Multi-generation panel ── */}
+      {multiMode && (
+        <div className="space-y-4">
+          {/* Count selector */}
+          <div className="card flex items-center justify-between">
+            <span className="text-sm font-medium text-[var(--text)]">מספר גינרציות</span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => handleMultiCountChange(multiCount - 1)}
+                disabled={multiCount <= 1}
+                className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface2)] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition-colors"
+              >
+                <span className="text-lg leading-none">−</span>
+              </button>
+              <span className="text-xl font-bold text-[var(--accent)] w-6 text-center">{multiCount}</span>
+              <button
+                type="button"
+                onClick={() => handleMultiCountChange(multiCount + 1)}
+                disabled={multiCount >= 10}
+                className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:bg-[var(--surface2)] disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed transition-colors"
+              >
+                <span className="text-lg leading-none">+</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Per-generation items */}
+          {Array.from({ length: multiCount }, (_, i) => (
+            <div key={i} className="card space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-[var(--text)]">גינרציה {i + 1}</span>
+                {multiGenerating[i] ? (
+                  <span className="flex items-center gap-1.5 text-xs text-blue-400">
+                    <Loader2 className="w-3 h-3 animate-spin" /> מייצר...
+                    <span className="text-[var(--text-muted)]">({Math.round(multiProgress[i])}%)</span>
+                  </span>
+                ) : multiResults[i] ? (
+                  <span className="flex items-center gap-1 text-xs text-green-400">
+                    <Check className="w-3 h-3" /> הושלם
+                  </span>
+                ) : multiErrors[i] ? (
+                  <span className="text-xs text-red-400 truncate max-w-[160px]">{multiErrors[i]}</span>
+                ) : null}
+              </div>
+
+              <textarea
+                rows={2}
+                dir="rtl"
+                className="input resize-none text-sm w-full"
+                placeholder={`פרומט לגינרציה ${i + 1}...`}
+                value={multiPrompts[i] ?? ''}
+                onChange={e => setMultiPrompts(prev => { const a = [...prev]; a[i] = e.target.value; return a; })}
+                disabled={multiGenerating[i]}
+              />
+
+              {multiResults[i] && (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={multiResults[i]!.imageUrl}
+                    alt={`גינרציה ${i + 1}`}
+                    className="w-20 h-20 rounded-xl object-cover border border-[var(--border)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => downloadImage(multiResults[i]!.imageUrl, `generation-${i + 1}.jpg`)}
+                    className="btn-secondary p-2 cursor-pointer"
+                    title="הורד"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {multiGenerating[i] && (
+                <div className="w-full bg-[var(--surface2)] rounded-full h-1 overflow-hidden border border-[var(--border)]">
+                  <div
+                    className="h-full rounded-full transition-all duration-1000"
+                    style={{ width: `${multiProgress[i]}%`, background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))' }}
+                  />
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Generate All button */}
+          <button
+            type="button"
+            disabled={!dishImage || multiGenerating.some(Boolean)}
+            onClick={handleMultiGenerate}
+            className="btn-primary w-full justify-center py-4 text-[15px] font-bold disabled:opacity-30 mt-1"
+            style={dishImage && !multiGenerating.some(Boolean) ? { boxShadow: '0 4px 24px rgba(200,150,42,0.18)' } : {}}
+          >
+            {multiGenerating.some(Boolean) ? (
+              <><Loader2 className="w-5 h-5 animate-spin" /> מייצר...</>
+            ) : (
+              <><Zap className="w-5 h-5" /> גנרט הכל</>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* ── Style locked from menu ── */}
-      {styleLockedFromMenu && (
+      {!multiMode && styleLockedFromMenu && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-sm" dir="rtl">
           <span>{STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}</span>
           <span className="text-[var(--accent)] font-semibold">{STYLE_PRESETS.find(p => p.key === styleKey)?.label}</span>
@@ -411,7 +622,7 @@ function LabContent() {
       )}
 
       {/* ── Style selector ── */}
-      {!styleLockedFromMenu && (
+      {!multiMode && !styleLockedFromMenu && (
         <div className="card">
           <label className="label text-sm mb-3">סגנון צילום</label>
 
@@ -492,62 +703,64 @@ function LabContent() {
         </div>
       )}
 
-      {/* ── Advanced options ── */}
-      <div className="card overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setShowAdvanced(p => !p)}
-          className="w-full flex items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors duration-200 cursor-pointer"
-        >
-          <span>אפשרויות מתקדמות</span>
-          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
-        </button>
+      {!multiMode && (
+        <>
+          {/* ── Advanced options ── */}
+          <div className="card overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced(p => !p)}
+              className="w-full flex items-center justify-between text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text)] transition-colors duration-200 cursor-pointer"
+            >
+              <span>אפשרויות מתקדמות</span>
+              <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} />
+            </button>
 
-        {showAdvanced && (
-          <div className="mt-4 space-y-4" dir="rtl">
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-[var(--text-muted)]">זווית צילום</p>
-                <span className="text-[10px] bg-[var(--surface2)] px-2 py-0.5 rounded-full text-[var(--text-muted)] border border-[var(--border)]">בקרוב</span>
-              </div>
-              <div className="flex gap-2 opacity-40 pointer-events-none">
-                {([['top', 'מבט עליון'], ['side', 'מהצד']] as const).map(([val, label]) => (
-                  <button
-                    key={val}
-                    type="button"
-                    className={`flex-1 py-2 rounded-xl border text-xs font-medium ${
-                      angle === val
-                        ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                        : 'border-[var(--border)] text-[var(--text-muted)]'
-                    }`}
-                  >{label}</button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              {([
-                ['סכום ומזל', showPrice],
-                ['ידים ומבע', hands],
-                ['תמונת פעולה', action],
-                ['בזמן הכנה', preparation],
-                ['חגיגי', festive],
-              ] as [string, boolean][]).map(([label]) => (
-                <div
-                  key={label}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--text-muted)] opacity-40 cursor-not-allowed text-right"
-                >
-                  <span className="flex-1">{label}</span>
-                  <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full border border-[var(--border)]">בקרוב</span>
+            {showAdvanced && (
+              <div className="mt-4 space-y-4" dir="rtl">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-[var(--text-muted)]">זווית צילום</p>
+                    <span className="text-[10px] bg-[var(--surface2)] px-2 py-0.5 rounded-full text-[var(--text-muted)] border border-[var(--border)]">בקרוב</span>
+                  </div>
+                  <div className="flex gap-2 opacity-40 pointer-events-none">
+                    {([['top', 'מבט עליון'], ['side', 'מהצד']] as const).map(([val, label]) => (
+                      <button
+                        key={val}
+                        type="button"
+                        className={`flex-1 py-2 rounded-xl border text-xs font-medium ${
+                          angle === val
+                            ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                            : 'border-[var(--border)] text-[var(--text-muted)]'
+                        }`}
+                      >{label}</button>
+                    ))}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
 
-      {/* ── Caption overlay ── */}
-      <div className="card">
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ['סכום ומזל', showPrice],
+                    ['ידים ומבע', hands],
+                    ['תמונת פעולה', action],
+                    ['בזמן הכנה', preparation],
+                    ['חגיגי', festive],
+                  ] as [string, boolean][]).map(([label]) => (
+                    <div
+                      key={label}
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs font-medium text-[var(--text-muted)] opacity-40 cursor-not-allowed text-right"
+                    >
+                      <span className="flex-1">{label}</span>
+                      <span className="text-[10px] bg-[var(--surface2)] px-1.5 py-0.5 rounded-full border border-[var(--border)]">בקרוב</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Caption overlay ── */}
+          <div className="card">
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -602,7 +815,9 @@ function LabContent() {
             </div>
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
 
       {/* ── Error ── */}
       {error && (
@@ -611,8 +826,8 @@ function LabContent() {
         </div>
       )}
 
-      {/* ── Progress bar ── */}
-      {generating && (
+      {/* ── Progress bar (single mode) ── */}
+      {!multiMode && generating && (
         <div className="space-y-2">
           <div className="flex justify-between text-xs text-[var(--text-muted)]">
             <span>{Math.round(progress)}%</span>
@@ -630,23 +845,25 @@ function LabContent() {
         </div>
       )}
 
-      {/* ── Generate button ── */}
-      <button
-        type="button"
-        disabled={!canGenerate}
-        onClick={handleGenerate}
-        className="btn-primary w-full justify-center py-4 text-[15px] font-bold disabled:opacity-30 mt-1"
-        style={canGenerate ? { boxShadow: '0 4px 24px rgba(200,150,42,0.18)' } : {}}
-      >
-        {generating ? (
-          <><Loader2 className="w-5 h-5 animate-spin" /> מייצר תמונה...</>
-        ) : (
-          <><Zap className="w-5 h-5" /> גנרט תמונה</>
-        )}
-      </button>
+      {/* ── Generate button (single mode) ── */}
+      {!multiMode && (
+        <button
+          type="button"
+          disabled={!canGenerate}
+          onClick={handleGenerate}
+          className="btn-primary w-full justify-center py-4 text-[15px] font-bold disabled:opacity-30 mt-1"
+          style={canGenerate ? { boxShadow: '0 4px 24px rgba(200,150,42,0.18)' } : {}}
+        >
+          {generating ? (
+            <><Loader2 className="w-5 h-5 animate-spin" /> מייצר תמונה...</>
+          ) : (
+            <><Zap className="w-5 h-5" /> גנרט תמונה</>
+          )}
+        </button>
+      )}
 
-      {/* ── Result ── */}
-      {result && (
+      {/* ── Result (single mode) ── */}
+      {!multiMode && result && (
         <div
           className="card overflow-hidden animate-reveal result-glow"
           style={{ borderColor: 'rgba(200,150,42,0.2)' }}
@@ -804,7 +1021,7 @@ function LabContent() {
                           <span className="text-sm font-medium flex-1" dir="rtl">{d}</span>
                           <Check className="w-3.5 h-3.5 text-green-400 shrink-0" />
                         </div>
-                      ))}
+      ))}
                     </div>
                     {saveModal.dishes.length > 6 && (
                       <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--surface)] to-transparent pointer-events-none" />
