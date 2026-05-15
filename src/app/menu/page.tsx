@@ -119,6 +119,7 @@ function LabContent() {
     `${IDENTITY_LOCK} Half body side profile portrait from the opposite side, ${STYLE_SUFFIX}, soft professional studio lighting, cinematic realism, 4K ultra detailed, 9:16 aspect ratio`,
     `${IDENTITY_LOCK} Lifestyle portrait sitting naturally on a boho chic sofa in a cozy stylish living room, ${STYLE_SUFFIX}, warm ambient lighting, cinematic cozy atmosphere, photorealistic, 9:16 aspect ratio`,
     `${IDENTITY_LOCK} Standing indoors near a large window, warm golden sunset light streaming through the window casting a soft glow on her face, she gazes thoughtfully toward the window, relaxed natural posture, cozy home interior softly blurred in background, ${STYLE_SUFFIX}, photorealistic, cinematic warm atmosphere, 4K ultra detailed, 9:16 aspect ratio`,
+    `${IDENTITY_LOCK} Selfie shot, one hand holding the phone slightly below face level creating a gentle upward angle, arm partially visible in frame, she looks directly into the camera with a natural relaxed expression, ${STYLE_SUFFIX}, casual indoor background softly blurred, authentic selfie feel, photorealistic, cinematic realism, 4K ultra detailed, 9:16 aspect ratio`,
   ];
   const [multiMode, setMultiMode] = useState(false);
   const [multiCount, setMultiCount] = useState(DEFAULT_MULTI_PROMPTS.length);
