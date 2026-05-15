@@ -110,7 +110,7 @@ function LabContent() {
   const [error, setError] = useState('');
 
   /* ── multi-generation mode ── */
-  const STYLE_SUFFIX = 'oversized white t-shirt softly tucked at the waist with effortless drape, thin gold chain necklace, small gold hoop earrings, natural glowy makeup, glossy lips, dewy skin, manicured nails';
+  const STYLE_SUFFIX = 'oversized white t-shirt softly tucked at the waist with effortless drape';
   const DEFAULT_MULTI_PROMPTS = [
     `Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Upper body portrait focused mainly on the face, ${STYLE_SUFFIX}, white studio background, soft studio lighting, ultra realistic skin texture, 4K ultra detailed, 9:16 aspect ratio`,
     `Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Naturally beautiful Israeli woman, ${STYLE_SUFFIX}, wide casual jeans, warm expressive eyes, soft feminine facial features, photorealistic, cinematic realism, authentic influencer vibe`,
