@@ -13,7 +13,7 @@ import { compressImage } from '@/lib/image-utils';
 
 const CAPTION_STYLES = [
   { key: 'elegant',   label: 'אלגנטי',    icon: Type,      description: 'סריף לבן עדין' },
-  { key: 'lifestyle', label: 'לייף סטייל', icon: AlignLeft, description: 'כתב יד חם' },
+  { key: 'lifestyle', label: 'לייפ סטייל', icon: AlignLeft, description: 'כתב יד חם' },
   { key: 'bold',      label: 'מודרני',     icon: Minus,     description: 'פונט עבה ובולט' },
 ];
 
@@ -110,13 +110,21 @@ function LabContent() {
   const [error, setError] = useState('');
 
   /* ── multi-generation mode ── */
+  const DEFAULT_MULTI_PROMPTS = [
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Upper body portrait focused mainly on the face, white studio background, soft studio lighting, ultra realistic skin texture, 4K ultra detailed, 9:16 aspect ratio',
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Naturally beautiful Israeli woman, oversized white t-shirt, wide casual jeans, warm expressive eyes, soft feminine facial features, photorealistic, cinematic realism, authentic influencer vibe',
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Close-up portrait, detailed eyes and skin texture, soft studio lighting, authentic mature facial expression, photorealistic, 4K ultra detailed',
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Half body side profile portrait, elegant relaxed posture, cinematic side profile angle, white studio background, photorealistic',
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Half body side profile portrait from the opposite side, soft professional studio lighting, cinematic realism, 4K ultra detailed',
+    'Using the reference image of the woman, keep the SAME woman in every generation. Maintain the same identity, same facial structure, same hair, same eyes and same overall appearance. The character should feel like a real consistent Instagram influencer with authentic human realism. Lifestyle portrait sitting naturally on a boho chic sofa in a cozy stylish living room, warm ambient lighting, cinematic cozy atmosphere',
+  ];
   const [multiMode, setMultiMode] = useState(false);
-  const [multiCount, setMultiCount] = useState(3);
-  const [multiPrompts, setMultiPrompts] = useState<string[]>(['', '', '']);
-  const [multiResults, setMultiResults] = useState<Array<{ imageUrl: string; dishId: string } | null>>([null, null, null]);
-  const [multiErrors, setMultiErrors] = useState<string[]>(['', '', '']);
-  const [multiGenerating, setMultiGenerating] = useState<boolean[]>([false, false, false]);
-  const [multiProgress, setMultiProgress] = useState<number[]>([0, 0, 0]);
+  const [multiCount, setMultiCount] = useState(DEFAULT_MULTI_PROMPTS.length);
+  const [multiPrompts, setMultiPrompts] = useState<string[]>(DEFAULT_MULTI_PROMPTS);
+  const [multiResults, setMultiResults] = useState<Array<{ imageUrl: string; dishId: string } | null>>(DEFAULT_MULTI_PROMPTS.map(() => null));
+  const [multiErrors, setMultiErrors] = useState<string[]>(DEFAULT_MULTI_PROMPTS.map(() => ''));
+  const [multiGenerating, setMultiGenerating] = useState<boolean[]>(DEFAULT_MULTI_PROMPTS.map(() => false));
+  const [multiProgress, setMultiProgress] = useState<number[]>(DEFAULT_MULTI_PROMPTS.map(() => 0));
 
   /* ── caption overlay ── */
   const [captionOverlay, setCaptionOverlay] = useState(false);
