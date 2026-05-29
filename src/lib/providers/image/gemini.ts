@@ -23,15 +23,16 @@ export class GeminiImageProvider implements ImageProvider {
     const parts: object[] = [];
 
     if (req.referenceImage) {
-      // Strip data URL prefix: "data:image/jpeg;base64,..."
       const match = req.referenceImage.match(/^data:(image\/\w+);base64,(.+)$/);
       if (match) {
-        parts.push({
-          inlineData: {
-            mimeType: match[1],
-            data: match[2],
-          },
-        });
+        parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+      }
+    }
+
+    for (const extra of req.extraImages ?? []) {
+      const match = extra.match(/^data:(image\/\w+);base64,(.+)$/);
+      if (match) {
+        parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
       }
     }
 

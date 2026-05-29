@@ -41,7 +41,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt, multiMode: isMultiMode } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt, multiMode: isMultiMode, productImages } = await req.json();
+    const extraImages: string[] = [productImages?.shirt, productImages?.pants, productImages?.shoes].filter(Boolean) as string[];
     const dishId = rawDishId ? String(rawDishId) : null;
 
     // Permission check
@@ -133,6 +134,15 @@ export async function POST(req: NextRequest) {
       if (mods.length > 0) prompt += `\n\n# ADVANCED DIRECTIVES:\n${mods.map(m => `- ${m}`).join('\n')}`;
     }
 
+    // Append product clothing override (takes priority over any clothing in the prompt)
+    if (productImages && (productImages.shirt || productImages.pants || productImages.shoes)) {
+      const clothingLines: string[] = [];
+      if (productImages.shirt)  clothingLines.push(`- SHIRT: Dress the person in the EXACT shirt from product reference image ${extraImages.indexOf(productImages.shirt) + 2}. Preserve its exact cut, shape, fabric texture, and colors with 100% fidelity. It must fit naturally on the body without altering proportions.`);
+      if (productImages.pants)  clothingLines.push(`- PANTS: Dress the person in the EXACT pants from product reference image ${extraImages.indexOf(productImages.pants) + 2}. Preserve its exact cut, shape, fabric texture, and colors with 100% fidelity. It must sit naturally on the body.`);
+      if (productImages.shoes)  clothingLines.push(`- SHOES: Put the EXACT shoes from product reference image ${extraImages.indexOf(productImages.shoes) + 2} on the person's feet. Preserve exact shape, design, and colors. Do not alter the footwear in any way.`);
+      prompt += `\n\n# CLOTHING OVERRIDE (overrides all other clothing instructions):\n${clothingLines.join('\n')}`;
+    }
+
     // Append caption overlay directive
     if (captionOverlay?.enabled && captionOverlay.text?.trim()) {
       const text = captionOverlay.text.trim();
@@ -179,7 +189,7 @@ export async function POST(req: NextRequest) {
     // No Lambda — generate directly in this request (synchronous fallback)
     try {
       const imageProvider = getImageProvider(settings);
-      const result = await imageProvider.generate({ prompt, referenceImage });
+      const result = await imageProvider.generate({ prompt, referenceImage, extraImages: extraImages.length > 0 ? extraImages : undefined });
       const compressed = await resizeForGallery(result.imageUrl);
       await prisma.dish.update({
         where: { id: savedDishId },

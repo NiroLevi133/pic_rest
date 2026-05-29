@@ -5,6 +5,7 @@ export interface ImageGenerationRequest {
   quality?: string;
   negativePrompt?: string;
   referenceImage?: string; // base64 data URL – triggers image editing instead of generation
+  extraImages?: string[];  // additional product reference images (shirt, pants, shoes)
 }
 
 export interface ImageGenerationResult {

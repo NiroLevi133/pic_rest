@@ -147,6 +147,20 @@ function LabContent() {
   const [multiGenerating, setMultiGenerating] = useState<boolean[]>(DEFAULT_MULTI_PROMPTS.map(() => false));
   const [multiProgress, setMultiProgress] = useState<number[]>(DEFAULT_MULTI_PROMPTS.map(() => 0));
 
+  /* ── product images (shirt / pants / shoes) ── */
+  const [shirtImage, setShirtImage] = useState<string | null>(null);
+  const [pantsImage, setPantsImage] = useState<string | null>(null);
+  const [shoesImage, setShoesImage] = useState<string | null>(null);
+  const shirtFileRef = useRef<HTMLInputElement>(null);
+  const pantsFileRef = useRef<HTMLInputElement>(null);
+  const shoesFileRef = useRef<HTMLInputElement>(null);
+
+  async function handleProductUpload(file: File, setter: (v: string) => void) {
+    const { compressImage } = await import('@/lib/image-utils');
+    const compressed = await compressImage(file, 1024);
+    setter(compressed);
+  }
+
   /* ── caption overlay ── */
   const [captionOverlay, setCaptionOverlay] = useState(false);
   const [captionText, setCaptionText] = useState('');
@@ -361,6 +375,11 @@ function LabContent() {
             customPrompt: multiPrompts[i],
             rawPrompt: true,
             multiMode: true,
+            productImages: {
+              shirt: shirtImage || undefined,
+              pants: pantsImage || undefined,
+              shoes: shoesImage || undefined,
+            },
           }),
         });
         const text = await res.text();
@@ -553,6 +572,50 @@ function LabContent() {
       {/* ── Multi-generation panel ── */}
       {multiMode && (
         <div className="space-y-4">
+
+          {/* ── Product images ── */}
+          <div className="card space-y-3">
+            <span className="text-sm font-medium text-[var(--text)]">פריטי לבוש (אופציונלי)</span>
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { label: 'חולצה', img: shirtImage, setter: setShirtImage, ref: shirtFileRef },
+                { label: 'מכנס', img: pantsImage, setter: setPantsImage, ref: pantsFileRef },
+                { label: 'נעליים', img: shoesImage, setter: setShoesImage, ref: shoesFileRef },
+              ] as const).map(({ label, img, setter, ref }) => (
+                <div key={label} className="flex flex-col items-center gap-1.5">
+                  <span className="text-xs text-[var(--text-muted)]">{label}</span>
+                  <button
+                    type="button"
+                    onClick={() => (ref as React.RefObject<HTMLInputElement>).current?.click()}
+                    className="relative w-full aspect-square rounded-xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] transition-colors overflow-hidden bg-[var(--surface)]"
+                  >
+                    {img ? (
+                      <>
+                        <img src={img} alt={label} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setter(null); }}
+                          className="absolute top-1 left-1 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </>
+                    ) : (
+                      <ImagePlus className="w-5 h-5 text-[var(--text-muted)] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                    )}
+                  </button>
+                  <input
+                    ref={ref as React.RefObject<HTMLInputElement>}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => { const f = e.target.files?.[0]; if (f) handleProductUpload(f, setter); }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Count selector */}
           <div className="card flex items-center justify-between">
             <span className="text-sm font-medium text-[var(--text)]">מספר גינרציות</span>
