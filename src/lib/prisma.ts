@@ -21,5 +21,7 @@ if (!globalForPrisma.dbMigrated) {
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantUrl" TEXT`,
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantDescription" TEXT`,
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantTheme" TEXT`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "canSingleGenerate" BOOLEAN NOT NULL DEFAULT true`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "canMultiGenerate" BOOLEAN NOT NULL DEFAULT false`,
   ]).catch(() => {});
 }
