@@ -17,6 +17,8 @@ model User {
   restaurantUrl         String?
   restaurantDescription String?
   restaurantTheme       String?
+  canSingleGenerate     Boolean  @default(true)
+  canMultiGenerate      Boolean  @default(false)
   createdAt             DateTime @default(now())
   menus                 Menu[]
 }

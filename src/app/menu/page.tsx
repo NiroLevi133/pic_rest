@@ -59,6 +59,24 @@ function LabContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  /* ── permissions ── */
+  const [canSingle, setCanSingle] = useState(true);
+  const [canMulti, setCanMulti] = useState(false);
+  const [permsLoaded, setPermsLoaded] = useState(false);
+  useEffect(() => {
+    fetch('/api/me')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) {
+          setCanSingle(data.canSingleGenerate);
+          setCanMulti(data.canMultiGenerate);
+          if (!data.canSingleGenerate && data.canMultiGenerate) setMultiMode(true);
+          if (data.canSingleGenerate && !data.canMultiGenerate) setMultiMode(false);
+        }
+        setPermsLoaded(true);
+      });
+  }, []);
+
   /* ── uploads ── */
   const [dishImage, setDishImage] = useState<string | null>(null);
   const [menuImage, setMenuImage] = useState<string | null>(null);
@@ -342,6 +360,7 @@ function LabContent() {
             styleKey: 'custom',
             customPrompt: multiPrompts[i],
             rawPrompt: true,
+            multiMode: true,
           }),
         });
         const text = await res.text();
@@ -429,30 +448,41 @@ function LabContent() {
       </div>
 
       {/* ── Mode toggle ── */}
-      <div className="flex gap-2 justify-center">
-        <button
-          type="button"
-          onClick={() => setMultiMode(false)}
-          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
-            !multiMode
-              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-              : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
-          }`}
-        >
-          גינרציה בודדת
-        </button>
-        <button
-          type="button"
-          onClick={() => setMultiMode(true)}
-          className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
-            multiMode
-              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-              : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
-          }`}
-        >
-          בחירה מרובה
-        </button>
-      </div>
+      {permsLoaded && (canSingle || canMulti) && (
+        <div className="flex gap-2 justify-center">
+          {canSingle && (
+            <button
+              type="button"
+              onClick={() => setMultiMode(false)}
+              className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+                !multiMode
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+              }`}
+            >
+              גינרציה בודדת
+            </button>
+          )}
+          {canMulti && (
+            <button
+              type="button"
+              onClick={() => setMultiMode(true)}
+              className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+                multiMode
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+              }`}
+            >
+              בחירה מרובה
+            </button>
+          )}
+        </div>
+      )}
+      {permsLoaded && !canSingle && !canMulti && (
+        <div className="text-center text-[var(--text-muted)] text-sm py-4 border border-[var(--border)] rounded-xl">
+          אין לך הרשאה לשימוש בכלי זה. צור קשר עם המנהל.
+        </div>
+      )}
 
       {/* ── Menu scan ── */}
       <div>

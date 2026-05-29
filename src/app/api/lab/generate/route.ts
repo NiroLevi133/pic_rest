@@ -41,8 +41,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt, multiMode: isMultiMode } = await req.json();
     const dishId = rawDishId ? String(rawDishId) : null;
+
+    // Permission check
+    const userPerms = await prisma.user.findUnique({ where: { id: userId }, select: { canSingleGenerate: true, canMultiGenerate: true } });
+    if (isMultiMode && !userPerms?.canMultiGenerate) {
+      return NextResponse.json({ success: false, error: 'אין הרשאה לבחירה מרובה' }, { status: 403 });
+    }
+    if (!isMultiMode && !userPerms?.canSingleGenerate) {
+      return NextResponse.json({ success: false, error: 'אין הרשאה לגנרציה בודדת' }, { status: 403 });
+    }
 
     // Fall back to stored reference image if none provided (used for "regenerate" flow)
     let referenceImage = reqReferenceImage;
