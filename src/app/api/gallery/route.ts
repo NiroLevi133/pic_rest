@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getPreset } from '@/lib/style-presets';
+import { isStorageUrl } from '@/lib/storage';
 
 export async function GET(req: NextRequest) {
   const userId = getUserIdFromRequest(req);
@@ -13,8 +14,8 @@ export async function GET(req: NextRequest) {
       dishes: {
         where: { status: 'DONE', imageUrl: { not: null } },
         orderBy: { updatedAt: 'desc' },
-        // Do NOT select imageUrl (base64) — served separately via /api/images/[id]
-        select: { id: true, name: true, category: true, price: true, updatedAt: true },
+        // imageUrl is now a short CDN URL (or null/base64 for un-migrated rows).
+        select: { id: true, name: true, category: true, price: true, updatedAt: true, imageUrl: true },
       },
     },
     orderBy: { createdAt: 'desc' },
@@ -51,7 +52,9 @@ export async function GET(req: NextRequest) {
     }
 
     for (const dish of menu.dishes) {
-      const imageUrl = `/api/images/${dish.id}`;
+      // Migrated images → point straight at the CDN (no server round-trip).
+      // Legacy base64 rows → keep serving via the API endpoint.
+      const imageUrl = isStorageUrl(dish.imageUrl) ? dish.imageUrl! : `/api/images/${dish.id}`;
       groups[key].dishes.push({
         id: String(dish.id),
         name: dish.name,

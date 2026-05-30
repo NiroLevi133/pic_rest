@@ -6,6 +6,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'oaidalleapiprodscus.blob.core.windows.net' },
       { protocol: 'https', hostname: '**.stability.ai' },
       { protocol: 'https', hostname: '**.replicate.delivery' },
+      { protocol: 'https', hostname: '**.supabase.co' },
     ],
   },
 };

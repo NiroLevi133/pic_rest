@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { persistImage } from '@/lib/storage';
 
 const BG_SECRET = process.env.BG_SECRET;
 
@@ -24,12 +25,14 @@ export async function POST(req: NextRequest) {
 
   try {
     if (imageUrl) {
+      // Upload to Storage (CDN) and persist the URL instead of base64.
+      const storedUrl = await persistImage(imageUrl);
       await Promise.all([
         prisma.dish.update({
           where: { id: dishId },
-          data: { status: 'DONE', imageUrl, errorMessage: null },
+          data: { status: 'DONE', imageUrl: storedUrl, errorMessage: null },
         }),
-        prisma.dishImage.create({ data: { dishId, imageUrl } }),
+        prisma.dishImage.create({ data: { dishId, imageUrl: storedUrl } }),
       ]);
     } else {
       await prisma.dish.update({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSettings } from '@/lib/settings';
 import { getImageProvider } from '@/lib/providers';
+import { persistImage } from '@/lib/storage';
 
 export const maxDuration = 300;
 
@@ -34,12 +35,13 @@ export async function POST(req: NextRequest) {
       referenceImage: dish.referenceImage,
     });
 
+    const storedUrl = await persistImage(result.imageUrl);
     const [, dishImage] = await Promise.all([
       prisma.dish.update({
         where: { id: dishId },
-        data: { status: 'DONE', imageUrl: result.imageUrl, errorMessage: null },
+        data: { status: 'DONE', imageUrl: storedUrl, errorMessage: null },
       }),
-      prisma.dishImage.create({ data: { dishId, imageUrl: result.imageUrl } }),
+      prisma.dishImage.create({ data: { dishId, imageUrl: storedUrl } }),
     ]);
 
     return NextResponse.json({ ok: true, dishImageId: dishImage.id });
