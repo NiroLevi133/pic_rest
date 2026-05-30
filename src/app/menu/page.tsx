@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Loader2, Zap, X, Camera, ScanLine,
   Download, Check, ImagePlus, ChevronDown, MessageSquare, Copy,
-  FlaskConical, Type, AlignLeft, Minus,
+  FlaskConical, Type, AlignLeft, Minus, RotateCw,
 } from 'lucide-react';
 import { downloadImage } from '@/lib/download-utils';
 import { STYLE_PRESETS } from '@/lib/style-presets';
@@ -146,6 +146,13 @@ function LabContent() {
   const [multiErrors, setMultiErrors] = useState<string[]>(DEFAULT_MULTI_PROMPTS.map(() => ''));
   const [multiGenerating, setMultiGenerating] = useState<boolean[]>(DEFAULT_MULTI_PROMPTS.map(() => false));
   const [multiProgress, setMultiProgress] = useState<number[]>(DEFAULT_MULTI_PROMPTS.map(() => 0));
+
+  /* ── 360° turntable video (opt-in checkpoint) ── */
+  const [want360, setWant360] = useState(false);
+  const [spin360Status, setSpin360Status] = useState<'idle' | 'generating' | 'done' | 'error'>('idle');
+  const [spin360Url, setSpin360Url] = useState<string | null>(null);
+  const [spin360Error, setSpin360Error] = useState('');
+  const [spin360Progress, setSpin360Progress] = useState(0);
 
   /* ── product images (shirt / pants / shoes) ── */
   const [shirtImage, setShirtImage] = useState<string | null>(null);
@@ -427,6 +434,57 @@ function LabContent() {
     });
 
     chains.forEach(fn => fn());
+  }
+
+  async function handleGenerate360() {
+    if (!dishImage) { setError('נא להעלות תמונה'); return; }
+    setSpin360Error('');
+    setSpin360Url(null);
+    setSpin360Status('generating');
+    setSpin360Progress(0);
+
+    // 360 videos take ~1-3 min — creep a progress bar while we poll.
+    const progressInterval = setInterval(() => {
+      setSpin360Progress(p => Math.min(95, p + (p < 60 ? 1.5 : 0.4)));
+    }, 1000);
+
+    try {
+      const res = await fetch('/api/lab/generate-360', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ referenceImage: dishImage }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(text ? (JSON.parse(text).error || `HTTP ${res.status}`) : `HTTP ${res.status}`);
+      const data = JSON.parse(text);
+      if (!data.success) throw new Error(data.error || 'שגיאה');
+      const dishId = data.data.dishId as string;
+
+      // Poll until the video is ready (up to ~4 minutes).
+      for (let attempt = 0; attempt < 48; attempt++) {
+        await new Promise(r => setTimeout(r, 5000));
+        const sres = await fetch('/api/lab/360-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dishId }),
+        });
+        const sdata = await sres.json().catch(() => null);
+        const status = sdata?.data?.status;
+        if (status === 'DONE') {
+          setSpin360Progress(100);
+          setSpin360Url(sdata.data.videoUrl);
+          setSpin360Status('done');
+          return;
+        }
+        if (status === 'ERROR') throw new Error(sdata?.data?.error || 'הסרטון נכשל');
+      }
+      throw new Error('פג זמן — נסה שוב');
+    } catch (err) {
+      setSpin360Error(err instanceof Error ? err.message : 'שגיאה');
+      setSpin360Status('error');
+    } finally {
+      clearInterval(progressInterval);
+    }
   }
 
   const canGenerate = !!dishImage && !generating &&
@@ -731,6 +789,72 @@ function LabContent() {
               <><Zap className="w-5 h-5" /> גנרט הכל</>
             )}
           </button>
+
+          {/* ── 360° turntable video (opt-in) ── */}
+          <div className="mt-2 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3.5">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={want360}
+                onChange={(e) => setWant360(e.target.checked)}
+                className="w-4 h-4 accent-[var(--accent)]"
+              />
+              <RotateCw className="w-4 h-4 text-[var(--accent)]" />
+              <span className="text-sm font-semibold text-[var(--text)]">סרטון 360° מסתובב</span>
+              <span className="text-[11px] text-[var(--text-muted)]">(וידאו)</span>
+            </label>
+
+            {want360 && (
+              <div className="mt-3 space-y-3">
+                <button
+                  type="button"
+                  disabled={!dishImage || spin360Status === 'generating'}
+                  onClick={handleGenerate360}
+                  className="btn-primary w-full justify-center py-3 text-sm font-bold disabled:opacity-30"
+                >
+                  {spin360Status === 'generating' ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> מייצר סרטון... (עד 3 דק׳)</>
+                  ) : (
+                    <><RotateCw className="w-4 h-4" /> צור סרטון 360°</>
+                  )}
+                </button>
+
+                {spin360Status === 'generating' && (
+                  <div className="w-full bg-[var(--surface2)] rounded-full h-1 overflow-hidden border border-[var(--border)]">
+                    <div
+                      className="h-full rounded-full transition-all duration-1000"
+                      style={{ width: `${spin360Progress}%`, background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))' }}
+                    />
+                  </div>
+                )}
+
+                {spin360Error && (
+                  <div className="text-xs text-red-400 text-center">{spin360Error}</div>
+                )}
+
+                {spin360Url && (
+                  <div className="space-y-2">
+                    <video
+                      src={spin360Url}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      controls
+                      className="w-full rounded-xl border border-[var(--border)] bg-black"
+                    />
+                    <a
+                      href={spin360Url}
+                      download="spin360.mp4"
+                      className="btn-secondary w-full justify-center py-2.5 text-sm flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" /> הורד סרטון
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

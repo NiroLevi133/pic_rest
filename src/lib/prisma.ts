@@ -23,5 +23,8 @@ if (!globalForPrisma.dbMigrated) {
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "restaurantTheme" TEXT`,
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "canSingleGenerate" BOOLEAN NOT NULL DEFAULT true`,
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "canMultiGenerate" BOOLEAN NOT NULL DEFAULT false`,
+    prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "mediaType" TEXT NOT NULL DEFAULT 'image'`,
+    prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT`,
+    prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "videoOpId" TEXT`,
   ]).catch(() => {});
 }

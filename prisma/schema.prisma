@@ -52,6 +52,9 @@ model Dish {
   hidden         Boolean     @default(false)
   imageUrl       String?
   referenceImage String?
+  mediaType      String      @default("image")
+  videoUrl       String?
+  videoOpId      String?
   errorMessage   String?
   retryCount     Int         @default(0)
   createdAt      DateTime    @default(now())

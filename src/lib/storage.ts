@@ -75,6 +75,12 @@ async function uploadBuffer(buffer: Buffer, prefix: string, contentType = 'image
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
+/** Upload a video buffer (mp4) to storage and return its public URL. */
+export async function uploadVideo(buffer: Buffer, prefix = 'spin360'): Promise<string | null> {
+  if (!isStorageConfigured()) return null;
+  return uploadBuffer(buffer, prefix, 'video/mp4', 'mp4');
+}
+
 /**
  * Upload an existing base64 data URL to storage **without** re-processing it
  * through sharp. Used by the migration: the bytes are already sized, so we
