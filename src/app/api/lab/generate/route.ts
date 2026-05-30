@@ -181,13 +181,14 @@ export async function POST(req: NextRequest) {
       savedDishId = dish.id;
     }
 
-    // If Lambda is configured — fire-and-forget (async worker)
-    if (process.env.LAMBDA_GENERATE_URL) {
-      fireBg(savedDishId, referenceImage, prompt, extraImages.length > 0 ? extraImages : undefined);
+    // If Lambda is configured AND no extra images — fire-and-forget (async worker)
+    // When extra product images exist, bypass Lambda and generate directly so Gemini receives all images
+    if (process.env.LAMBDA_GENERATE_URL && extraImages.length === 0) {
+      fireBg(savedDishId, referenceImage, prompt);
       return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
     }
 
-    // No Lambda — generate directly in this request (synchronous fallback)
+    // No Lambda (or has product images) — generate directly in this request (synchronous)
     try {
       const imageProvider = getImageProvider(settings);
       const result = await imageProvider.generate({ prompt, referenceImage, extraImages: extraImages.length > 0 ? extraImages : undefined });
