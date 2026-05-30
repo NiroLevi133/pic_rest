@@ -134,14 +134,21 @@ export async function POST(req: NextRequest) {
       if (mods.length > 0) prompt += `\n\n# ADVANCED DIRECTIVES:\n${mods.map(m => `- ${m}`).join('\n')}`;
     }
 
-    // Append product clothing override (takes priority over any clothing in the prompt)
+    // Dynamic clothing substitution — replace default clothing with product images
     if (productImages && (productImages.shirt || productImages.pants || productImages.shoes)) {
-      const clothingLines: string[] = [];
-      let imgIdx = 2;
-      if (productImages.shirt)  { clothingLines.push(`- SHIRT: The image labeled "shirt product" (reference image ${imgIdx++}) shows the exact shirt to wear. Dress the person in that exact shirt — preserve cut, shape, fabric texture, and colors with 100% fidelity. No logos or changes.`); }
-      if (productImages.pants)  { clothingLines.push(`- PANTS: The image labeled "pants product" (reference image ${imgIdx++}) shows the exact pants to wear. Dress the person in those exact pants — preserve cut, shape, fabric texture, and colors with 100% fidelity. No changes.`); }
-      if (productImages.shoes)  { clothingLines.push(`- SHOES: The image labeled "shoes product" (reference image ${imgIdx++}) shows the exact shoes to put on the person's feet. Preserve shape, design, and colors exactly. No changes.`); }
-      prompt += `\n\n# CLOTHING OVERRIDE — THIS OVERRIDES ALL OTHER CLOTHING INSTRUCTIONS:\nThe additional reference images after the main person photo are product images. Use them as follows:\n${clothingLines.join('\n')}`;
+      const shirtText = productImages.shirt
+        ? 'the exact shirt from the shirt product image'
+        : 'oversized plain white t-shirt';
+      const pantsText = productImages.pants
+        ? 'the exact pants from the pants product image'
+        : 'classic blue jeans';
+      const shoesText = productImages.shoes
+        ? ', the exact shoes from the shoes product image'
+        : '';
+      prompt = prompt.replace(
+        /oversized plain white t-shirt, classic blue jeans/g,
+        `${shirtText}, ${pantsText}${shoesText}`
+      );
     }
 
     // Append caption overlay directive
