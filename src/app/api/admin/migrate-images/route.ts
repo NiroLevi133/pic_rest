@@ -27,67 +27,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Storage not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)' }, { status: 500 });
   }
 
-  // Keep each request small — base64 decode + resize + upload is heavy, and
-  // the function has a hard execution-time limit. The client calls repeatedly.
-  const limit = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 4, 20);
+  // Process one item at a time and stop well before the gateway timeout,
+  // returning partial progress. The client calls repeatedly until done.
+  const TIME_BUDGET_MS = 12_000;
+  const start = Date.now();
+  const maxItems = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 8, 20);
 
-  let migratedDishes = 0;
-  let migratedDishImages = 0;
+  let migrated = 0;
   const errors: string[] = [];
 
-  // Dish.imageUrl
-  const dishes = await prisma.dish.findMany({
-    where: { imageUrl: { startsWith: 'data:' } },
-    select: { id: true, imageUrl: true },
-    take: limit,
-  });
-  for (const d of dishes) {
-    try {
-      const url = await persistImage(d.imageUrl!);
-      // persistImage degrades to base64 on upload failure — don't write that
-      // back (it would leave the row un-migrated and loop forever).
-      if (!isStorageUrl(url)) { errors.push(`dish ${d.id}: upload failed`); continue; }
-      await prisma.dish.update({ where: { id: d.id }, data: { imageUrl: url } });
-      migratedDishes++;
-    } catch (err) {
-      errors.push(`dish ${d.id}: ${String(err)}`);
-    }
-  }
-
-  // DishImage.imageUrl — only use the remaining budget so total work per
-  // request stays bounded.
-  const budget = limit - dishes.length;
-  if (budget > 0) {
-    const dishImages = await prisma.dishImage.findMany({
+  async function migrateOneDish(): Promise<boolean> {
+    const d = await prisma.dish.findFirst({
       where: { imageUrl: { startsWith: 'data:' } },
       select: { id: true, imageUrl: true },
-      take: budget,
     });
-    for (const di of dishImages) {
-      try {
-        const url = await persistImage(di.imageUrl);
-        if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); continue; }
-        await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
-        migratedDishImages++;
-      } catch (err) {
-        errors.push(`dishImage ${di.id}: ${String(err)}`);
-      }
+    if (!d) return false;
+    try {
+      const url = await persistImage(d.imageUrl!);
+      if (!isStorageUrl(url)) { errors.push(`dish ${d.id}: upload failed`); return false; }
+      await prisma.dish.update({ where: { id: d.id }, data: { imageUrl: url } });
+      migrated++;
+    } catch (err) {
+      errors.push(`dish ${d.id}: ${String(err)}`);
+      return false;
     }
+    return true;
   }
 
-  const [remainingDishes, remainingDishImages] = await Promise.all([
-    prisma.dish.count({ where: { imageUrl: { startsWith: 'data:' } } }),
-    prisma.dishImage.count({ where: { imageUrl: { startsWith: 'data:' } } }),
-  ]);
+  async function migrateOneDishImage(): Promise<boolean> {
+    const di = await prisma.dishImage.findFirst({
+      where: { imageUrl: { startsWith: 'data:' } },
+      select: { id: true, imageUrl: true },
+    });
+    if (!di) return false;
+    try {
+      const url = await persistImage(di.imageUrl);
+      if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); return false; }
+      await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
+      migrated++;
+    } catch (err) {
+      errors.push(`dishImage ${di.id}: ${String(err)}`);
+      return false;
+    }
+    return true;
+  }
 
-  return NextResponse.json({
-    migratedDishes,
-    migratedDishImages,
-    remaining: remainingDishes + remainingDishImages,
-    remainingDishes,
-    remainingDishImages,
-    errors,
-  });
+  let dishesDone = false;
+  let dishImagesDone = false;
+  // Migrate Dish rows first, then DishImage rows. Stop on time/count budget or
+  // on the first failure (so we don't spin on a poison row).
+  for (let i = 0; i < maxItems && Date.now() - start < TIME_BUDGET_MS; i++) {
+    if (!dishesDone) {
+      const ok = await migrateOneDish();
+      if (ok) continue;
+      dishesDone = true; // none left (or a failure) — move on to dish-images
+    }
+    const ok = await migrateOneDishImage();
+    if (!ok) { dishImagesDone = true; break; }
+  }
+
+  // Cheap "is there more?" probe — avoids scanning/COUNTing the whole table.
+  const [moreDish, moreDishImage] = await Promise.all([
+    dishesDone ? prisma.dish.findFirst({ where: { imageUrl: { startsWith: 'data:' } }, select: { id: true } }) : Promise.resolve(true),
+    dishImagesDone ? prisma.dishImage.findFirst({ where: { imageUrl: { startsWith: 'data:' } }, select: { id: true } }) : Promise.resolve(true),
+  ]);
+  const hasMore = Boolean(moreDish) || Boolean(moreDishImage);
+
+  return NextResponse.json({ migrated, hasMore, errors });
 }
 
 /** Quick status check: how many rows still hold base64. */

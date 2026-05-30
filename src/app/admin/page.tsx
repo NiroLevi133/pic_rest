@@ -52,12 +52,12 @@ export default function AdminPage() {
         }
 
         consecutiveFailures = 0;
-        const moved = (data.migratedDishes || 0) + (data.migratedDishImages || 0);
+        const moved = data.migrated || 0;
         total += moved;
-        setMigrateStatus(`הועברו ${total} תמונות... נשארו ${data.remaining}`);
-        if (data.remaining === 0) { setMigrateStatus(`✅ הסתיים. סה"כ הועברו ${total} תמונות.`); break; }
+        setMigrateStatus(`הועברו ${total} תמונות...`);
+        if (!data.hasMore) { setMigrateStatus(`✅ הסתיים. סה"כ הועברו ${total} תמונות.`); break; }
         if (moved === 0) {
-          setMigrateStatus(`נעצר — ${data.remaining} לא עברו. ${(data.errors || []).slice(0, 2).join('; ')}`);
+          setMigrateStatus(`נעצר — ${total} עברו, השאר לא הצליחו. ${(data.errors || []).slice(0, 2).join('; ')}`);
           break;
         }
       }
