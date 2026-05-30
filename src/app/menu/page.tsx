@@ -156,8 +156,8 @@ function LabContent() {
   const shoesFileRef = useRef<HTMLInputElement>(null);
 
   async function handleProductUpload(file: File, setter: (v: string) => void) {
-    const { compressImage } = await import('@/lib/image-utils');
-    const compressed = await compressImage(file, 1024);
+    const dataUrl = await readFile(file);
+    const compressed = await compressImage(dataUrl, 1024);
     setter(compressed);
   }
 
