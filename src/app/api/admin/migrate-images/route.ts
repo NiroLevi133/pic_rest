@@ -27,7 +27,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Storage not configured (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)' }, { status: 500 });
   }
 
-  const limit = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 25, 100);
+  // Keep each request small — base64 decode + resize + upload is heavy, and
+  // the function has a hard execution-time limit. The client calls repeatedly.
+  const limit = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 4, 20);
 
   let migratedDishes = 0;
   let migratedDishImages = 0;
@@ -52,20 +54,24 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // DishImage.imageUrl
-  const dishImages = await prisma.dishImage.findMany({
-    where: { imageUrl: { startsWith: 'data:' } },
-    select: { id: true, imageUrl: true },
-    take: limit,
-  });
-  for (const di of dishImages) {
-    try {
-      const url = await persistImage(di.imageUrl);
-      if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); continue; }
-      await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
-      migratedDishImages++;
-    } catch (err) {
-      errors.push(`dishImage ${di.id}: ${String(err)}`);
+  // DishImage.imageUrl — only use the remaining budget so total work per
+  // request stays bounded.
+  const budget = limit - dishes.length;
+  if (budget > 0) {
+    const dishImages = await prisma.dishImage.findMany({
+      where: { imageUrl: { startsWith: 'data:' } },
+      select: { id: true, imageUrl: true },
+      take: budget,
+    });
+    for (const di of dishImages) {
+      try {
+        const url = await persistImage(di.imageUrl);
+        if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); continue; }
+        await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
+        migratedDishImages++;
+      } catch (err) {
+        errors.push(`dishImage ${di.id}: ${String(err)}`);
+      }
     }
   }
 

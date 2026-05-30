@@ -26,23 +26,41 @@ export default function AdminPage() {
   async function runMigration() {
     setMigrating(true);
     setMigrateStatus('בודק...');
+    let total = 0;
+    let consecutiveFailures = 0;
     try {
-      let total = 0;
-      // Keep processing batches until nothing base64 remains.
+      // Keep processing small batches until nothing base64 remains. Each
+      // request is intentionally tiny so it can't hit the function timeout.
       for (;;) {
-        const res = await fetch('/api/admin/migrate-images?limit=25', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) { setMigrateStatus('שגיאה: ' + (data.error || res.status)); break; }
-        total += (data.migratedDishes || 0) + (data.migratedDishImages || 0);
+        let data: any = null;
+        try {
+          const res = await fetch('/api/admin/migrate-images?limit=4', { method: 'POST' });
+          const text = await res.text();
+          data = text ? JSON.parse(text) : null;
+          if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+          if (!data) throw new Error('empty response');
+        } catch (e) {
+          // Timeout / empty body / transient error — retry a few times.
+          consecutiveFailures++;
+          if (consecutiveFailures >= 4) {
+            setMigrateStatus(`נעצר אחרי ${total} תמונות — שגיאות חוזרות (${String(e)}). אפשר ללחוץ שוב להמשך.`);
+            break;
+          }
+          setMigrateStatus(`הועברו ${total}... מנסה שוב (${consecutiveFailures})`);
+          await new Promise(r => setTimeout(r, 1500 * consecutiveFailures));
+          continue;
+        }
+
+        consecutiveFailures = 0;
+        const moved = (data.migratedDishes || 0) + (data.migratedDishImages || 0);
+        total += moved;
         setMigrateStatus(`הועברו ${total} תמונות... נשארו ${data.remaining}`);
         if (data.remaining === 0) { setMigrateStatus(`✅ הסתיים. סה"כ הועברו ${total} תמונות.`); break; }
-        if ((data.migratedDishes || 0) + (data.migratedDishImages || 0) === 0) {
-          setMigrateStatus(`נעצר — ${data.remaining} נכשלו. ${(data.errors || []).slice(0, 2).join('; ')}`);
+        if (moved === 0) {
+          setMigrateStatus(`נעצר — ${data.remaining} לא עברו. ${(data.errors || []).slice(0, 2).join('; ')}`);
           break;
         }
       }
-    } catch (err) {
-      setMigrateStatus('שגיאה: ' + String(err));
     } finally {
       setMigrating(false);
     }
