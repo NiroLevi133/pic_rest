@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { persistImage, isStorageConfigured, isStorageUrl } from '@/lib/storage';
+import { uploadDataUrlAsIs, isStorageConfigured, isStorageUrl } from '@/lib/storage';
 
 export const maxDuration = 300;
 
@@ -29,9 +29,10 @@ export async function POST(req: NextRequest) {
 
   // Process one item at a time and stop well before the gateway timeout,
   // returning partial progress. The client calls repeatedly until done.
-  const TIME_BUDGET_MS = 12_000;
+  // Bytes are uploaded as-is (no sharp), so each upload is fast.
+  const TIME_BUDGET_MS = 8_000;
   const start = Date.now();
-  const maxItems = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 8, 20);
+  const maxItems = Math.min(Number(req.nextUrl.searchParams.get('limit')) || 6, 20);
 
   let migrated = 0;
   const errors: string[] = [];
@@ -43,9 +44,9 @@ export async function POST(req: NextRequest) {
     });
     if (!d) return false;
     try {
-      const url = await persistImage(d.imageUrl!);
+      const url = await uploadDataUrlAsIs(d.imageUrl!);
       if (!isStorageUrl(url)) { errors.push(`dish ${d.id}: upload failed`); return false; }
-      await prisma.dish.update({ where: { id: d.id }, data: { imageUrl: url } });
+      await prisma.dish.update({ where: { id: d.id }, data: { imageUrl: url! } });
       migrated++;
     } catch (err) {
       errors.push(`dish ${d.id}: ${String(err)}`);
@@ -61,9 +62,9 @@ export async function POST(req: NextRequest) {
     });
     if (!di) return false;
     try {
-      const url = await persistImage(di.imageUrl);
+      const url = await uploadDataUrlAsIs(di.imageUrl);
       if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); return false; }
-      await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
+      await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url! } });
       migrated++;
     } catch (err) {
       errors.push(`dishImage ${di.id}: ${String(err)}`);

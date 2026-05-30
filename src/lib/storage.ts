@@ -57,13 +57,13 @@ async function toJpegBuffer(input: string): Promise<Buffer> {
 }
 
 /** Upload a buffer to the storage bucket and return its public URL. */
-async function uploadBuffer(buffer: Buffer, prefix: string): Promise<string> {
-  const path = `${prefix}/${Date.now()}-${randomBytes(8).toString('hex')}.jpg`;
+async function uploadBuffer(buffer: Buffer, prefix: string, contentType = 'image/jpeg', ext = 'jpg'): Promise<string> {
+  const path = `${prefix}/${Date.now()}-${randomBytes(8).toString('hex')}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${SERVICE_KEY}`,
-      'Content-Type': 'image/jpeg',
+      'Content-Type': contentType,
       'Cache-Control': 'public, max-age=31536000, immutable',
       'x-upsert': 'true',
     },
@@ -73,6 +73,21 @@ async function uploadBuffer(buffer: Buffer, prefix: string): Promise<string> {
     throw new Error(`storage upload failed ${res.status}: ${await res.text()}`);
   }
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+}
+
+/**
+ * Upload an existing base64 data URL to storage **without** re-processing it
+ * through sharp. Used by the migration: the bytes are already sized, so we
+ * just move them as-is, which keeps each request fast and timeout-safe.
+ * Returns null if storage is unconfigured or the input isn't a data URL.
+ */
+export async function uploadDataUrlAsIs(dataUrl: string, prefix = 'dishes'): Promise<string | null> {
+  if (!isStorageConfigured() || !dataUrl.startsWith('data:')) return null;
+  const comma = dataUrl.indexOf(',');
+  const mime = dataUrl.slice(5, comma).split(';')[0] || 'image/jpeg';
+  const ext = (mime.split('/')[1] || 'jpg').replace('+xml', '').replace('jpeg', 'jpg');
+  const buffer = Buffer.from(dataUrl.slice(comma + 1), 'base64');
+  return uploadBuffer(buffer, prefix, mime, ext);
 }
 
 /**

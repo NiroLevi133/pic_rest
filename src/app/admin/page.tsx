@@ -34,10 +34,11 @@ export default function AdminPage() {
       for (;;) {
         let data: any = null;
         try {
-          const res = await fetch('/api/admin/migrate-images?limit=4', { method: 'POST' });
+          const res = await fetch('/api/admin/migrate-images?limit=6', { method: 'POST' });
           const text = await res.text();
+          // Check status before parsing — error pages are HTML, not JSON.
+          if (!res.ok) throw new Error(`HTTP ${res.status} ${text.slice(0, 60).replace(/\s+/g, ' ')}`);
           data = text ? JSON.parse(text) : null;
-          if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
           if (!data) throw new Error('empty response');
         } catch (e) {
           // Timeout / empty body / transient error — retry a few times.
