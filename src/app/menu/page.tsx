@@ -174,7 +174,7 @@ function LabContent() {
     setMultiPrompts(DEFAULT_MULTI_PROMPTS.map(p =>
       p.replace(/oversized plain white t-shirt, classic blue jeans/g, `${shirtText}, ${pantsText}${shoesText}`)
     ));
-    setMultiCount(DEFAULT_MULTI_PROMPTS.length);
+    setMultiCount(5);
   }, [shirtImage, pantsImage, shoesImage]);
 
   /* ── caption overlay ── */
