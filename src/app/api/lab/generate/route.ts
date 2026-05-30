@@ -11,7 +11,7 @@ import { resizeForGallery } from '@/lib/image-resize';
 
 import OpenAI from 'openai';
 
-function fireBg(dishId: string, referenceImage: string, prompt: string): void {
+function fireBg(dishId: string, referenceImage: string, prompt: string, extraImages?: string[]): void {
   const url = process.env.LAMBDA_GENERATE_URL;
   const appUrl = process.env.APP_URL || '';
   const secret = process.env.BG_SECRET || '';
@@ -20,7 +20,7 @@ function fireBg(dishId: string, referenceImage: string, prompt: string): void {
   fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-bg-secret': secret },
-    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl }),
+    body: JSON.stringify({ dishId, referenceImage, prompt, callbackUrl, extraImages }),
   }).catch((err) => console.error('[fireBg] invoke failed', err));
 }
 
@@ -137,10 +137,11 @@ export async function POST(req: NextRequest) {
     // Append product clothing override (takes priority over any clothing in the prompt)
     if (productImages && (productImages.shirt || productImages.pants || productImages.shoes)) {
       const clothingLines: string[] = [];
-      if (productImages.shirt)  clothingLines.push(`- SHIRT: Dress the person in the EXACT shirt from product reference image ${extraImages.indexOf(productImages.shirt) + 2}. Preserve its exact cut, shape, fabric texture, and colors with 100% fidelity. It must fit naturally on the body without altering proportions.`);
-      if (productImages.pants)  clothingLines.push(`- PANTS: Dress the person in the EXACT pants from product reference image ${extraImages.indexOf(productImages.pants) + 2}. Preserve its exact cut, shape, fabric texture, and colors with 100% fidelity. It must sit naturally on the body.`);
-      if (productImages.shoes)  clothingLines.push(`- SHOES: Put the EXACT shoes from product reference image ${extraImages.indexOf(productImages.shoes) + 2} on the person's feet. Preserve exact shape, design, and colors. Do not alter the footwear in any way.`);
-      prompt += `\n\n# CLOTHING OVERRIDE (overrides all other clothing instructions):\n${clothingLines.join('\n')}`;
+      let imgIdx = 2;
+      if (productImages.shirt)  { clothingLines.push(`- SHIRT: The image labeled "shirt product" (reference image ${imgIdx++}) shows the exact shirt to wear. Dress the person in that exact shirt — preserve cut, shape, fabric texture, and colors with 100% fidelity. No logos or changes.`); }
+      if (productImages.pants)  { clothingLines.push(`- PANTS: The image labeled "pants product" (reference image ${imgIdx++}) shows the exact pants to wear. Dress the person in those exact pants — preserve cut, shape, fabric texture, and colors with 100% fidelity. No changes.`); }
+      if (productImages.shoes)  { clothingLines.push(`- SHOES: The image labeled "shoes product" (reference image ${imgIdx++}) shows the exact shoes to put on the person's feet. Preserve shape, design, and colors exactly. No changes.`); }
+      prompt += `\n\n# CLOTHING OVERRIDE — THIS OVERRIDES ALL OTHER CLOTHING INSTRUCTIONS:\nThe additional reference images after the main person photo are product images. Use them as follows:\n${clothingLines.join('\n')}`;
     }
 
     // Append caption overlay directive
@@ -182,7 +183,7 @@ export async function POST(req: NextRequest) {
 
     // If Lambda is configured — fire-and-forget (async worker)
     if (process.env.LAMBDA_GENERATE_URL) {
-      fireBg(savedDishId, referenceImage, prompt);
+      fireBg(savedDishId, referenceImage, prompt, extraImages.length > 0 ? extraImages : undefined);
       return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
     }
 

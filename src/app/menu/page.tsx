@@ -155,6 +155,9 @@ function LabContent() {
   const pantsFileRef = useRef<HTMLInputElement>(null);
   const shoesFileRef = useRef<HTMLInputElement>(null);
 
+  /* ── lightbox ── */
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
   async function handleProductUpload(file: File, setter: (v: string) => void) {
     const dataUrl = await readFile(file);
     const compressed = await compressImage(dataUrl, 1024);
@@ -675,7 +678,8 @@ function LabContent() {
                   <img
                     src={multiResults[i]!.imageUrl}
                     alt={`גינרציה ${i + 1}`}
-                    className="w-20 h-20 rounded-xl object-cover border border-[var(--border)]"
+                    className="w-20 h-20 rounded-xl object-cover border border-[var(--border)] cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => setLightboxUrl(multiResults[i]!.imageUrl)}
                   />
                   <button
                     type="button"
@@ -1194,6 +1198,29 @@ function LabContent() {
         </div>
       )}
     </div>
+
+    {/* ── Lightbox ── */}
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+        onClick={() => setLightboxUrl(null)}
+      >
+        <button
+          type="button"
+          onClick={() => setLightboxUrl(null)}
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+        >
+          <X className="w-5 h-5 text-white" />
+        </button>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={lightboxUrl}
+          alt="תצוגה מוגדלת"
+          className="max-h-[90vh] max-w-full rounded-2xl object-contain"
+          onClick={e => e.stopPropagation()}
+        />
+      </div>
+    )}
   );
 }
 
