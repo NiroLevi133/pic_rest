@@ -23,120 +23,149 @@ function model(): string {
 export const TURNTABLE_PROMPT = `Use the provided reference image as the sole source of truth for the character.
 
 CRITICAL IDENTITY PRESERVATION:
-Maintain the exact same real person throughout the entire video with absolute consistency. The character must remain identical to the reference image in every frame. Preserve exactly: face shape, facial structure, eyes, eyebrows, nose, lips, jawline, ears, skin tone, hairstyle, hair color, body proportions, clothing, clothing colors, textures, posture, and all unique identifying features.
-
-The generated character must look like the same real person from the reference image, not a reinterpretation, not a similar person, and not a redesigned version.
+Maintain the EXACT same real person throughout the entire video with absolute fidelity and maximum consistency.
+The generated person must look like the SAME real person shown in the reference image.
+Do not reinterpret, redesign, beautify, stylize, or modify the character in any way.
+Preserve exactly: face shape, facial structure, eyes, eyebrows, eyelashes, nose, lips, teeth, jawline, chin, ears, skin tone, skin texture, hair style, hair color, hair length, body proportions, clothing, clothing colors, clothing textures, accessories, natural expression, and unique identifying features.
+The character must remain completely identical from the first frame to the final frame.
 
 VIDEO TYPE:
-Professional fashion studio turntable presentation.
-
-DURATION:
-10 seconds.
-
-SHOT TYPE:
+Professional luxury fashion studio showcase.
+Duration: 6 seconds.
 Single continuous shot.
-
-CAMERA MOVEMENT:
-A perfectly smooth 360-degree orbit around the character.
-
+One uninterrupted take.
 No cuts.
 No transitions.
 No scene changes.
-No camera shake.
-No handheld movement.
-No zooming.
-No focus breathing.
 
-The camera must move at a constant speed around the character while maintaining a fixed distance and fixed height.
+CAMERA MOVEMENT:
+Perform a complete 360-degree orbit around the character.
+The camera must move smoothly and continuously at a constant speed.
+The camera starts directly in front of the character.
+The camera travels around the entire body in a perfect circular path.
+The camera finishes in the exact same front-facing position where it started.
+The orbit must be fluid and cinematic.
+No sudden acceleration.
+No sudden deceleration.
+No camera shake.
+No handheld effect.
+No zoom in.
+No zoom out.
+No focus breathing.
+No framing changes.
+Maintain the exact same camera distance throughout the entire video.
+Maintain the exact same camera height throughout the entire video.
 
 STUDIO ENVIRONMENT:
 Luxury professional photography studio.
-Clean seamless infinity cyclorama background.
-Soft neutral light gray background.
-Minimalist studio environment.
-No furniture.
+Premium commercial fashion photography setup.
+Clean seamless infinity cyclorama wall.
+Soft neutral light-gray studio background.
+No visible corners.
+No visible seams.
+No visible studio equipment.
 No props.
+No furniture.
 No decorations.
+No screens.
+No signs.
 No text.
 No logos.
 No watermarks.
 No additional objects.
-No moving elements.
-The background must remain completely static throughout the video.
+The background must remain completely static throughout the entire video.
 
 LIGHTING:
-Professional commercial studio lighting.
-Large softboxes.
-Soft cinematic lighting.
+Professional studio softbox lighting.
+Large soft light sources positioned symmetrically.
+Soft cinematic beauty lighting.
 Balanced shadows.
-Even illumination across the entire body.
 Natural skin rendering.
-High-end fashion catalog lighting.
-No dramatic shadows.
+Premium fashion catalog lighting.
+Even illumination across the entire body.
+Consistent lighting throughout the entire video.
+No lighting changes.
+No exposure shifts.
 No color shifts.
-No lighting changes during the shot.
+No flickering.
 
 COMPOSITION:
-Full-body framing.
+Full-body shot.
 Entire body visible from head to toe at all times.
-Character remains perfectly centered throughout the orbit.
+Character remains centered in frame.
 Eye-level camera angle.
-Consistent framing from beginning to end.
+Consistent framing.
+Consistent composition.
+No cropping.
+No reframing.
 
 CHARACTER BEHAVIOR:
 The character stands naturally in a relaxed neutral pose.
-Arms remain in a natural resting position.
+Arms relaxed naturally.
+Natural posture.
 Natural facial expression.
-The character remains still throughout the video.
+Character remains completely still.
 No walking.
-No pose changes.
+No turning.
 No gestures.
-No body movement.
+No pose changes.
 No facial expression changes.
+No blinking animations.
+No body movement.
 
 TIMELINE:
-Second 0-1: Front view. Character facing directly toward camera. Establishing shot.
-Second 1-2: Camera begins smooth clockwise orbit. 45-degree front-side angle.
-Second 2-3: Right-side profile view. 90 degrees.
-Second 3-4: 135-degree angle.
-Second 4-5: Rear three-quarter view.
-Second 5-6: Direct back view. 180 degrees.
-Second 6-7: Rear three-quarter view from opposite side.
-Second 7-8: Left-side profile view. 270 degrees.
-Second 8-9: 315-degree angle.
-Second 9-10: Return to the exact original front-facing position. Final frame should closely match the opening frame.
+Second 0.0-0.5: Front-facing view. Character looks directly toward camera. Full body visible. Camera perfectly centered. Establishes the exact appearance of the character.
+Second 0.5-1.0: Camera begins a smooth clockwise orbit. Front-right three-quarter angle. Approximately 45 degrees. Maintain perfect facial consistency.
+Second 1.0-1.5: Right-side profile. Approximately 90 degrees. Camera movement remains perfectly smooth. Character remains motionless.
+Second 1.5-2.0: Rear-right three-quarter angle. Approximately 135 degrees. All clothing details remain identical.
+Second 2.0-2.5: Direct rear view. Approximately 180 degrees. Perfect consistency in body proportions and clothing.
+Second 2.5-3.0: Rear-left three-quarter angle. Approximately 225 degrees. Background and lighting remain unchanged.
+Second 3.0-3.5: Left-side profile. Approximately 270 degrees. Character remains perfectly centered.
+Second 3.5-4.0: Front-left three-quarter angle. Approximately 315 degrees. Maintain exact identity.
+Second 4.0-4.5: Return toward front view. Camera continues moving smoothly. No speed changes.
+Second 4.5-5.0: Nearly identical to original angle. Facial features remain perfectly preserved.
+Second 5.0-5.5: Camera aligns with the original front-facing position. Character remains identical to opening frame.
+Second 5.5-6.0: Final hero shot. Exact front-facing view. Final frame should closely match the first frame.
 
 CONSISTENCY REQUIREMENTS:
 Perfect facial consistency.
+Perfect identity preservation.
 Perfect clothing consistency.
 Perfect body consistency.
+Perfect skin consistency.
 Perfect hair consistency.
 Perfect color consistency.
-Perfect lighting consistency.
 Perfect background consistency.
+Perfect lighting consistency.
 Perfect camera distance consistency.
 No identity drift.
 No face morphing.
 No body morphing.
-No outfit changes.
+No clothing changes.
+No hairstyle changes.
+No accessory changes.
 No age changes.
 No gender changes.
-No hairstyle changes.
 No skin tone changes.
 No proportion changes.
+No visual artifacts.
 
 VISUAL QUALITY:
 Ultra realistic.
 Photorealistic.
+Luxury fashion campaign.
 High-end commercial photography.
-Luxury fashion campaign quality.
-DSLR photography look.
+Professional studio production.
+DSLR photography quality.
 Sharp focus.
 Natural skin texture.
-Professional studio production.
+Realistic fabric details.
+Premium catalog photography.
 Extremely high character consistency.
 Smooth cinematic camera motion.
-360-degree turntable presentation.`;
+Perfect 360-degree turntable presentation.
+
+The final result should look like a professional fashion catalog video where a camera performs a flawless 360-degree orbit around the exact same real person from the reference image while preserving every visual detail with maximum consistency.`;
 
 function parseDataUrl(input: string): { mimeType: string; data: string } {
   if (input.startsWith('data:')) {
@@ -153,6 +182,7 @@ export async function startTurntable(
   referenceImage: string,
   prompt = TURNTABLE_PROMPT,
   aspectRatio = '9:16',
+  durationSeconds = 6,
 ): Promise<string> {
   const { mimeType, data } = parseDataUrl(referenceImage);
   const res = await fetch(`${BASE}/models/${model()}:predictLongRunning`, {
@@ -160,7 +190,7 @@ export async function startTurntable(
     headers: { 'x-goog-api-key': apiKey(), 'Content-Type': 'application/json' },
     body: JSON.stringify({
       instances: [{ prompt, image: { bytesBase64Encoded: data, mimeType } }],
-      parameters: { aspectRatio },
+      parameters: { aspectRatio, durationSeconds },
     }),
     signal: AbortSignal.timeout(60_000),
   });
