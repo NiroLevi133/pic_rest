@@ -420,6 +420,7 @@ function LabContent() {
     (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim());
 
   return (
+    <>
     <div className="max-w-2xl mx-auto space-y-5" dir="rtl">
 
       {/* ── Title ── */}
@@ -1221,6 +1222,7 @@ function LabContent() {
         />
       </div>
     )}
+    </>
   );
 }
 
