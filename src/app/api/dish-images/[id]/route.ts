@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resizeForGallery } from '@/lib/image-resize';
+import { isStorageUrl } from '@/lib/storage';
 
 const RECOMPRESS_THRESHOLD = 150_000;
 
@@ -50,6 +51,14 @@ export async function GET(
   }
 
   let url = record.imageUrl;
+
+  // Hosted on Storage/CDN → redirect straight to it.
+  if (isStorageUrl(url)) {
+    return NextResponse.redirect(url, {
+      status: 307,
+      headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+    });
+  }
 
   if (url.startsWith('data:')) {
     // Re-compress oversized images and save back to DB

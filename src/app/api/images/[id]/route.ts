@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { resizeForGallery } from '@/lib/image-resize';
+import { isStorageUrl } from '@/lib/storage';
 
 // Compress anything above ~80 KB binary (~107 KB base64)
 const RECOMPRESS_THRESHOLD = 107_000;
@@ -56,6 +57,15 @@ export async function GET(
   }
 
   const url = dish.imageUrl;
+
+  // Hosted on Storage/CDN → redirect the browser straight to it (no DB blob,
+  // no base64 decode through the serverless function).
+  if (isStorageUrl(url)) {
+    return NextResponse.redirect(url, {
+      status: 307,
+      headers: { 'Cache-Control': 'public, max-age=31536000, immutable' },
+    });
+  }
 
   // base64 data URL → serve directly (re-compress if too large)
   if (url.startsWith('data:')) {

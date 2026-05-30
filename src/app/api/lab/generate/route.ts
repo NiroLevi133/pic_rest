@@ -7,7 +7,7 @@ import { getSettings } from '@/lib/settings';
 import { getPresetPrompt, getMenuSeriesPrompt } from '@/lib/style-presets';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 import { getImageProvider } from '@/lib/providers';
-import { resizeForGallery } from '@/lib/image-resize';
+import { persistImage } from '@/lib/storage';
 
 import OpenAI from 'openai';
 
@@ -198,13 +198,13 @@ export async function POST(req: NextRequest) {
     try {
       const imageProvider = getImageProvider(settings);
       const result = await imageProvider.generate({ prompt, referenceImage, extraImages: extraImages.length > 0 ? extraImages : undefined });
-      const compressed = await resizeForGallery(result.imageUrl);
+      const storedUrl = await persistImage(result.imageUrl);
       await prisma.dish.update({
         where: { id: savedDishId },
-        data: { status: 'DONE', imageUrl: compressed, errorMessage: null },
+        data: { status: 'DONE', imageUrl: storedUrl, errorMessage: null },
       });
       // Also create a DishImage record for history
-      await prisma.dishImage.create({ data: { dishId: savedDishId, imageUrl: compressed } });
+      await prisma.dishImage.create({ data: { dishId: savedDishId, imageUrl: storedUrl } });
     } catch (genErr) {
       await prisma.dish.update({
         where: { id: savedDishId },

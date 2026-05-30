@@ -13,7 +13,9 @@ export async function GET(req: NextRequest) {
       dishes: {
         where: { status: 'DONE', imageUrl: { not: null } },
         orderBy: { updatedAt: 'desc' },
-        // Do NOT select imageUrl (base64) — served separately via /api/images/[id]
+        // Never select imageUrl here — for un-migrated rows it's a large base64
+        // blob. Images are served via /api/images/[id], which redirects hosted
+        // images straight to the CDN.
         select: { id: true, name: true, category: true, price: true, updatedAt: true },
       },
     },
