@@ -164,6 +164,19 @@ function LabContent() {
     setter(compressed);
   }
 
+  // Rebuild prompts when product images change
+  useEffect(() => {
+    const shirtText = shirtImage ? 'the exact shirt from the shirt product image' : 'oversized plain white t-shirt';
+    const pantsText = pantsImage ? 'the exact pants from the pants product image' : 'classic blue jeans';
+    const shoesText = pantsImage || shirtImage || shoesImage
+      ? shoesImage ? ', the exact shoes from the shoes product image' : ''
+      : '';
+    setMultiPrompts(DEFAULT_MULTI_PROMPTS.map(p =>
+      p.replace(/oversized plain white t-shirt, classic blue jeans/g, `${shirtText}, ${pantsText}${shoesText}`)
+    ));
+    setMultiCount(DEFAULT_MULTI_PROMPTS.length);
+  }, [shirtImage, pantsImage, shoesImage]);
+
   /* ── caption overlay ── */
   const [captionOverlay, setCaptionOverlay] = useState(false);
   const [captionText, setCaptionText] = useState('');
