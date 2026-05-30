@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { persistImage, isStorageConfigured } from '@/lib/storage';
+import { persistImage, isStorageConfigured, isStorageUrl } from '@/lib/storage';
 
 export const maxDuration = 300;
 
@@ -42,6 +42,9 @@ export async function POST(req: NextRequest) {
   for (const d of dishes) {
     try {
       const url = await persistImage(d.imageUrl!);
+      // persistImage degrades to base64 on upload failure — don't write that
+      // back (it would leave the row un-migrated and loop forever).
+      if (!isStorageUrl(url)) { errors.push(`dish ${d.id}: upload failed`); continue; }
       await prisma.dish.update({ where: { id: d.id }, data: { imageUrl: url } });
       migratedDishes++;
     } catch (err) {
@@ -58,6 +61,7 @@ export async function POST(req: NextRequest) {
   for (const di of dishImages) {
     try {
       const url = await persistImage(di.imageUrl);
+      if (!isStorageUrl(url)) { errors.push(`dishImage ${di.id}: upload failed`); continue; }
       await prisma.dishImage.update({ where: { id: di.id }, data: { imageUrl: url } });
       migratedDishImages++;
     } catch (err) {

@@ -81,16 +81,24 @@ async function uploadBuffer(buffer: Buffer, prefix: string): Promise<string> {
  * base64 data URL (legacy fallback) so the app keeps working.
  */
 export async function persistImage(input: string, prefix = 'dishes'): Promise<string> {
-  // Already hosted — nothing to do.
-  if (isHttpUrl(input) && SUPABASE_URL && input.startsWith(`${SUPABASE_URL}/storage`)) {
-    return input;
+  // Already hosted on our bucket — nothing to do.
+  if (isStorageUrl(input)) return input;
+
+  // This sits in the image-generation hot path, so it must never throw:
+  // a storage hiccup should degrade to the previous base64 behaviour, never
+  // lose a generated image.
+  if (isStorageConfigured()) {
+    try {
+      const buffer = await toJpegBuffer(input);
+      return await uploadBuffer(buffer, prefix);
+    } catch (err) {
+      console.error('[storage] upload failed, falling back to base64:', err);
+    }
   }
 
-  if (!isStorageConfigured()) {
-    // Fallback: keep previous behaviour (compressed base64 in DB).
-    return resizeForGallery(input);
+  try {
+    return await resizeForGallery(input);
+  } catch {
+    return input; // last resort: store as-is
   }
-
-  const buffer = await toJpegBuffer(input);
-  return uploadBuffer(buffer, prefix);
 }
