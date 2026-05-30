@@ -504,7 +504,7 @@ function LabContent() {
       )}
 
       {/* ── Menu scan ── */}
-      <div>
+      {!multiMode && <div>
         <button
           type="button"
           onClick={() => menuFileRef.current?.click()}
@@ -537,10 +537,10 @@ function LabContent() {
           )}
         </button>
         <input ref={menuFileRef} type="file" accept="image/*" className="hidden" onChange={handleMenuImage} />
-      </div>
+      </div>}
 
       {/* ── Dish name ── */}
-      <div className="card">
+      {!multiMode && <div className="card">
         <label className="label text-sm mb-2">
           שם המנה{' '}
           <span className="text-[var(--text-muted)] text-xs font-normal">(אופציונלי)</span>
@@ -567,7 +567,7 @@ function LabContent() {
             dir="rtl"
           />
         )}
-      </div>
+      </div>}
 
       {/* ── Multi-generation panel ── */}
       {multiMode && (
