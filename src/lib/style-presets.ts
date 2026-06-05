@@ -17,6 +17,89 @@ export interface StylePreset {
 
 export const STYLE_PRESETS: StylePreset[] = [
   {
+    key: 'product',
+    label: 'תמונת מוצר',
+    description: 'צילום מוצר על רקע לבן נקי, מוכן ל-Amazon/Shopify',
+    emoji: '📦',
+    color: 'slate',
+    prompt: `You are an elite commercial product photography and image editing expert. Your task is to transform the uploaded product image into a premium e-commerce product photograph that looks as if it was captured in a professional photography studio.
+
+OBJECTIVE:
+Create a clean, realistic, high-end product photo suitable for Amazon, Shopify, online stores, catalogs, advertisements, marketplaces, and marketing materials.
+
+PRODUCT PRESERVATION RULES:
+- Keep the product exactly as it appears in the original image.
+- Do not alter the product's design, shape, dimensions, proportions, colors, branding, logos, labels, materials, textures, finishes, or packaging.
+- Do not add, remove, invent, or modify any product features.
+- Preserve all text, labels, logos, and product details exactly as they appear.
+- Maintain accurate color reproduction and realistic materials.
+
+BACKGROUND AND SURFACE:
+- Replace the entire background with a seamless pure white background (#FFFFFF).
+- Place the product on a clean pure white studio surface (#FFFFFF).
+- The transition between the surface and background should be smooth and professional.
+- Remove all environmental elements and original background details.
+- Remove furniture, tables, walls, shelves, decorations, people, hands, reflections, and any unrelated objects.
+
+LIGHTING:
+- Use professional commercial studio lighting.
+- Create soft, balanced, diffused lighting from multiple softboxes.
+- Ensure even illumination across the entire product.
+- Eliminate harsh shadows and unwanted reflections.
+- Keep only a subtle, realistic contact shadow directly beneath the product to maintain realism.
+- Simulate a professional white studio photography setup.
+
+IMAGE QUALITY:
+- Ultra sharp focus.
+- High detail preservation.
+- Professional commercial photography quality.
+- Crisp edges and clean separation from the background.
+- Natural and realistic appearance.
+- High dynamic range.
+- Premium e-commerce presentation.
+- 8K quality appearance.
+- Noise-free and artifact-free output.
+
+COMPOSITION:
+- Center the product in the frame.
+- Keep the entire product fully visible.
+- Maintain balanced spacing around the product.
+- Straight and professional alignment.
+- Suitable for product catalogs and online marketplaces.
+
+STYLE:
+- Professional commercial product photography.
+- Luxury studio presentation.
+- Modern e-commerce style.
+- Amazon-ready product image.
+- Shopify-ready product image.
+- Catalog-quality product photography.
+
+CAMERA SIMULATION:
+- Professional studio photoshoot.
+- Canon EOS R5 quality.
+- 85mm professional product photography lens.
+- Softbox lighting setup.
+- Commercial advertising photography standards.
+
+STRICTLY AVOID:
+- Colored backgrounds.
+- Decorative props.
+- Additional objects.
+- Watermarks.
+- Borders.
+- Graphic elements.
+- Artificial effects.
+- Unrealistic reflections.
+- Over-saturation.
+- Product modifications.
+- Lifestyle scenes.
+- Text overlays.
+
+FINAL RESULT:
+Generate a realistic, premium, professional studio product photograph with a pure white background and pure white surface, making the product look ready for a top-tier e-commerce listing while preserving every detail of the original product.`,
+  },
+  {
     key: 'atmosphere',
     label: 'תמונות אווירה',
     description: 'צילום lifestyle חי ועליז עם רקע אווירתי ותאורת יום טבעית',
