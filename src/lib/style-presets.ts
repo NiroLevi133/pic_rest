@@ -13,6 +13,7 @@ export interface StylePreset {
   prompt: string;
   comingSoon?: boolean; // kept for type compat
   isCustom?: boolean;   // user uploads a style reference image
+  isQuoteForm?: boolean; // NIRO BAR price-quote flyer — needs the structured form, not a free prompt
 }
 
 export const STYLE_PRESETS: StylePreset[] = [
@@ -641,6 +642,15 @@ No text, logos, or watermarks.
 No artificial, "plastic" or AI-generated textures. Absolute photorealism.`,
   },
   {
+    key: 'niroBarQuote',
+    label: 'הצעת מחיר NIRO BAR',
+    description: 'פלייר אנכי 9:16 להצעת מחיר לאירועי בר קוקטיילים — עיצוב שמנת-שחור-זהב קבוע',
+    emoji: '🍸',
+    color: 'amber',
+    prompt: '', // generated dynamically from the quote form — see buildNiroBarQuotePrompt
+    isQuoteForm: true,
+  },
+  {
     key: 'custom',
     label: 'סגנון חופשי',
     description: 'העלה תמונת השראה וה-AI יאמץ את הסגנון',
@@ -876,4 +886,182 @@ QUALITY: 4K, ultra-photorealistic, maximum sharpness, clean minimal output.`;
     default:
       return getPresetPrompt(styleKey) ?? '';
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   NIRO BAR — price-quote flyer template (9:16, cream–black–gold brand kit)
+   ═══════════════════════════════════════════════════════════════════════ */
+
+export interface NiroBarPriceTier {
+  min?: string; // lower guest-count bound (optional)
+  max?: string; // upper guest-count bound (optional)
+  price?: string;
+}
+
+export interface NiroBarQuoteFields {
+  clientName: string;
+  clientRole?: string;
+  eventType: string;
+  eventDate: string;
+  eventLocation: string;
+  bartenders: string;
+  serviceHours?: string;
+  gift: string;
+  priceMode: 'perPerson' | 'total';
+  tiers?: NiroBarPriceTier[];
+  totalPrice?: string;
+  guestCap?: string;
+}
+
+/** Fixed list of event types called out explicitly in the template — plus a free-text "אחר" in the UI. */
+export const NIRO_BAR_EVENT_TYPES = ['מסיבת שקיעה', 'חתונה', 'יום הולדת', 'אירוע פרטי'];
+
+/** Number of featured cocktails is locked at 4 — not a per-quote variable. */
+export const NIRO_BAR_COCKTAIL_COUNT = 4;
+
+function niroBarTierLabel(tier: NiroBarPriceTier): string {
+  const min = tier.min?.trim();
+  const max = tier.max?.trim();
+  if (min && max) return `${min}–${max}`;
+  if (max) return `עד ${max}`;
+  if (min) return `מעל ${min}`;
+  return '';
+}
+
+function buildNiroBarPriceSection(fields: NiroBarQuoteFields): string {
+  if (fields.priceMode === 'total') {
+    const capLine = fields.guestCap?.trim()
+      ? `\nמתחת למחיר, בשורה קטנה יותר: עד ${fields.guestCap.trim()} משתתפים.`
+      : '';
+    return `אין מדרגות מחיר — יש להציג כרטיס גדול ויחיד במרכז, ולא 3 כרטיסים.
+כותרת הכרטיס: "מחיר כולל".
+מתחתיה, כאלמנט הכי בולט בחלק התחתון: ${fields.totalPrice?.trim() ?? ''} ₪${capLine}`;
+  }
+
+  const tiers = (fields.tiers ?? []).filter(t => t.price?.trim() && niroBarTierLabel(t));
+  const sideNames = ['ימני', 'אמצעי', 'שמאלי'];
+  const rows = tiers
+    .map((t, i) => {
+      const side = tiers.length === 3 ? `כרטיס ${sideNames[i]}` : `כרטיס ${i + 1}`;
+      return `${side}: ${niroBarTierLabel(t)} משתתפים — ${t.price!.trim()} ₪ לאדם`;
+    })
+    .join('\n');
+
+  return `כותרת: "מחיר לאדם".
+יש להציג ${tiers.length} כרטיסים אחידים בעיצובם, זה לצד זה, מסודרים מימין לשמאל בדיוק לפי הסדר הבא:
+${rows}
+אין להפוך את סדר המספרים בתוך טווח — למשל תמיד לכתוב "50–100" ולעולם לא "100–50".
+בכל כרטיס: שורה עליונה – כמות המשתתפים; במרכז – המחיר בגדול מאוד (האלמנט הכי בולט בכרטיס); מתחת – המילה "לאדם".`;
+}
+
+function renderNiroBarTemplate(template: string, vars: Record<string, string | undefined>): string {
+  let out = template.replace(/\{\{#IF (\w+)\}\}([\s\S]*?)\{\{\/IF\}\}/g, (_m, key: string, body: string) =>
+    vars[key]?.trim() ? body : ''
+  );
+  out = out.replace(/\{\{#IFNOT (\w+)\}\}([\s\S]*?)\{\{\/IFNOT\}\}/g, (_m, key: string, body: string) =>
+    vars[key]?.trim() ? '' : body
+  );
+  out = out.replace(/\{\{(\w+)\}\}/g, (_m, key: string) => vars[key] ?? '');
+  return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const NIRO_BAR_QUOTE_TEMPLATE = `צור פלייר אנכי להצעת מחיר עבור NIRO BAR, ביחס 9:16, בעיצוב אלגנטי, נקי, חמים ומעט יוקרתי — אבל לא כבד ולא רשמי מדי.
+
+המטרה היא ליצור טמפלט קבוע להצעות מחיר: אותו מבנה גרפי ואותה שפה עיצובית בכל הצעה, כשמשתנים רק פרטי האירוע, החבילה, המתנה והמחירים.
+
+# סגנון כללי
+העיצוב צריך לשדר: בר קוקטיילים מקצועי ואיכותי, אלגנטיות קלילה, תחושה אישית ולא תאגידית, עיצוב מודרני אך לא טרנדי מדי, מראה שיכול להישלח ישירות ללקוח ב-WhatsApp.
+
+# צבעוניות
+פלטה מצומצמת: רקע שמנת/ivory/off-white; טקסט מרכזי שחור או שחור-פחם; קווים, מסגרות ואייקונים בזהב עדין/champagne gold; מעט בז' או חול בהיר מותר; צבעי הקוקטיילים עצמם יכולים להכניס מעט צבע טבעי. לא להשתמש בהרבה ורוד, ירוק, כחול או צבעים בוהקים. התחושה הכללית: cream + black + soft gold + natural cocktail colors.
+
+# מבנה הפלייר — אנכי, מלמעלה למטה
+כל הטקסט בעברית חייב להיות RTL אמיתי, מיושר נכון, ללא אותיות הפוכות, ללא ערבוב סדר מילים, קריא וברור, עם היררכיה ברורה בין כותרות, טקסט ומחירים.
+
+## חלק 1 – לוגו
+בחלק העליון במרכז: למקם את לוגו NIRO BAR בתוך עיגול לבן/שמנת עם מסגרת זהב דקה. הלוגו לא צריך להיות גדול מדי. מתחת ללוגו — קו דקורטיבי קטן וזהוב ועדין. יש להשאיר מספיק white space סביב הלוגו.
+
+## חלק 2 – כותרת
+מתחת ללוגו, כותרת גדולה מאוד: "הצעת מחיר". שחורה, בפונט עברי אלגנטי, עבה וברור — לא מצועצע. מקצועי, מודרני ונקי.
+
+## חלק 3 – פרטי האירוע
+מתחת לכותרת: שורה אחת רחבה המחולקת ל-4 כרטיסים שווים. רקע שמנת כמעט לבן, מסגרת זהב דקה, פינות מעוגלות מעט, אייקון זהב בחלק העליון, כותרת קטנה, מידע מודגש מתחתיה. סדר הכרטיסים מימין לשמאל:
+
+כרטיס 1 – לקוח / איש קשר: אייקון אדם. טקסט: {{CLIENT_NAME}}
+{{#IF CLIENT_ROLE}}ומתחת, בשורה קטנה יותר: {{CLIENT_ROLE}}{{/IF}}
+{{#IFNOT CLIENT_ROLE}}אין תפקיד/חברה למקרה זה — הצג רק את שם הלקוח, ללא שורה שנייה.{{/IFNOT}}
+
+כרטיס 2 – סוג האירוע: אייקון קטן שמתאים לאירוע. טקסט: "אירוע:" ומתחת: {{EVENT_TYPE}}
+
+כרטיס 3 – תאריך: אייקון לוח שנה זהוב. טקסט: "תאריך:" ומתחת: {{EVENT_DATE}}
+
+כרטיס 4 – מיקום: אייקון location pin זהוב. טקסט: "מיקום:" ומתחת: {{EVENT_LOCATION}}
+
+## חלק 4 – אזור החבילה
+מתחת לפרטי האירוע: אזור מרכזי רחב עם כותרת גדולה במרכז, בשחור, עם אלמנטים זהובים קטנים משני הצדדים: "בר קוקטיילים לאירוע" (או "חבילת בר קוקטיילים", בהתאם להצעה).
+
+## חלק 5 – תמונת הקוקטיילים
+בחצי השמאלי של אזור החבילה: צילום ריאליסטי של 2 קוקטיילים מקצועיים (למשל אחד בגוון זהוב/צהוב ואחד בגוון ורוד/אפרסק) — אמיתיים, מוקפדים, עם קרח, קישוטי הדרים, נענע/רוזמרין, כוסות איכותיות. הצילום משתלב בעיצוב ולא נראה כמו תמונת סטוק נפרדת. רקע בהיר ונקי.
+
+## חלק 6 – מה כוללת החבילה
+בחצי הימני של האזור: פרטי החבילה, כל סעיף בשורה נפרדת, מימין לכל סעיף אייקון line-art קטן בזהב, בין הסעיפים קו מנוקד/קו זהב עדין. מבנה הסעיפים:
+
+סעיף 1: "{{BARTENDERS}} ברמנים מקצועיים" ומתחת, בשורה קטנה יותר: "בהתאם לכמות המשתתפים ולאופי האירוע."
+
+סעיף 2: "בר קוקטיילים מעוצב" ומתחת: "מותאם לאופי ולסגנון האירוע."
+
+סעיף 3: "4 קוקטיילים ללא הגבלה" ומתחת: "לבחירה מתוך תפריט הקוקטיילים."
+
+סעיף 4 – ציוד: "כל ציוד הבר כלול" ומתחת: "כוסות, קרח, ציוד בר וקישוטים לקוקטיילים."
+
+{{#IF SERVICE_HOURS}}
+סעיף אופציונלי – שעות פעילות: "{{SERVICE_HOURS}} שעות פעילות" ומתחת: "שירות בר מלא לאורך האירוע."
+{{/IF}}
+{{#IFNOT SERVICE_HOURS}}אין מידע על משך השירות במקרה זה — אין להציג סעיף שעות פעילות כלל.{{/IFNOT}}
+
+## חלק 7 – מתנה ממני
+מתחת לאזור החבילה: מסגרת אופקית נפרדת, מעט מודגשת אך אלגנטית. כותרת: "מתנה ממני" עם אייקון מתנה קטן בזהב. מתחת: "{{GIFT}}"
+
+### הצגת התמונה המודפסת (אם המתנה כוללת תמונות מודפסות)
+חשוב מאוד: לא להציג תמונה עגולה שמודפסת ישירות על הקצף של הקוקטייל. במקום זאת, להציג המחשה שמזכירה את השירות האמיתי: צילום קטן בסגנון Polaroid, מסגרת לבנה סביב התמונה, יחס אנכי קטן, התמונה מוחזקת בעזרת אטב עץ קטן המחובר לשפת כוס הקוקטייל או לקיסם/מחזיק קטן, התמונה נמצאת מעל הקוקטייל ולא מודפסת בתוך המשקה, ניתן להטות את ה-Polaroid מעט הצידה, וליצור צל קטן ועדין לעומק. התוצאה צריכה להיראות כמו תמונה אמיתית שמחוברת לקוקטייל באטב — לא כתמונה אכילה או חלק מהקצף.
+
+## חלק 8 – מחיר
+בתחתית: אזור מחירים ברור מאוד.
+{{PRICE_SECTION}}
+
+## חלק 9 – Footer
+בתחתית הפלייר: קו דק זהוב. מתחת: "NIRO BAR" באותיות גדולות יחסית. ומתחת, בסגנון קטן ועדין: "קוקטיילים, אווירה ובר שמגיע עד אליכם." ניתן להוסיף ענף בוטני קטן בצד אחד, ו-jigger/כלי בר קטן בצד השני. לא להעמיס.
+
+# קומפוזיציה
+הפלייר צריך להרגיש מאוזן מאוד, עם הרבה white space, ללא דחיסת טקסט, מרווחים קבועים. היררכיית גודל: 1) "הצעת מחיר", 2) המחיר, 3) כותרת החבילה, 4) כותרות הסעיפים, 5) טקסט משני.
+
+# סגנון צילום
+photorealistic, commercial cocktail photography, soft natural light, warm neutral lighting, realistic glass reflections, premium but approachable, clean tabletop, shallow depth of field. לא ליצור תמונות שנראות כמו איור.
+
+# סגנון אייקונים
+thin line icons, בצבע זהב, באותו עובי קו, ללא ערבוב בין סגנונות, מינימליסטיים.
+
+# טיפוגרפיה
+עברית: פונט מודרני ונקי, כותרות מעט אלגנטיות, טקסט גוף sans-serif קריא. אין להשתמש בפונט כתב יד עבור הטקסט המרכזי. ניתן להשתמש בכתב יד עדין באנגלית רק עבור "Niro Bar" כאלמנט משני.
+
+# דברים שאסור לעשות
+לא להשתמש ברקע כהה. לא להפוך את הפלייר לצבעוני מדי. לא להשתמש ב-gradient חזק או ב-neon או באפקטים כבדים. לא ליצור עומס של קוקטיילים ולא להשתמש ביותר מדי תמונות. לא לשנות את מבנה הטמפלט. לא להוסיף מידע שלא נמסר. לא להמציא מחירים. לא להוסיף מספר טלפון או אינסטגרם אם לא נמסרו. לא להוסיף אלכוהול או מותגים שלא מופיעים בפרטי ההצעה. לא להציג את התמונה המודפסת כחלק מהקצף או כצילום אכיל — ה-Polaroid חייב להיות מחוץ למשקה ומחובר באמצעות אטב.
+
+# חוק חשוב
+העיצוב צריך להיראות כמו אותו טמפלט קבוע של NIRO BAR בכל פעם, ולא כמו פלייר חדש לחלוטין. יש לשמור תמיד על: אותו מבנה, אותו מיקום לוגו, אותה היררכיית כותרות, אותו אזור פרטי אירוע, אותו מבנה חבילה, אותה המחשת Polaroid עם אטב, אותו אזור מחירים, אותה פלטת שמנת–שחור–זהב, אותו Footer. החלף רק את המידע המשתנה לפי ההצעה החדשה. התוצר הסופי צריך להיראות כמו Brand Template מקצועי להצעות מחיר של NIRO BAR שאפשר לזהות מיד כחלק מאותה סדרת עיצובים.`;
+
+/** Fills the locked NIRO BAR quote template with this request's variables. */
+export function buildNiroBarQuotePrompt(fields: NiroBarQuoteFields): string {
+  const vars: Record<string, string | undefined> = {
+    CLIENT_NAME: fields.clientName?.trim(),
+    CLIENT_ROLE: fields.clientRole?.trim(),
+    EVENT_TYPE: fields.eventType?.trim(),
+    EVENT_DATE: fields.eventDate?.trim(),
+    EVENT_LOCATION: fields.eventLocation?.trim(),
+    BARTENDERS: fields.bartenders?.trim(),
+    SERVICE_HOURS: fields.serviceHours?.trim(),
+    GIFT: fields.gift?.trim(),
+    PRICE_SECTION: buildNiroBarPriceSection(fields),
+  };
+  return renderNiroBarTemplate(NIRO_BAR_QUOTE_TEMPLATE, vars);
 }

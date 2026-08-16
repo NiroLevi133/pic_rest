@@ -8,8 +8,14 @@ import {
   FlaskConical, Type, AlignLeft, Minus, RotateCw,
 } from 'lucide-react';
 import { downloadImage } from '@/lib/download-utils';
-import { STYLE_PRESETS } from '@/lib/style-presets';
+import {
+  STYLE_PRESETS, NIRO_BAR_EVENT_TYPES, buildNiroBarQuotePrompt,
+  type NiroBarQuoteFields, type NiroBarPriceTier,
+} from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
+
+const NIRO_BAR_QUOTE_KEY = 'niroBarQuote';
+const EVENT_TYPE_CUSTOM = '__custom__';
 
 const CAPTION_STYLES = [
   { key: 'elegant',   label: 'אלגנטי',    icon: Type,      description: 'סריף לבן עדין' },
@@ -93,6 +99,53 @@ function LabContent() {
   const [styleRefImage, setStyleRefImage] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
   const styleRefFileRef = useRef<HTMLInputElement>(null);
+  const isQuote = styleKey === NIRO_BAR_QUOTE_KEY;
+
+  /* ── NIRO BAR price-quote form ── */
+  const [quoteClientName, setQuoteClientName] = useState('');
+  const [quoteClientRole, setQuoteClientRole] = useState('');
+  const [quoteEventType, setQuoteEventType] = useState(NIRO_BAR_EVENT_TYPES[0]);
+  const [quoteEventTypeCustom, setQuoteEventTypeCustom] = useState('');
+  const [quoteEventDate, setQuoteEventDate] = useState('');
+  const [quoteEventLocation, setQuoteEventLocation] = useState('');
+  const [quoteBartenders, setQuoteBartenders] = useState('');
+  const [quoteServiceHours, setQuoteServiceHours] = useState('');
+  const [quoteGift, setQuoteGift] = useState('עד 30 תמונות מודפסות על הקוקטיילים');
+  const [quotePriceMode, setQuotePriceMode] = useState<'perPerson' | 'total'>('perPerson');
+  const [quoteTiers, setQuoteTiers] = useState<NiroBarPriceTier[]>([
+    { max: '', price: '' },
+    { min: '', max: '', price: '' },
+    { min: '', price: '' },
+  ]);
+  const [quoteTotalPrice, setQuoteTotalPrice] = useState('');
+  const [quoteGuestCap, setQuoteGuestCap] = useState('');
+
+  const quoteEventTypeResolved = quoteEventType === EVENT_TYPE_CUSTOM ? quoteEventTypeCustom.trim() : quoteEventType;
+
+  function getQuoteFields(): NiroBarQuoteFields {
+    return {
+      clientName: quoteClientName,
+      clientRole: quoteClientRole,
+      eventType: quoteEventTypeResolved,
+      eventDate: quoteEventDate,
+      eventLocation: quoteEventLocation,
+      bartenders: quoteBartenders,
+      serviceHours: quoteServiceHours,
+      gift: quoteGift,
+      priceMode: quotePriceMode,
+      tiers: quoteTiers,
+      totalPrice: quoteTotalPrice,
+      guestCap: quoteGuestCap,
+    };
+  }
+
+  const quotePriceFilled = quotePriceMode === 'total'
+    ? !!quoteTotalPrice.trim()
+    : quoteTiers.some(t => t.price?.trim());
+
+  const canGenerateQuote = !!quoteClientName.trim() && !!quoteEventTypeResolved.trim() &&
+    !!quoteEventDate.trim() && !!quoteEventLocation.trim() && !!quoteBartenders.trim() &&
+    !!quoteGift.trim() && quotePriceFilled;
 
   const [styleLockedFromMenu, setStyleLockedFromMenu] = useState(false);
   useEffect(() => {
@@ -335,14 +388,17 @@ Generate a realistic, premium, professional studio product photograph with a pur
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           referenceImage: dishImage,
-          dishName: selectedDish,
+          dishName: isQuote ? `הצעת מחיר – ${quoteClientName.trim()}` : selectedDish,
           styleKey,
           styleRefImage,
-          customPrompt: styleKey === 'custom' && customPrompt.trim() ? customPrompt.trim() : undefined,
-          captionOverlay: captionOverlay
+          customPrompt: isQuote
+            ? buildNiroBarQuotePrompt(getQuoteFields())
+            : (styleKey === 'custom' && customPrompt.trim() ? customPrompt.trim() : undefined),
+          rawPrompt: isQuote ? true : undefined,
+          captionOverlay: isQuote ? null : (captionOverlay
             ? { enabled: true, text: captionText || selectedDish, style: captionStyle }
-            : null,
-          advancedOptions: { angle, showPrice, festive, hands, action, preparation },
+            : null),
+          advancedOptions: isQuote ? undefined : { angle, showPrice, festive, hands, action, preparation },
         }),
       });
       const text = await res.text();
@@ -563,7 +619,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
   }
 
   const canGenerate = !!dishImage && !generating &&
-    (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim());
+    (isQuote ? canGenerateQuote : (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim()));
 
   return (
     <>
@@ -581,7 +637,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
       {/* ── Dish photo upload ── */}
       <div className="flex justify-center">
         <div className="w-1/2 max-w-[220px]">
-          <p className="text-xs font-medium text-[var(--text-muted)] mb-2 text-center">צילום המנה</p>
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-2 text-center">{isQuote ? 'צילום קוקטיילים (רפרנס)' : 'צילום המנה'}</p>
           <button
             type="button"
             onClick={() => dishFileRef.current?.click()}
@@ -654,7 +710,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
       )}
 
       {/* ── Menu scan ── */}
-      {!multiMode && <div>
+      {!multiMode && !isQuote && <div>
         <button
           type="button"
           onClick={() => menuFileRef.current?.click()}
@@ -690,7 +746,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
       </div>}
 
       {/* ── Dish name ── */}
-      {!multiMode && <div className="card">
+      {!multiMode && !isQuote && <div className="card">
         <label className="label text-sm mb-2">
           שם המנה{' '}
           <span className="text-[var(--text-muted)] text-xs font-normal">(אופציונלי)</span>
@@ -949,7 +1005,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
 
           {/* Main presets */}
           <div className="grid grid-cols-4 gap-2">
-            {STYLE_PRESETS.filter(p => !['butcher', 'skewers', 'marble', 'custom'].includes(p.key)).map(preset => (
+            {STYLE_PRESETS.filter(p => !['butcher', 'skewers', 'marble', 'custom', NIRO_BAR_QUOTE_KEY].includes(p.key)).map(preset => (
               <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} />
             ))}
           </div>
@@ -966,6 +1022,18 @@ Generate a realistic, premium, professional studio product photograph with a pur
                 <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} wide />
               ))}
             </div>
+          </div>
+
+          {/* Price quote flyer */}
+          <div className="mt-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="flex-1 h-px bg-[var(--border)]" />
+              <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">להצעות מחיר</span>
+              <div className="flex-1 h-px bg-[var(--border)]" />
+            </div>
+            {STYLE_PRESETS.filter(p => p.key === NIRO_BAR_QUOTE_KEY).map(preset => (
+              <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} fullWidth />
+            ))}
           </div>
 
           {/* Custom */}
@@ -1024,7 +1092,135 @@ Generate a realistic, premium, professional studio product photograph with a pur
         </div>
       )}
 
-      {!multiMode && (
+      {/* ── NIRO BAR price-quote form ── */}
+      {!multiMode && isQuote && (
+        <div className="card space-y-4" dir="rtl">
+          <div>
+            <label className="label text-sm mb-3">פרטי ההצעה</label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label text-xs mb-1.5">שם הלקוח *</label>
+                <input className="input text-sm" value={quoteClientName} onChange={e => setQuoteClientName(e.target.value)} placeholder="לדוגמה: דנה כהן" dir="rtl" />
+              </div>
+              <div>
+                <label className="label text-xs mb-1.5">תפקיד / חברה <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
+                <input className="input text-sm" value={quoteClientRole} onChange={e => setQuoteClientRole(e.target.value)} placeholder="לדוגמה: מנהלת אירועים" dir="rtl" />
+              </div>
+              <div>
+                <label className="label text-xs mb-1.5">סוג האירוע *</label>
+                <select className="input text-sm" value={quoteEventType} onChange={e => setQuoteEventType(e.target.value)}>
+                  {NIRO_BAR_EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  <option value={EVENT_TYPE_CUSTOM}>אחר...</option>
+                </select>
+                {quoteEventType === EVENT_TYPE_CUSTOM && (
+                  <input className="input text-sm mt-2" value={quoteEventTypeCustom} onChange={e => setQuoteEventTypeCustom(e.target.value)} placeholder="הקלד סוג אירוע" dir="rtl" />
+                )}
+              </div>
+              <div>
+                <label className="label text-xs mb-1.5">תאריך *</label>
+                <input className="input text-sm" value={quoteEventDate} onChange={e => setQuoteEventDate(e.target.value)} placeholder="לדוגמה: 12.9.2026" dir="rtl" />
+              </div>
+              <div className="col-span-2">
+                <label className="label text-xs mb-1.5">מיקום *</label>
+                <input className="input text-sm" value={quoteEventLocation} onChange={e => setQuoteEventLocation(e.target.value)} placeholder="לדוגמה: גני יהודה, רחובות" dir="rtl" />
+              </div>
+              <div>
+                <label className="label text-xs mb-1.5">מספר ברמנים *</label>
+                <input className="input text-sm" type="number" min="1" value={quoteBartenders} onChange={e => setQuoteBartenders(e.target.value)} placeholder="2" dir="rtl" />
+              </div>
+              <div>
+                <label className="label text-xs mb-1.5">שעות פעילות <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
+                <input className="input text-sm" type="number" min="1" value={quoteServiceHours} onChange={e => setQuoteServiceHours(e.target.value)} placeholder="4" dir="rtl" />
+              </div>
+              <div className="col-span-2">
+                <label className="label text-xs mb-1.5">מתנה ממני *</label>
+                <input className="input text-sm" value={quoteGift} onChange={e => setQuoteGift(e.target.value)} dir="rtl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-[var(--border)]">
+            <label className="label text-sm mb-2">מבנה המחיר</label>
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setQuotePriceMode('perPerson')}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
+                  quotePriceMode === 'perPerson'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+                }`}
+              >
+                מחיר לאדם (מדרגות)
+              </button>
+              <button
+                type="button"
+                onClick={() => setQuotePriceMode('total')}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
+                  quotePriceMode === 'total'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+                }`}
+              >
+                מחיר כולל
+              </button>
+            </div>
+
+            {quotePriceMode === 'perPerson' ? (
+              <div className="space-y-2">
+                {([
+                  { idx: 0, label: 'כרטיס ימני', fields: ['max', 'price'] },
+                  { idx: 1, label: 'כרטיס אמצעי', fields: ['min', 'max', 'price'] },
+                  { idx: 2, label: 'כרטיס שמאלי', fields: ['min', 'price'] },
+                ] as { idx: number; label: string; fields: ('min' | 'max' | 'price')[] }[]).map(({ idx, label, fields }) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--text-muted)] w-16 shrink-0">{label}</span>
+                    {fields.includes('min') && (
+                      <input
+                        className="input text-sm"
+                        type="number"
+                        placeholder="מ-"
+                        value={quoteTiers[idx]?.min ?? ''}
+                        onChange={e => setQuoteTiers(prev => { const a = [...prev]; a[idx] = { ...a[idx], min: e.target.value }; return a; })}
+                      />
+                    )}
+                    {fields.includes('max') && (
+                      <input
+                        className="input text-sm"
+                        type="number"
+                        placeholder="עד"
+                        value={quoteTiers[idx]?.max ?? ''}
+                        onChange={e => setQuoteTiers(prev => { const a = [...prev]; a[idx] = { ...a[idx], max: e.target.value }; return a; })}
+                      />
+                    )}
+                    <input
+                      className="input text-sm"
+                      type="number"
+                      placeholder="מחיר לאדם ₪"
+                      value={quoteTiers[idx]?.price ?? ''}
+                      onChange={e => setQuoteTiers(prev => { const a = [...prev]; a[idx] = { ...a[idx], price: e.target.value }; return a; })}
+                    />
+                  </div>
+                ))}
+                <p className="text-[11px] text-[var(--text-muted)]">אפשר למלא כרטיס אחד עד שלושה — ריקים לא יוצגו בפלייר.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label text-xs mb-1.5">מחיר כולל ₪ *</label>
+                  <input className="input text-sm" type="number" value={quoteTotalPrice} onChange={e => setQuoteTotalPrice(e.target.value)} dir="rtl" />
+                </div>
+                <div>
+                  <label className="label text-xs mb-1.5">עד כמות משתתפים <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
+                  <input className="input text-sm" type="number" value={quoteGuestCap} onChange={e => setQuoteGuestCap(e.target.value)} dir="rtl" />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!multiMode && !isQuote && (
         <>
           {/* ── Advanced options ── */}
           <div className="card overflow-hidden">
@@ -1203,8 +1399,8 @@ Generate a realistic, premium, professional studio product photograph with a pur
           {/* Meta + actions */}
           <div className="flex items-center justify-between" dir="rtl">
             <div>
-              {selectedDish && (
-                <p className="font-semibold text-[var(--text)]">{selectedDish}</p>
+              {(isQuote ? quoteClientName : selectedDish) && (
+                <p className="font-semibold text-[var(--text)]">{isQuote ? `הצעת מחיר – ${quoteClientName}` : selectedDish}</p>
               )}
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}{' '}
@@ -1216,7 +1412,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => downloadImage(result.imageUrl, `${selectedDish || 'dish'}.jpg`)}
+                onClick={() => downloadImage(result.imageUrl, `${(isQuote ? quoteClientName : selectedDish) || 'dish'}.jpg`)}
                 className="btn-secondary p-2.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />
@@ -1232,7 +1428,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
           </div>
 
           {/* Instagram caption */}
-          <div className="mt-5 pt-5 border-t border-[var(--border)]">
+          {!isQuote && <div className="mt-5 pt-5 border-t border-[var(--border)]">
             {!caption ? (
               <button
                 type="button"
@@ -1279,7 +1475,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
                 </div>
               </div>
             )}
-          </div>
+          </div>}
         </div>
       )}
 
