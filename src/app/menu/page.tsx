@@ -99,7 +99,6 @@ function LabContent() {
   const [styleRefImage, setStyleRefImage] = useState<string | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
   const styleRefFileRef = useRef<HTMLInputElement>(null);
-  const isQuote = styleKey === NIRO_BAR_QUOTE_KEY;
 
   /* ── NIRO BAR price-quote form ── */
   const [quoteClientName, setQuoteClientName] = useState('');
@@ -268,6 +267,11 @@ Generate a realistic, premium, professional studio product photograph with a pur
     `${IDENTITY_LOCK} Selfie shot, one hand holding the phone slightly below face level creating a gentle upward angle, arm partially visible in frame, she looks directly into the camera with a natural relaxed expression, ${STYLE_SUFFIX}, casual indoor background softly blurred, authentic selfie feel, photorealistic, cinematic realism, 4K ultra detailed, 9:16 aspect ratio`,
   ];
   const [multiMode, setMultiMode] = useState(false);
+  const [quoteMode, setQuoteMode] = useState(false);
+  const isQuote = quoteMode;
+  function selectSingleMode() { setMultiMode(false); setQuoteMode(false); }
+  function selectMultiMode() { setMultiMode(true); setQuoteMode(false); }
+  function selectQuoteMode() { setMultiMode(false); setQuoteMode(true); }
   const [multiCount, setMultiCount] = useState(5);
   const [multiPrompts, setMultiPrompts] = useState<string[]>(DEFAULT_MULTI_PROMPTS);
   const [multiResults, setMultiResults] = useState<Array<{ imageUrl: string; dishId: string } | null>>(DEFAULT_MULTI_PROMPTS.map(() => null));
@@ -368,7 +372,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
   }
 
   async function handleGenerate() {
-    if (!dishImage) { setError('נא להעלות תמונת מנה'); return; }
+    if (!isQuote && !dishImage) { setError('נא להעלות תמונת מנה'); return; }
     setError('');
     setGenerating(true);
     setProgress(0);
@@ -387,9 +391,10 @@ Generate a realistic, premium, professional studio product photograph with a pur
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          referenceImage: dishImage,
+          referenceImage: isQuote ? undefined : dishImage,
+          textOnly: isQuote,
           dishName: isQuote ? `הצעת מחיר – ${quoteClientName.trim()}` : selectedDish,
-          styleKey,
+          styleKey: isQuote ? NIRO_BAR_QUOTE_KEY : styleKey,
           styleRefImage,
           customPrompt: isQuote
             ? buildNiroBarQuotePrompt(getQuoteFields())
@@ -618,8 +623,9 @@ Generate a realistic, premium, professional studio product photograph with a pur
     }
   }
 
-  const canGenerate = !!dishImage && !generating &&
-    (isQuote ? canGenerateQuote : (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim()));
+  const canGenerate = !generating && (isQuote
+    ? canGenerateQuote
+    : !!dishImage && (styleKey !== 'custom' || !!styleRefImage || !!customPrompt.trim()));
 
   return (
     <>
@@ -635,9 +641,9 @@ Generate a realistic, premium, professional studio product photograph with a pur
       </div>
 
       {/* ── Dish photo upload ── */}
-      <div className="flex justify-center">
+      {!isQuote && <div className="flex justify-center">
         <div className="w-1/2 max-w-[220px]">
-          <p className="text-xs font-medium text-[var(--text-muted)] mb-2 text-center">{isQuote ? 'צילום קוקטיילים (רפרנס)' : 'צילום המנה'}</p>
+          <p className="text-xs font-medium text-[var(--text-muted)] mb-2 text-center">צילום המנה</p>
           <button
             type="button"
             onClick={() => dishFileRef.current?.click()}
@@ -670,7 +676,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
           </button>
           <input ref={dishFileRef} type="file" accept="image/*" className="hidden" onChange={handleDishImage} />
         </div>
-      </div>
+      </div>}
 
       {/* ── Mode toggle ── */}
       {permsLoaded && (canSingle || canMulti) && (
@@ -678,9 +684,9 @@ Generate a realistic, premium, professional studio product photograph with a pur
           {canSingle && (
             <button
               type="button"
-              onClick={() => setMultiMode(false)}
+              onClick={selectSingleMode}
               className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
-                !multiMode
+                !multiMode && !quoteMode
                   ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
                   : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
               }`}
@@ -691,7 +697,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
           {canMulti && (
             <button
               type="button"
-              onClick={() => setMultiMode(true)}
+              onClick={selectMultiMode}
               className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
                 multiMode
                   ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
@@ -699,6 +705,19 @@ Generate a realistic, premium, professional studio product photograph with a pur
               }`}
             >
               בחירה מרובה
+            </button>
+          )}
+          {canSingle && (
+            <button
+              type="button"
+              onClick={selectQuoteMode}
+              className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-all duration-200 cursor-pointer ${
+                quoteMode
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+              }`}
+            >
+              הצעת מחיר
             </button>
           )}
         </div>
@@ -990,7 +1009,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
       )}
 
       {/* ── Style locked from menu ── */}
-      {!multiMode && styleLockedFromMenu && (
+      {!multiMode && !isQuote && styleLockedFromMenu && (
         <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--accent)]/10 border border-[var(--accent)]/20 text-sm" dir="rtl">
           <span>{STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}</span>
           <span className="text-[var(--accent)] font-semibold">{STYLE_PRESETS.find(p => p.key === styleKey)?.label}</span>
@@ -999,7 +1018,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
       )}
 
       {/* ── Style selector ── */}
-      {!multiMode && !styleLockedFromMenu && (
+      {!multiMode && !isQuote && !styleLockedFromMenu && (
         <div className="card">
           <label className="label text-sm mb-3">סגנון צילום</label>
 
@@ -1022,18 +1041,6 @@ Generate a realistic, premium, professional studio product photograph with a pur
                 <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} wide />
               ))}
             </div>
-          </div>
-
-          {/* Price quote flyer */}
-          <div className="mt-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex-1 h-px bg-[var(--border)]" />
-              <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider px-1">להצעות מחיר</span>
-              <div className="flex-1 h-px bg-[var(--border)]" />
-            </div>
-            {STYLE_PRESETS.filter(p => p.key === NIRO_BAR_QUOTE_KEY).map(preset => (
-              <StyleButton key={preset.key} preset={preset} selected={styleKey === preset.key} onSelect={() => { setStyleKey(preset.key); setStyleRefImage(null); }} fullWidth />
-            ))}
           </div>
 
           {/* Custom */}
@@ -1372,9 +1379,9 @@ Generate a realistic, premium, professional studio product photograph with a pur
           style={canGenerate ? { boxShadow: '0 4px 24px rgba(200,150,42,0.18)' } : {}}
         >
           {generating ? (
-            <><Loader2 className="w-5 h-5 animate-spin" /> מייצר תמונה...</>
+            <><Loader2 className="w-5 h-5 animate-spin" /> {isQuote ? 'מייצר הצעת מחיר...' : 'מייצר תמונה...'}</>
           ) : (
-            <><Zap className="w-5 h-5" /> גנרט תמונה</>
+            <><Zap className="w-5 h-5" /> {isQuote ? 'צור הצעת מחיר' : 'גנרט תמונה'}</>
           )}
         </button>
       )}
@@ -1571,7 +1578,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
                     <h2 className="text-base font-bold">בחר סגנון צילום</h2>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    {STYLE_PRESETS.map(p => (
+                    {STYLE_PRESETS.filter(p => p.key !== NIRO_BAR_QUOTE_KEY).map(p => (
                       <button
                         key={p.key}
                         type="button"

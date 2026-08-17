@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt, multiMode: isMultiMode, productImages } = await req.json();
+    const { referenceImage: reqReferenceImage, dishName, styleKey, styleRefImage, customPrompt, dishId: rawDishId, customNote, advancedOptions, captionOverlay, rawPrompt, multiMode: isMultiMode, textOnly, productImages } = await req.json();
     const extraImages: string[] = [productImages?.shirt, productImages?.pants, productImages?.shoes].filter(Boolean) as string[];
     const dishId = rawDishId ? String(rawDishId) : null;
 
@@ -61,7 +61,8 @@ export async function POST(req: NextRequest) {
       referenceImage = existing?.referenceImage ?? null;
     }
 
-    if (!referenceImage) return NextResponse.json({ success: false, error: 'referenceImage required' }, { status: 400 });
+    // Text-only flows (e.g. the NIRO BAR price-quote flyer) generate from the prompt alone — no reference photo.
+    if (!referenceImage && !textOnly) return NextResponse.json({ success: false, error: 'referenceImage required' }, { status: 400 });
 
     const settings = await getSettings();
 
@@ -190,14 +191,14 @@ export async function POST(req: NextRequest) {
 
     // If Lambda is configured — fire-and-forget (async worker)
     if (process.env.LAMBDA_GENERATE_URL) {
-      fireBg(savedDishId, referenceImage, prompt, extraImages.length > 0 ? extraImages : undefined);
+      fireBg(savedDishId, referenceImage || '', prompt, extraImages.length > 0 ? extraImages : undefined);
       return NextResponse.json({ success: true, data: { dishId: String(savedDishId), status: 'GENERATING' } });
     }
 
     // No Lambda — generate directly in this request (synchronous fallback)
     try {
       const imageProvider = getImageProvider(settings);
-      const result = await imageProvider.generate({ prompt, referenceImage, extraImages: extraImages.length > 0 ? extraImages : undefined });
+      const result = await imageProvider.generate({ prompt, referenceImage: referenceImage || undefined, extraImages: extraImages.length > 0 ? extraImages : undefined });
       const storedUrl = await persistImage(result.imageUrl);
       await prisma.dish.update({
         where: { id: savedDishId },
