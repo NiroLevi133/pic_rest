@@ -17,11 +17,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const dish = await prisma.dish.findUnique({ where: { id: dishId } });
-    if (!dish?.referenceImage) {
-      await prisma.dish.update({
-        where: { id: dishId },
-        data: { status: 'ERROR', errorMessage: 'Missing reference image' },
-      });
+    if (!dish) {
       return NextResponse.json({ ok: false });
     }
 
@@ -32,7 +28,7 @@ export async function POST(req: NextRequest) {
       prompt: dish.prompt,
       size: settings.imageSize,
       quality: settings.imageQuality,
-      referenceImage: dish.referenceImage,
+      referenceImage: dish.referenceImage || undefined,
     });
 
     const storedUrl = await persistImage(result.imageUrl);
