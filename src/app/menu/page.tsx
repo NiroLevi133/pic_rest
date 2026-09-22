@@ -121,9 +121,17 @@ function LabContent() {
   const [quoteExtraHourPrice, setQuoteExtraHourPrice] = useState('');
 
   /* ── NIRO BAR feature checklist ("מה מחכה לכם?") ── */
-  type QuoteFeatureRow = { template: NiroBarFeatureTemplate; selected: boolean; numberValue: string };
+  type QuoteFeatureRow = { template: NiroBarFeatureTemplate; selected: boolean; title: string; description: string };
+  function seedFeatureRow(template: NiroBarFeatureTemplate): QuoteFeatureRow {
+    return {
+      template,
+      selected: true,
+      title: template.titleTemplate.replace('{N}', template.defaultNumber ?? '').trim(),
+      description: template.description,
+    };
+  }
   const [quoteFeatureRows, setQuoteFeatureRows] = useState<QuoteFeatureRow[]>(
-    NIRO_BAR_DEFAULT_FEATURES.map(template => ({ template, selected: true, numberValue: template.defaultNumber ?? '' }))
+    NIRO_BAR_DEFAULT_FEATURES.map(seedFeatureRow)
   );
   const [quoteFeaturesLoaded, setQuoteFeaturesLoaded] = useState(false);
   const [showAddFeature, setShowAddFeature] = useState(false);
@@ -141,9 +149,7 @@ function LabContent() {
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         setQuoteFeatureRows(prev => [
           ...prev,
-          ...(data.data as NiroBarFeatureTemplate[]).map(template => ({
-            template, selected: true, numberValue: template.defaultNumber ?? '',
-          })),
+          ...(data.data as NiroBarFeatureTemplate[]).map(seedFeatureRow),
         ]);
       }
     } catch {/* ignore */}
@@ -165,7 +171,7 @@ function LabContent() {
       const data = await res.json();
       if (data.success && Array.isArray(data.data) && data.data.length > 0) {
         const added = data.data[data.data.length - 1] as NiroBarFeatureTemplate;
-        setQuoteFeatureRows(prev => [...prev, { template: added, selected: true, numberValue: added.defaultNumber ?? '' }]);
+        setQuoteFeatureRows(prev => [...prev, seedFeatureRow(added)]);
       }
     } finally {
       setSavingFeature(false);
@@ -188,12 +194,7 @@ function LabContent() {
       guestCount: quoteGuestCount,
       features: quoteFeatureRows
         .filter(r => r.selected)
-        .map(r => ({
-          title: r.template.hasNumber && r.numberValue.trim()
-            ? r.template.titleTemplate.replace('{N}', r.numberValue.trim())
-            : r.template.titleTemplate.replace('{N}', '').trim(),
-          description: r.template.description,
-        })),
+        .map(r => ({ title: r.title, description: r.description })),
       gift: quoteIncludeGift ? quoteGift : '',
       priceMode: quotePriceMode,
       tiers: quoteTiers,
@@ -1206,7 +1207,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
 
           {/* ── Feature checklist ── */}
           <div className="pt-2 border-t border-[var(--border)]">
-            <label className="label text-sm mb-2">מה מחכה לכם — בחר מה לכלול</label>
+            <label className="label text-sm mb-2">מה מחכה לכם — בחר מה לכלול, ואפשר לערוך את הניסוח</label>
             <div className="space-y-2">
               {quoteFeatureRows.map((row, idx) => (
                 <div key={row.template.id} className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
@@ -1216,23 +1217,21 @@ Generate a realistic, premium, professional studio product photograph with a pur
                     onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], selected: e.target.checked }; return a; })}
                     className="w-4 h-4 mt-0.5 accent-[var(--accent)] cursor-pointer shrink-0"
                   />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{row.template.titleTemplate.replace('{N}', '').trim()}</span>
-                      {row.template.hasNumber && (
-                        <input
-                          className="input text-xs w-16 py-1"
-                          type="number"
-                          value={row.numberValue}
-                          onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], numberValue: e.target.value }; return a; })}
-                          placeholder="מספר"
-                          dir="rtl"
-                        />
-                      )}
-                    </div>
-                    {row.template.description && (
-                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{row.template.description}</p>
-                    )}
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <input
+                      className="input text-sm w-full font-medium py-1.5"
+                      value={row.title}
+                      onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], title: e.target.value }; return a; })}
+                      placeholder="כותרת"
+                      dir="rtl"
+                    />
+                    <input
+                      className="input text-xs w-full py-1"
+                      value={row.description}
+                      onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], description: e.target.value }; return a; })}
+                      placeholder="תת-כותרת (אופציונלי)"
+                      dir="rtl"
+                    />
                   </div>
                 </div>
               ))}
