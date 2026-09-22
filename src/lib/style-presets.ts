@@ -956,6 +956,12 @@ export const NIRO_BAR_DEFAULT_FEATURES: NiroBarFeatureTemplate[] = [
     description: 'עמדת בר מפנקת עם קוקטיילים קלילים, טעימים ומתאימים לאירוע. עיצוב הבר לפי האופי של האירוע.',
     hasNumber: false,
   },
+  {
+    id: 'everything_included',
+    titleTemplate: 'הכל עלינו',
+    description: 'קרח, כוסות, ציוד בר וגרניש לקוקטייל.',
+    hasNumber: false,
+  },
 ];
 
 function niroBarTierLabel(tier: NiroBarPriceTier): string {
@@ -985,13 +991,16 @@ ${rows}
 }
 
 function buildNiroBarFeaturesSection(fields: NiroBarQuoteFields): string {
-  return (fields.features ?? [])
+  const cards = (fields.features ?? [])
     .filter(f => f.title?.trim())
     .map((f, i) => {
       const desc = f.description?.trim();
       return `כרטיס ${i + 1}:\nכותרת: "${f.title.trim()}"${desc ? `\nטקסט: "${desc}"` : ''}\nאייקון: outline שחור, מתאים לתוכן הכרטיס.`;
-    })
-    .join('\n\n');
+    });
+
+  return `⚠️ חובה להציג בדיוק ${cards.length} כרטיסים ברשימה הזו — לא יותר ולא פחות — בדיוק לפי הרשימה הבאה. תמונת הרפרנס המצורפת מראה 4 כרטיסים, אבל זו רק דוגמה עיצובית למבנה הכרטיס עצמו (רקע, פינות, מיקום האייקון) — היא אינה קובעת כמה כרטיסים להציג כאן. אם המספר למטה שונה מ-4, יש להתאים את גובה המסגרת ולהוסיף/להסיר שורות בהתאם, ולא לשמור על 4 כרטיסים כמו ברפרנס.
+
+${cards.join('\n\n')}`;
 }
 
 function buildNiroBarExtraHourSection(fields: NiroBarQuoteFields): string {
@@ -1028,6 +1037,8 @@ function renderNiroBarTemplate(template: string, vars: Record<string, string | u
 const NIRO_BAR_QUOTE_TEMPLATE = `צור תבנית מעוצבת להצעת מחיר עבור מותג הקוקטיילים "NIRO BAR", בסגנון זהה כמעט לחלוטין לתמונת הרפרנס המצורפת לבקשה הזו.
 
 ⚠️ התמונה המצורפת היא רפרנס עיצובי בלבד — לשכפל ממנה אך ורק את המבנה, הפריסה, הסגנון הגרפי, הטיפוגרפיה, האייקונים ואיורי הקוקטיילים. אסור להעתיק ממנה שום טקסט, שם, מספר, תאריך או מיקום ספציפי שמופיע בה (הם רק דוגמה) — כל הנתונים בפלייר הזה חייבים להיות אך ורק אלה שמפורטים למטה.
+
+⚠️ שימי לב במיוחד: גם **כמות** הכרטיסים באזור "מה מחכה לכם?" ברפרנס (4) היא רק דוגמה ולא הוראה. הרשימה המדויקת בחלק 4 למטה קובעת בדיוק כמה כרטיסים להציג ומה כתוב בכל אחד — יש לפעול לפיה במדויק, גם אם המספר שם שונה מ-4.
 
 המטרה היא ליצור TEMPLATE קבוע, נקי, אלגנטי, מודרני ומזמין, עבור הצעות מחיר לאירועים, עם מראה יוקרתי אך קליל, מינימליסטי ומסודר מאוד — כך שבכל הצעה חדשה ישתנו רק הנתונים, והמבנה הגרפי יישאר זהה.
 
