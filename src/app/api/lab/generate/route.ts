@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export const maxDuration = 300;
+import fs from 'fs';
+import path from 'path';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import { getSettings } from '@/lib/settings';
@@ -10,6 +12,25 @@ import { getImageProvider } from '@/lib/providers';
 import { persistImage } from '@/lib/storage';
 
 import OpenAI from 'openai';
+
+const NIRO_BAR_QUOTE_KEY = 'niroBarQuote';
+
+// Cached in module scope — read once per warm serverless instance.
+let niroBarReferenceDataUrl: string | null | undefined;
+
+/** The bundled NIRO BAR quote design reference, sent as an image alongside the prompt so the model matches its layout/style closely. */
+function getNiroBarReferenceImage(): string | null {
+  if (niroBarReferenceDataUrl !== undefined) return niroBarReferenceDataUrl;
+  try {
+    const filePath = path.join(process.cwd(), 'public', 'niro-bar-quote-reference.webp');
+    const buf = fs.readFileSync(filePath);
+    niroBarReferenceDataUrl = `data:image/webp;base64,${buf.toString('base64')}`;
+  } catch (err) {
+    console.error('[lab/generate] failed to load NIRO BAR reference image', err);
+    niroBarReferenceDataUrl = null;
+  }
+  return niroBarReferenceDataUrl;
+}
 
 function fireBg(dishId: string, referenceImage: string, prompt: string, extraImages?: string[]): void {
   const url = process.env.LAMBDA_GENERATE_URL;
@@ -63,6 +84,11 @@ export async function POST(req: NextRequest) {
 
     // Text-only flows (e.g. the NIRO BAR price-quote flyer) generate from the prompt alone — no reference photo.
     if (!referenceImage && !textOnly) return NextResponse.json({ success: false, error: 'referenceImage required' }, { status: 400 });
+
+    // NIRO BAR quote flyer: attach the bundled design reference as an image input so the model matches its layout/style.
+    if (!referenceImage && styleKey === NIRO_BAR_QUOTE_KEY) {
+      referenceImage = getNiroBarReferenceImage();
+    }
 
     const settings = await getSettings();
 

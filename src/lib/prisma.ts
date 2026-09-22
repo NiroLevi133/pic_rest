@@ -26,5 +26,6 @@ if (!globalForPrisma.dbMigrated) {
     prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "mediaType" TEXT NOT NULL DEFAULT 'image'`,
     prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "videoUrl" TEXT`,
     prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "videoOpId" TEXT`,
+    prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "niroBarCustomFeatures" TEXT`,
   ]).catch(() => {});
 }

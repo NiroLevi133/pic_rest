@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import { downloadImage } from '@/lib/download-utils';
 import {
-  STYLE_PRESETS, NIRO_BAR_EVENT_TYPES, buildNiroBarQuotePrompt,
-  type NiroBarQuoteFields, type NiroBarPriceTier,
+  STYLE_PRESETS, NIRO_BAR_EVENT_TYPES, NIRO_BAR_DEFAULT_FEATURES, buildNiroBarQuotePrompt,
+  type NiroBarQuoteFields, type NiroBarPriceTier, type NiroBarFeatureTemplate,
 } from '@/lib/style-presets';
 import { compressImage } from '@/lib/image-utils';
 
@@ -107,17 +107,74 @@ function LabContent() {
   const [quoteEventTypeCustom, setQuoteEventTypeCustom] = useState('');
   const [quoteEventDate, setQuoteEventDate] = useState('');
   const [quoteEventLocation, setQuoteEventLocation] = useState('');
-  const [quoteBartenders, setQuoteBartenders] = useState('');
-  const [quoteServiceHours, setQuoteServiceHours] = useState('');
-  const [quoteGift, setQuoteGift] = useState('עד 30 תמונות מודפסות על הקוקטיילים');
-  const [quotePriceMode, setQuotePriceMode] = useState<'perPerson' | 'total'>('perPerson');
+  const [quoteGuestCount, setQuoteGuestCount] = useState('');
+  const [quoteIncludeGift, setQuoteIncludeGift] = useState(true);
+  const [quoteGift, setQuoteGift] = useState('30 תמונות מודפסות על הקוקטיילים');
+  const [quotePriceMode, setQuotePriceMode] = useState<'perPerson' | 'total'>('total');
   const [quoteTiers, setQuoteTiers] = useState<NiroBarPriceTier[]>([
     { max: '', price: '' },
     { min: '', max: '', price: '' },
     { min: '', price: '' },
   ]);
   const [quoteTotalPrice, setQuoteTotalPrice] = useState('');
-  const [quoteGuestCap, setQuoteGuestCap] = useState('');
+  const [quoteIncludeExtraHour, setQuoteIncludeExtraHour] = useState(false);
+  const [quoteExtraHourPrice, setQuoteExtraHourPrice] = useState('');
+
+  /* ── NIRO BAR feature checklist ("מה מחכה לכם?") ── */
+  type QuoteFeatureRow = { template: NiroBarFeatureTemplate; selected: boolean; numberValue: string };
+  const [quoteFeatureRows, setQuoteFeatureRows] = useState<QuoteFeatureRow[]>(
+    NIRO_BAR_DEFAULT_FEATURES.map(template => ({ template, selected: true, numberValue: template.defaultNumber ?? '' }))
+  );
+  const [quoteFeaturesLoaded, setQuoteFeaturesLoaded] = useState(false);
+  const [showAddFeature, setShowAddFeature] = useState(false);
+  const [newFeatureTitle, setNewFeatureTitle] = useState('');
+  const [newFeatureDescription, setNewFeatureDescription] = useState('');
+  const [newFeatureHasNumber, setNewFeatureHasNumber] = useState(false);
+  const [savingFeature, setSavingFeature] = useState(false);
+
+  async function loadCustomFeatures() {
+    if (quoteFeaturesLoaded) return;
+    setQuoteFeaturesLoaded(true);
+    try {
+      const res = await fetch('/api/settings/niro-bar-features');
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        setQuoteFeatureRows(prev => [
+          ...prev,
+          ...(data.data as NiroBarFeatureTemplate[]).map(template => ({
+            template, selected: true, numberValue: template.defaultNumber ?? '',
+          })),
+        ]);
+      }
+    } catch {/* ignore */}
+  }
+
+  async function handleAddFeature() {
+    if (!newFeatureTitle.trim()) return;
+    setSavingFeature(true);
+    try {
+      const res = await fetch('/api/settings/niro-bar-features', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titleTemplate: newFeatureTitle.trim(),
+          description: newFeatureDescription.trim(),
+          hasNumber: newFeatureHasNumber,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data) && data.data.length > 0) {
+        const added = data.data[data.data.length - 1] as NiroBarFeatureTemplate;
+        setQuoteFeatureRows(prev => [...prev, { template: added, selected: true, numberValue: added.defaultNumber ?? '' }]);
+      }
+    } finally {
+      setSavingFeature(false);
+      setShowAddFeature(false);
+      setNewFeatureTitle('');
+      setNewFeatureDescription('');
+      setNewFeatureHasNumber(false);
+    }
+  }
 
   const quoteEventTypeResolved = quoteEventType === EVENT_TYPE_CUSTOM ? quoteEventTypeCustom.trim() : quoteEventType;
 
@@ -128,13 +185,20 @@ function LabContent() {
       eventType: quoteEventTypeResolved,
       eventDate: quoteEventDate,
       eventLocation: quoteEventLocation,
-      bartenders: quoteBartenders,
-      serviceHours: quoteServiceHours,
-      gift: quoteGift,
+      guestCount: quoteGuestCount,
+      features: quoteFeatureRows
+        .filter(r => r.selected)
+        .map(r => ({
+          title: r.template.hasNumber && r.numberValue.trim()
+            ? r.template.titleTemplate.replace('{N}', r.numberValue.trim())
+            : r.template.titleTemplate.replace('{N}', '').trim(),
+          description: r.template.description,
+        })),
+      gift: quoteIncludeGift ? quoteGift : '',
       priceMode: quotePriceMode,
       tiers: quoteTiers,
       totalPrice: quoteTotalPrice,
-      guestCap: quoteGuestCap,
+      extraHourPrice: quoteIncludeExtraHour ? quoteExtraHourPrice : '',
     };
   }
 
@@ -142,9 +206,9 @@ function LabContent() {
     ? !!quoteTotalPrice.trim()
     : quoteTiers.some(t => t.price?.trim());
 
-  const canGenerateQuote = !!quoteClientName.trim() && !!quoteEventTypeResolved.trim() &&
-    !!quoteEventDate.trim() && !!quoteEventLocation.trim() && !!quoteBartenders.trim() &&
-    !!quoteGift.trim() && quotePriceFilled;
+  const canGenerateQuote = !!quoteEventTypeResolved.trim() &&
+    !!quoteEventDate.trim() && !!quoteEventLocation.trim() && !!quoteGuestCount.trim() &&
+    quoteFeatureRows.some(r => r.selected) && quotePriceFilled;
 
   const [styleLockedFromMenu, setStyleLockedFromMenu] = useState(false);
   useEffect(() => {
@@ -271,7 +335,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
   const isQuote = quoteMode;
   function selectSingleMode() { setMultiMode(false); setQuoteMode(false); }
   function selectMultiMode() { setMultiMode(true); setQuoteMode(false); }
-  function selectQuoteMode() { setMultiMode(false); setQuoteMode(true); }
+  function selectQuoteMode() { setMultiMode(false); setQuoteMode(true); loadCustomFeatures(); }
   const [multiCount, setMultiCount] = useState(5);
   const [multiPrompts, setMultiPrompts] = useState<string[]>(DEFAULT_MULTI_PROMPTS);
   const [multiResults, setMultiResults] = useState<Array<{ imageUrl: string; dishId: string } | null>>(DEFAULT_MULTI_PROMPTS.map(() => null));
@@ -393,7 +457,9 @@ Generate a realistic, premium, professional studio product photograph with a pur
         body: JSON.stringify({
           referenceImage: isQuote ? undefined : dishImage,
           textOnly: isQuote,
-          dishName: isQuote ? `הצעת מחיר – ${quoteClientName.trim()}` : selectedDish,
+          dishName: isQuote
+            ? `הצעת מחיר – ${quoteClientName.trim() || `${quoteEventTypeResolved} ${quoteEventDate}`.trim()}`
+            : selectedDish,
           styleKey: isQuote ? NIRO_BAR_QUOTE_KEY : styleKey,
           styleRefImage,
           customPrompt: isQuote
@@ -1106,7 +1172,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
             <label className="label text-sm mb-3">פרטי ההצעה</label>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="label text-xs mb-1.5">שם הלקוח *</label>
+                <label className="label text-xs mb-1.5">שם הלקוח <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
                 <input className="input text-sm" value={quoteClientName} onChange={e => setQuoteClientName(e.target.value)} placeholder="לדוגמה: דנה כהן" dir="rtl" />
               </div>
               <div>
@@ -1132,23 +1198,115 @@ Generate a realistic, premium, professional studio product photograph with a pur
                 <input className="input text-sm" value={quoteEventLocation} onChange={e => setQuoteEventLocation(e.target.value)} placeholder="לדוגמה: גני יהודה, רחובות" dir="rtl" />
               </div>
               <div>
-                <label className="label text-xs mb-1.5">מספר ברמנים *</label>
-                <input className="input text-sm" type="number" min="1" value={quoteBartenders} onChange={e => setQuoteBartenders(e.target.value)} placeholder="2" dir="rtl" />
-              </div>
-              <div>
-                <label className="label text-xs mb-1.5">שעות פעילות <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
-                <input className="input text-sm" type="number" min="1" value={quoteServiceHours} onChange={e => setQuoteServiceHours(e.target.value)} placeholder="4" dir="rtl" />
-              </div>
-              <div className="col-span-2">
-                <label className="label text-xs mb-1.5">מתנה ממני *</label>
-                <input className="input text-sm" value={quoteGift} onChange={e => setQuoteGift(e.target.value)} dir="rtl" />
+                <label className="label text-xs mb-1.5">כמות אורחים *</label>
+                <input className="input text-sm" type="number" min="1" value={quoteGuestCount} onChange={e => setQuoteGuestCount(e.target.value)} placeholder="160" dir="rtl" />
               </div>
             </div>
           </div>
 
+          {/* ── Feature checklist ── */}
+          <div className="pt-2 border-t border-[var(--border)]">
+            <label className="label text-sm mb-2">מה מחכה לכם — בחר מה לכלול</label>
+            <div className="space-y-2">
+              {quoteFeatureRows.map((row, idx) => (
+                <div key={row.template.id} className="flex items-start gap-2 px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)]">
+                  <input
+                    type="checkbox"
+                    checked={row.selected}
+                    onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], selected: e.target.checked }; return a; })}
+                    className="w-4 h-4 mt-0.5 accent-[var(--accent)] cursor-pointer shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium">{row.template.titleTemplate.replace('{N}', '').trim()}</span>
+                      {row.template.hasNumber && (
+                        <input
+                          className="input text-xs w-16 py-1"
+                          type="number"
+                          value={row.numberValue}
+                          onChange={e => setQuoteFeatureRows(prev => { const a = [...prev]; a[idx] = { ...a[idx], numberValue: e.target.value }; return a; })}
+                          placeholder="מספר"
+                          dir="rtl"
+                        />
+                      )}
+                    </div>
+                    {row.template.description && (
+                      <p className="text-[11px] text-[var(--text-muted)] mt-0.5">{row.template.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {!showAddFeature ? (
+              <button
+                type="button"
+                onClick={() => setShowAddFeature(true)}
+                className="btn-ghost mt-2 text-sm gap-1.5 cursor-pointer"
+              >
+                + הוסף פריט חדש
+              </button>
+            ) : (
+              <div className="mt-2 p-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-2">
+                <input
+                  className="input text-sm"
+                  value={newFeatureTitle}
+                  onChange={e => setNewFeatureTitle(e.target.value)}
+                  placeholder="כותרת הפריט (אפשר להשתמש ב-{N} למספר עריך)"
+                  dir="rtl"
+                />
+                <input
+                  className="input text-sm"
+                  value={newFeatureDescription}
+                  onChange={e => setNewFeatureDescription(e.target.value)}
+                  placeholder="תיאור קצר (אופציונלי)"
+                  dir="rtl"
+                />
+                <label className="flex items-center gap-2 text-xs text-[var(--text-muted)] cursor-pointer select-none">
+                  <input type="checkbox" checked={newFeatureHasNumber} onChange={e => setNewFeatureHasNumber(e.target.checked)} className="w-3.5 h-3.5 accent-[var(--accent)] cursor-pointer" />
+                  הפריט כולל מספר עריך (למשל כמות)
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleAddFeature}
+                    disabled={savingFeature || !newFeatureTitle.trim()}
+                    className="btn-primary text-sm py-1.5 disabled:opacity-40 cursor-pointer"
+                  >
+                    {savingFeature ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'שמור והוסף'}
+                  </button>
+                  <button type="button" onClick={() => setShowAddFeature(false)} className="btn-ghost text-sm py-1.5 cursor-pointer">ביטול</button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Gift ── */}
+          <div className="pt-2 border-t border-[var(--border)]">
+            <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
+              <input type="checkbox" checked={quoteIncludeGift} onChange={e => setQuoteIncludeGift(e.target.checked)} className="w-4 h-4 accent-[var(--accent)] cursor-pointer" />
+              <span className="text-sm font-medium">לכלול מתנה עלינו</span>
+            </label>
+            {quoteIncludeGift && (
+              <input className="input text-sm" value={quoteGift} onChange={e => setQuoteGift(e.target.value)} dir="rtl" />
+            )}
+          </div>
+
+          {/* ── Price ── */}
           <div className="pt-2 border-t border-[var(--border)]">
             <label className="label text-sm mb-2">מבנה המחיר</label>
             <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setQuotePriceMode('total')}
+                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
+                  quotePriceMode === 'total'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
+                }`}
+              >
+                מחיר חבילה
+              </button>
               <button
                 type="button"
                 onClick={() => setQuotePriceMode('perPerson')}
@@ -1160,28 +1318,17 @@ Generate a realistic, premium, professional studio product photograph with a pur
               >
                 מחיר לאדם (מדרגות)
               </button>
-              <button
-                type="button"
-                onClick={() => setQuotePriceMode('total')}
-                className={`flex-1 py-2 rounded-xl border text-sm font-medium transition-colors cursor-pointer ${
-                  quotePriceMode === 'total'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[var(--border)] text-[var(--text-muted)] hover:bg-[var(--surface2)]'
-                }`}
-              >
-                מחיר כולל
-              </button>
             </div>
 
             {quotePriceMode === 'perPerson' ? (
               <div className="space-y-2">
                 {([
-                  { idx: 0, label: 'כרטיס ימני', fields: ['max', 'price'] },
-                  { idx: 1, label: 'כרטיס אמצעי', fields: ['min', 'max', 'price'] },
-                  { idx: 2, label: 'כרטיס שמאלי', fields: ['min', 'price'] },
+                  { idx: 0, label: 'שורה 1', fields: ['max', 'price'] },
+                  { idx: 1, label: 'שורה 2', fields: ['min', 'max', 'price'] },
+                  { idx: 2, label: 'שורה 3', fields: ['min', 'price'] },
                 ] as { idx: number; label: string; fields: ('min' | 'max' | 'price')[] }[]).map(({ idx, label, fields }) => (
                   <div key={idx} className="flex items-center gap-2">
-                    <span className="text-xs text-[var(--text-muted)] w-16 shrink-0">{label}</span>
+                    <span className="text-xs text-[var(--text-muted)] w-14 shrink-0">{label}</span>
                     {fields.includes('min') && (
                       <input
                         className="input text-sm"
@@ -1209,19 +1356,24 @@ Generate a realistic, premium, professional studio product photograph with a pur
                     />
                   </div>
                 ))}
-                <p className="text-[11px] text-[var(--text-muted)]">אפשר למלא כרטיס אחד עד שלושה — ריקים לא יוצגו בפלייר.</p>
+                <p className="text-[11px] text-[var(--text-muted)]">אפשר למלא שורה אחת עד שלוש — ריקות לא יוצגו בפלייר.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="label text-xs mb-1.5">מחיר כולל ₪ *</label>
-                  <input className="input text-sm" type="number" value={quoteTotalPrice} onChange={e => setQuoteTotalPrice(e.target.value)} dir="rtl" />
-                </div>
-                <div>
-                  <label className="label text-xs mb-1.5">עד כמות משתתפים <span className="text-[var(--text-muted)] font-normal">(אופציונלי)</span></label>
-                  <input className="input text-sm" type="number" value={quoteGuestCap} onChange={e => setQuoteGuestCap(e.target.value)} dir="rtl" />
-                </div>
+              <div>
+                <label className="label text-xs mb-1.5">מחיר החבילה ₪ *</label>
+                <input className="input text-sm" type="number" value={quoteTotalPrice} onChange={e => setQuoteTotalPrice(e.target.value)} dir="rtl" />
               </div>
+            )}
+          </div>
+
+          {/* ── Extra hour ── */}
+          <div className="pt-2 border-t border-[var(--border)]">
+            <label className="flex items-center gap-2 cursor-pointer select-none mb-2">
+              <input type="checkbox" checked={quoteIncludeExtraHour} onChange={e => setQuoteIncludeExtraHour(e.target.checked)} className="w-4 h-4 accent-[var(--accent)] cursor-pointer" />
+              <span className="text-sm font-medium">לכלול מחיר לשעה נוספת</span>
+            </label>
+            {quoteIncludeExtraHour && (
+              <input className="input text-sm" type="number" value={quoteExtraHourPrice} onChange={e => setQuoteExtraHourPrice(e.target.value)} placeholder="450" dir="rtl" />
             )}
           </div>
         </div>
@@ -1406,8 +1558,8 @@ Generate a realistic, premium, professional studio product photograph with a pur
           {/* Meta + actions */}
           <div className="flex items-center justify-between" dir="rtl">
             <div>
-              {(isQuote ? quoteClientName : selectedDish) && (
-                <p className="font-semibold text-[var(--text)]">{isQuote ? `הצעת מחיר – ${quoteClientName}` : selectedDish}</p>
+              {(isQuote ? (quoteClientName || quoteEventTypeResolved) : selectedDish) && (
+                <p className="font-semibold text-[var(--text)]">{isQuote ? `הצעת מחיר – ${quoteClientName || quoteEventTypeResolved}` : selectedDish}</p>
               )}
               <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {STYLE_PRESETS.find(p => p.key === styleKey)?.emoji}{' '}
@@ -1419,7 +1571,7 @@ Generate a realistic, premium, professional studio product photograph with a pur
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => downloadImage(result.imageUrl, `${(isQuote ? quoteClientName : selectedDish) || 'dish'}.jpg`)}
+                onClick={() => downloadImage(result.imageUrl, `${(isQuote ? (quoteClientName || quoteEventTypeResolved) : selectedDish) || 'dish'}.jpg`)}
                 className="btn-secondary p-2.5 cursor-pointer"
               >
                 <Download className="w-4 h-4" />

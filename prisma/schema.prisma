@@ -19,6 +19,7 @@ model User {
   restaurantTheme       String?
   canSingleGenerate     Boolean  @default(true)
   canMultiGenerate      Boolean  @default(false)
+  niroBarCustomFeatures String?
   createdAt             DateTime @default(now())
   menus                 Menu[]
 }
