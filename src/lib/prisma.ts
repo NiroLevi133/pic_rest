@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import { RECEIPTS_MIGRATION_SQL } from './receipts-migration';
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient;
@@ -28,4 +29,12 @@ if (!globalForPrisma.dbMigrated) {
     prisma.$executeRaw`ALTER TABLE "Dish" ADD COLUMN IF NOT EXISTS "videoOpId" TEXT`,
     prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "niroBarCustomFeatures" TEXT`,
   ]).catch(() => {});
+
+  // Receipts module: run statements in order (tables depend on each other)
+  (async () => {
+    const statements = RECEIPTS_MIGRATION_SQL
+      .split('\n').filter((l) => !l.trim().startsWith('--')).join('\n')
+      .split(';').map((s) => s.trim()).filter(Boolean);
+    for (const stmt of statements) await prisma.$executeRawUnsafe(stmt);
+  })().catch((err) => console.error('[receipts migration]', err));
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { FlaskConical, Image as ImageIcon, Settings, BookOpen, LogOut, Phone, UtensilsCrossed } from 'lucide-react';
+import { FlaskConical, Image as ImageIcon, Settings, BookOpen, LogOut, Phone, UtensilsCrossed, Receipt } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useEffect, useState } from 'react';
 
@@ -10,6 +10,7 @@ const links = [
   { href: '/menu',     label: 'מעבדה',   icon: FlaskConical },
   { href: '/history',  label: 'תפריטים', icon: BookOpen },
   { href: '/gallery',  label: 'גלריה',   icon: ImageIcon },
+  { href: '/receipts', label: 'קבלות',   icon: Receipt },
   { href: '/settings', label: 'הגדרות',  icon: Settings },
 ];
 
@@ -36,7 +37,7 @@ export default function Navigation() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl">
+    <header className="print:hidden sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--bg)]/90 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
         {/* Logo */}

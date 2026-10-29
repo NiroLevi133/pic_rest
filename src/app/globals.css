@@ -110,3 +110,8 @@
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+
+@media print {
+  @page { size: A4; margin: 15mm; }
+  html, body { background: #fff !important; }
+}
