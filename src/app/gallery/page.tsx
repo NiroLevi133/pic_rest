@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Download, Film, Image as ImageIcon, Loader2, Pencil, Search, Sparkles, Trash2, Wand2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { STYLE_PRESETS } from '@/lib/style-presets';
@@ -12,6 +12,8 @@ import Modal from '@/components/ui/Modal';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
 import Spinner, { ErrorBox } from '@/components/ui/Spinner';
+import CustomerPicker, { type PickedCustomer } from '@/components/customers/CustomerPicker';
+import { useCurrentUser, hasBusinessAccess } from '@/components/CurrentUser';
 
 interface GalleryItem {
   id: string;
@@ -24,6 +26,7 @@ interface GalleryItem {
 }
 
 interface AssetDetails extends GalleryItem {
+  customer: { id: string; name: string } | null;
   prompt: string | null;
   hasSource: boolean;
   parentAssetId: string | null;
@@ -40,6 +43,14 @@ function formatDate(iso: string) {
 }
 
 export default function GalleryPage() {
+  return <Suspense fallback={<Spinner />}><Gallery /></Suspense>;
+}
+
+function Gallery() {
+  const params = useSearchParams();
+  const { user } = useCurrentUser();
+  const isBusiness = hasBusinessAccess(user);
+  const [customer, setCustomer] = useState<PickedCustomer | null>(null);
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [kind, setKind] = useState<'' | 'image' | 'video'>('');
@@ -54,6 +65,15 @@ export default function GalleryPage() {
   const [error, setError] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
 
+  // Arriving from a customer card: /gallery?customerId=...
+  useEffect(() => {
+    const id = params.get('customerId');
+    if (!id || customer?.id === id) return;
+    fetch(`/api/customers/${id}`).then((r) => r.json()).then((d) => {
+      if (d.success) setCustomer({ id: d.data.id, name: d.data.name, phone: d.data.phone });
+    });
+  }, [params, customer?.id]);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(q), 300);
     return () => clearTimeout(t);
@@ -66,9 +86,10 @@ export default function GalleryPage() {
     if (style) sp.set('style', style);
     if (from) sp.set('from', from);
     if (to) sp.set('to', to);
+    if (customer) sp.set('customerId', customer.id);
     if (c) sp.set('cursor', c);
     return sp.toString();
-  }, [debouncedQ, kind, style, from, to]);
+  }, [debouncedQ, kind, style, from, to, customer]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,7 +123,7 @@ export default function GalleryPage() {
     }
   }
 
-  const filtered = !!(debouncedQ || kind || style || from || to);
+  const filtered = !!(debouncedQ || kind || style || from || to || customer);
 
   return (
     <>
@@ -130,6 +151,11 @@ export default function GalleryPage() {
           <input type="date" className="input !px-2 min-w-0" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="מתאריך" />
           <input type="date" className="input !px-2 min-w-0" value={to} onChange={(e) => setTo(e.target.value)} aria-label="עד תאריך" />
         </div>
+        {isBusiness && (
+          <div className="sm:col-span-2 lg:col-span-6">
+            <CustomerPicker value={customer} onChange={setCustomer} placeholder="כל הלקוחות" allowClear />
+          </div>
+        )}
       </div>
 
       {error ? (
@@ -182,6 +208,7 @@ export default function GalleryPage() {
 
       <AssetModal
         id={openId}
+        canAssign={isBusiness}
         onClose={() => setOpenId(null)}
         onChanged={(updated) => setItems((prev) => prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i)))}
         onDeleted={(id) => { setItems((prev) => prev.filter((i) => i.id !== id)); setOpenId(null); }}
@@ -190,8 +217,9 @@ export default function GalleryPage() {
   );
 }
 
-function AssetModal({ id, onClose, onChanged, onDeleted }: {
+function AssetModal({ id, canAssign, onClose, onChanged, onDeleted }: {
   id: string | null;
+  canAssign: boolean;
   onClose: () => void;
   onChanged: (a: Partial<GalleryItem> & { id: string }) => void;
   onDeleted: (id: string) => void;
@@ -233,6 +261,19 @@ function AssetModal({ id, onClose, onChanged, onDeleted }: {
       }
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function assignCustomer(c: PickedCustomer | null) {
+    if (!asset) return;
+    const d = await (await fetch(`/api/gallery/${asset.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId: c?.id ?? null }),
+    })).json();
+    if (d.success) {
+      setAsset({ ...asset, customerId: d.data.customerId, customer: d.data.customer });
+      onChanged({ id: asset.id, customerId: d.data.customerId });
     }
   }
 
@@ -281,6 +322,18 @@ function AssetModal({ id, onClose, onChanged, onDeleted }: {
                 <div className="flex justify-between gap-2"><dt className="text-[var(--text-muted)]">תאריך יצירה</dt><dd>{formatDate(asset.createdAt)}</dd></div>
                 <div className="flex justify-between gap-2"><dt className="text-[var(--text-muted)]">סגנון</dt><dd>{styleLabel(asset.styleKey)}</dd></div>
               </dl>
+
+              {canAssign && (
+                <div>
+                  <p className="label">שיוך ללקוח</p>
+                  <CustomerPicker
+                    value={asset.customer ? { id: asset.customer.id, name: asset.customer.name } : null}
+                    onChange={assignCustomer}
+                    placeholder="ללא שיוך"
+                    allowClear
+                  />
+                </div>
+              )}
 
               {asset.prompt && (
                 <details className="rounded-xl border border-[var(--border)] p-3">

@@ -126,6 +126,7 @@ model MediaAsset {
   sourceImageUrl String?
   parentAssetId  String?
   customerId     String?
+  customer       Customer?      @relation(fields: [customerId], references: [id], onDelete: SetNull)
   /// Set for assets backfilled from the legacy Dish/DishImage tables
   legacyDishId   String?
   legacyImageId  String?        @unique
@@ -137,4 +138,63 @@ model MediaAsset {
   @@index([userId, createdAt])
   @@index([customerId])
   @@index([legacyDishId])
+}
+
+/// The business's own details (single business). Used on quotes and receipts.
+model BusinessProfile {
+  id                  String   @id @default("main")
+  businessName        String   @default("")
+  logoUrl             String?
+  /// עוסק מורשה / פטור / ח.פ — the number printed on documents
+  taxId               String   @default("")
+  /// EXEMPT (עוסק פטור) | LICENSED (עוסק מורשה) | COMPANY (חברה בע"מ)
+  vatType             String   @default("EXEMPT")
+  address             String   @default("")
+  phone               String   @default("")
+  email               String   @default("")
+  documentFooter      String   @default("")
+  brandColor          String   @default("#B8862B")
+  defaultPaymentTerms String   @default("")
+  /// Saved services for quotes: [{ description, unitPrice (agorot) }]
+  savedServices       Json     @default("[]")
+  updatedAt           DateTime @updatedAt
+}
+
+model Customer {
+  id          String       @id @default(cuid())
+  name        String
+  phone       String       @default("")
+  email       String       @default("")
+  /// ח.פ / ע.מ / ת.ז
+  taxId       String       @default("")
+  address     String       @default("")
+  notes       String       @default("")
+  /// LEAD | QUOTE_SENT | ACTIVE | INACTIVE
+  status      String       @default("LEAD")
+  createdById String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  mediaAssets MediaAsset[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([status])
+}
+
+/// Append-only log of sensitive actions; also feeds customer timelines and the dashboard.
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  /// e.g. customer.created, customer.updated, quote.sent, receipt.issued
+  action     String
+  entityType String
+  entityId   String
+  customerId String?
+  summary    String
+  data       Json?
+  createdAt  DateTime @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
