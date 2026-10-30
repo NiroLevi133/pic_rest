@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSessionUser, BUSINESS_ROLES } from '@/lib/auth';
+import { getSessionUser } from '@/lib/auth';
+import { mediaScope } from '@/lib/media-scope';
 
 const CACHE_HEADERS = { 'Cache-Control': 'private, max-age=31536000, immutable' };
 
@@ -12,11 +13,11 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const user = await getSessionUser(req);
   if (!user) return new NextResponse('Unauthorized', { status: 401 });
 
-  const asset = await prisma.mediaAsset.findUnique({
-    where: { id: params.id },
-    select: { userId: true, url: true, sourceImageUrl: true, legacyDishId: true },
+  const asset = await prisma.mediaAsset.findFirst({
+    where: { AND: [mediaScope(user), { id: params.id }] },
+    select: { url: true, sourceImageUrl: true, legacyDishId: true },
   });
-  if (!asset || (asset.userId !== user.id && !BUSINESS_ROLES.includes(user.role))) {
+  if (!asset) {
     return new NextResponse('Not found', { status: 404 });
   }
 

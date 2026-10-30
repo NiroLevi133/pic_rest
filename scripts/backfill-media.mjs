@@ -25,7 +25,7 @@ async function main() {
   const dishes = await prisma.dish.findMany({
     where: { OR: [{ imageUrl: { not: null } }, { videoUrl: { not: null } }, { images: { some: {} } }] },
     select: {
-      id: true, name: true, prompt: true, imageUrl: true, videoUrl: true, mediaType: true,
+      id: true, name: true, prompt: true, imageUrl: true, videoUrl: true,
       referenceImage: true, updatedAt: true, hidden: true,
       menu: { select: { userId: true, styleKey: true } },
       images: { select: { id: true, imageUrl: true, createdAt: true }, orderBy: { createdAt: 'asc' } },
@@ -54,7 +54,8 @@ async function main() {
     if (dish.imageUrl && !seenUrls.has(dish.imageUrl)) {
       rows.push({ ...base, kind: 'image', url: dish.imageUrl, legacyImageId: `dish:${dish.id}`, createdAt: dish.updatedAt });
     }
-    if (dish.mediaType === 'video' && dish.videoUrl) {
+    // Covers both 'video' and 360° turntables ('spin360')
+    if (dish.videoUrl) {
       rows.push({ ...base, kind: 'video', url: dish.videoUrl, legacyImageId: `video:${dish.id}`, createdAt: dish.updatedAt });
     }
   }

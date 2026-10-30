@@ -1,305 +1,323 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
-import { Loader2, Download, ImageOff, Images, Share2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Download, Film, Image as ImageIcon, Loader2, Pencil, Search, Sparkles, Trash2, Wand2 } from 'lucide-react';
+import { clsx } from 'clsx';
+import { STYLE_PRESETS } from '@/lib/style-presets';
 import { downloadImage } from '@/lib/download-utils';
+import PageHeader from '@/components/ui/PageHeader';
+import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
+import Spinner, { ErrorBox } from '@/components/ui/Spinner';
 
-interface GalleryDish {
+interface GalleryItem {
   id: string;
-  name: string;
-  category: string;
-  price: string | null;
-  imageUrl: string;
-  menuName: string;
-  menuId: string;
-  updatedAt: string;
+  kind: 'image' | 'video';
+  title: string;
+  styleKey: string | null;
+  customerId: string | null;
+  createdAt: string;
+  src: string;
 }
 
-interface StyleGroup {
-  styleKey: string;
-  styleLabel: string;
-  styleEmoji: string;
-  dishes: GalleryDish[];
+interface AssetDetails extends GalleryItem {
+  prompt: string | null;
+  hasSource: boolean;
+  parentAssetId: string | null;
 }
 
-/* ── Long-press hook ─────────────────────────────────────────────── */
-function useLongPress(onLongPress: () => void, ms = 500) {
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+const STYLE_OPTIONS = [...STYLE_PRESETS.filter((p) => !p.isQuoteForm).map((p) => ({ key: p.key, label: `${p.emoji} ${p.label}` })), { key: '360', label: '🔄 360°' }];
 
-  function start() { timer.current = setTimeout(onLongPress, ms); }
-  function cancel() { if (timer.current) { clearTimeout(timer.current); timer.current = null; } }
-
-  return {
-    onMouseDown: start, onMouseUp: cancel, onMouseLeave: cancel,
-    onTouchStart: start, onTouchEnd: cancel, onTouchCancel: cancel,
-  };
+function styleLabel(key: string | null) {
+  return STYLE_OPTIONS.find((s) => s.key === key)?.label ?? 'ללא סגנון';
 }
 
-/* ── Image card ──────────────────────────────────────────────────── */
-function ImageCard({ dish, onClick }: { dish: GalleryDish; onClick: () => void }) {
-  const [showActions, setShowActions] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-
-  const longPress = useLongPress(() => setShowActions(true));
-
-  async function handleShare() {
-    setShowActions(false);
-    if (navigator.share) {
-      try { await navigator.share({ title: dish.name, url: dish.imageUrl }); } catch { /* cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(dish.imageUrl);
-      alert('הקישור הועתק');
-    }
-  }
-
-  function handleDownload() {
-    setShowActions(false);
-    downloadImage(dish.imageUrl, `${dish.name.replace(/\s+/g, '-')}.jpg`);
-  }
-
-  return (
-    <div className="relative rounded-2xl overflow-hidden bg-[var(--surface)] border border-[var(--border)] cursor-pointer select-none transition-all duration-200 hover:border-[var(--accent)]/30">
-      <div {...longPress} onClick={onClick} className="relative group">
-        {!loaded && (
-          <div className="w-full aspect-square bg-[var(--surface2)] animate-pulse" />
-        )}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={dish.imageUrl}
-          alt={dish.name}
-          loading="lazy"
-          decoding="async"
-          onLoad={() => setLoaded(true)}
-          className={`w-full aspect-square object-contain bg-[var(--surface2)] group-hover:scale-[1.03] transition-transform duration-300 ${loaded ? 'block' : 'hidden'}`}
-          draggable={false}
-        />
-        {/* Hover overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
-          <div className="absolute bottom-0 left-0 right-0 p-2.5">
-            <div className="text-white text-xs font-semibold truncate" dir="rtl">{dish.name}</div>
-            <div className="text-white/50 text-[10px] mt-0.5">{dish.menuName}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Long-press action overlay */}
-      {showActions && (
-        <div
-          className="absolute inset-0 bg-black/75 backdrop-blur-sm flex flex-col items-center justify-center gap-3 z-10"
-          onClick={() => setShowActions(false)}
-        >
-          <button
-            onClick={e => { e.stopPropagation(); handleDownload(); }}
-            className="flex items-center gap-2 bg-white text-black px-5 py-2.5 rounded-xl font-semibold text-sm w-40 justify-center cursor-pointer"
-          >
-            <Download className="w-4 h-4" /> הורד
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); handleShare(); }}
-            className="flex items-center gap-2 bg-[var(--accent)] text-[#0C0A09] px-5 py-2.5 rounded-xl font-semibold text-sm w-40 justify-center cursor-pointer"
-          >
-            <Share2 className="w-4 h-4" /> שתף
-          </button>
-          <button
-            onClick={e => { e.stopPropagation(); setShowActions(false); }}
-            className="text-white/50 text-xs mt-1 cursor-pointer hover:text-white/80 transition-colors"
-          >
-            ביטול
-          </button>
-        </div>
-      )}
-    </div>
-  );
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
-/* ── Lightbox ────────────────────────────────────────────────────── */
-function Lightbox({ dish, onClose }: { dish: GalleryDish; onClose: () => void }) {
-  async function handleShare() {
-    if (navigator.share) {
-      try { await navigator.share({ title: dish.name, url: dish.imageUrl }); } catch { /* cancelled */ }
-    } else {
-      await navigator.clipboard.writeText(dish.imageUrl);
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/92 z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-[var(--surface)] rounded-2xl overflow-hidden max-w-lg w-full max-h-[90vh] flex flex-col border border-[var(--border)]"
-        style={{ boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}
-        onClick={e => e.stopPropagation()}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={dish.imageUrl}
-          alt={dish.name}
-          className="w-full object-contain bg-[var(--surface2)] max-h-[60vh]"
-        />
-        <div className="p-5">
-          <div className="flex items-start justify-between">
-            <div dir="rtl">
-              <h3 className="font-semibold text-[var(--text)]">{dish.name}</h3>
-              <p className="text-[var(--text-muted)] text-xs mt-1">{dish.menuName}</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={handleShare} className="btn-secondary p-2.5 cursor-pointer">
-                <Share2 className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => downloadImage(dish.imageUrl, `${dish.name}.jpg`)}
-                className="btn-secondary p-2.5 cursor-pointer"
-              >
-                <Download className="w-4 h-4" />
-              </button>
-              <button onClick={onClose} className="btn-ghost p-2.5 cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Main ────────────────────────────────────────────────────────── */
 export default function GalleryPage() {
-  const [groups, setGroups] = useState<StyleGroup[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [activeFilter, setActiveFilter] = useState<string>('all');
-  const [selected, setSelected] = useState<GalleryDish | null>(null);
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
+  const [kind, setKind] = useState<'' | 'image' | 'video'>('');
+  const [style, setStyle] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
 
-  const fetchGallery = useCallback(async () => {
+  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState('');
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const buildQuery = useCallback((c?: string | null) => {
+    const sp = new URLSearchParams();
+    if (debouncedQ.trim()) sp.set('q', debouncedQ.trim());
+    if (kind) sp.set('kind', kind);
+    if (style) sp.set('style', style);
+    if (from) sp.set('from', from);
+    if (to) sp.set('to', to);
+    if (c) sp.set('cursor', c);
+    return sp.toString();
+  }, [debouncedQ, kind, style, from, to]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const res = await fetch('/api/gallery');
+      const res = await fetch(`/api/gallery?${buildQuery()}`);
       const data = await res.json();
-      if (data.success) setGroups(data.data.groups);
+      if (!data.success) throw new Error(data.error);
+      setItems(data.data.items);
+      setCursor(data.data.nextCursor);
+    } catch {
+      setError('טעינת הגלריה נכשלה');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [buildQuery]);
 
-  useEffect(() => { fetchGallery(); }, [fetchGallery]);
+  useEffect(() => { load(); }, [load]);
 
-  const menuNames = useMemo(() =>
-    Array.from(new Set(groups.flatMap(g => g.dishes.map(d => d.menuName)))),
-    [groups]
-  );
-
-  const allDishes = useMemo(() =>
-    groups.flatMap(g => g.dishes)
-      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()),
-    [groups]
-  );
-
-  const visibleDishes = useMemo(() =>
-    activeFilter === 'all'
-      ? allDishes
-      : allDishes.filter(d => d.menuName === activeFilter),
-    [allDishes, activeFilter]
-  );
-
-  async function downloadAll() {
-    const BATCH = 5;
-    for (let i = 0; i < visibleDishes.length; i += BATCH) {
-      visibleDishes.slice(i, i + BATCH).forEach(dish => {
-        const a = document.createElement('a');
-        a.href = dish.imageUrl;
-        a.download = `${dish.name.replace(/\s+/g, '-')}.jpg`;
-        a.target = '_blank';
-        a.click();
-      });
-      if (i + BATCH < visibleDishes.length) await new Promise(r => setTimeout(r, 150));
+  async function loadMore() {
+    if (!cursor) return;
+    setLoadingMore(true);
+    try {
+      const data = await (await fetch(`/api/gallery?${buildQuery(cursor)}`)).json();
+      if (data.success) {
+        setItems((prev) => [...prev, ...data.data.items]);
+        setCursor(data.data.nextCursor);
+      }
+    } finally {
+      setLoadingMore(false);
     }
   }
 
+  const filtered = !!(debouncedQ || kind || style || from || to);
+
   return (
-    <div dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[var(--accent)]/15 border border-[var(--accent)]/20 flex items-center justify-center">
-            <Images className="w-5 h-5 text-[var(--accent)]" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--text)]">מאגר הנכסים</h1>
-            <p className="text-[var(--text-muted)] text-sm">{allDishes.length} תמונות</p>
-          </div>
+    <>
+      <PageHeader
+        title="גלריה"
+        subtitle="כל מה שה-AI יצר, במקום אחד"
+        actions={<Link href="/studio" className="btn-primary"><Sparkles className="w-4 h-4" /> יצירת תמונה</Link>}
+      />
+
+      <div className="card !p-4 mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+        <div className="relative lg:col-span-2">
+          <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 start-3 text-[var(--text-muted)]" />
+          <input className="input ps-9" value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי שם" aria-label="חיפוש" />
         </div>
-        {visibleDishes.length > 0 && (
-          <button className="btn-secondary gap-2 text-sm cursor-pointer" onClick={downloadAll}>
-            <Download className="w-4 h-4" /> הורד הכל
-          </button>
-        )}
+        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)} aria-label="סוג">
+          <option value="">תמונות וסרטונים</option>
+          <option value="image">תמונות</option>
+          <option value="video">סרטונים</option>
+        </select>
+        <select className="input" value={style} onChange={(e) => setStyle(e.target.value)} aria-label="סגנון">
+          <option value="">כל הסגנונות</option>
+          {STYLE_OPTIONS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+        </select>
+        <div className="flex gap-2 sm:col-span-2 min-w-0">
+          <input type="date" className="input !px-2 min-w-0" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="מתאריך" />
+          <input type="date" className="input !px-2 min-w-0" value={to} onChange={(e) => setTo(e.target.value)} aria-label="עד תאריך" />
+        </div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-24">
-          <Loader2 className="w-8 h-8 animate-spin text-[var(--accent)]" />
-        </div>
-      ) : allDishes.length === 0 ? (
-        <div className="text-center py-24 text-[var(--text-muted)]">
-          <div className="w-16 h-16 rounded-2xl bg-[var(--surface2)] flex items-center justify-center mx-auto mb-4">
-            <ImageOff className="w-7 h-7 opacity-40" />
-          </div>
-          <p className="font-semibold mb-1">אין תמונות עדיין</p>
-          <p className="text-sm">גנרט תמונה במעבדה והיא תופיע כאן</p>
-        </div>
+      {error ? (
+        <ErrorBox message={error} onRetry={load} />
+      ) : loading ? (
+        <Spinner />
+      ) : items.length === 0 ? (
+        <EmptyState
+          icon={ImageIcon}
+          title={filtered ? 'לא נמצאו תוצאות' : 'הגלריה ריקה'}
+          description={filtered ? 'נסה לשנות את הסינון' : 'תמונות שתיצור בסטודיו יישמרו כאן אוטומטית'}
+          action={!filtered && <Link href="/studio" className="btn-primary"><Sparkles className="w-4 h-4" /> יצירת תמונה</Link>}
+        />
       ) : (
         <>
-          {/* Filter tags */}
-          {menuNames.length > 1 && (
-            <div className="flex gap-2 mb-6 flex-wrap">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            {items.map((item) => (
               <button
-                onClick={() => setActiveFilter('all')}
-                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border cursor-pointer ${
-                  activeFilter === 'all'
-                    ? 'bg-[var(--accent)] text-[#0C0A09] border-[var(--accent)] font-semibold'
-                    : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border)]'
-                }`}
+                key={item.id}
+                onClick={() => setOpenId(item.id)}
+                className="group text-start rounded-xl overflow-hidden border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--accent)]/60 transition-colors"
               >
-                הכל ({allDishes.length})
+                <div className="relative aspect-square bg-[var(--surface2)]">
+                  {item.kind === 'video' ? (
+                    <video src={item.src} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.src} alt={item.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-300" />
+                  )}
+                  {item.kind === 'video' && (
+                    <span className="absolute top-2 start-2 badge bg-black/60 text-white"><Film className="w-3 h-3 me-1" /> וידאו</span>
+                  )}
+                </div>
+                <div className="px-3 py-2">
+                  <p className="text-sm font-medium truncate">{item.title}</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">{formatDate(item.createdAt)}</p>
+                </div>
               </button>
-              {menuNames.map(name => {
-                const count = allDishes.filter(d => d.menuName === name).length;
-                return (
-                  <button
-                    key={name}
-                    onClick={() => setActiveFilter(name)}
-                    className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all duration-200 border cursor-pointer ${
-                      activeFilter === name
-                        ? 'bg-[var(--accent)] text-[#0C0A09] border-[var(--accent)] font-semibold'
-                        : 'bg-[var(--surface)] border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--border)]'
-                    }`}
-                  >
-                    {name} ({count})
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {visibleDishes.map(dish => (
-              <ImageCard
-                key={dish.id}
-                dish={dish}
-                onClick={() => setSelected(dish)}
-              />
             ))}
           </div>
-
-          <p className="text-center text-xs text-[var(--text-muted)] mt-8 opacity-60">
-            לחיצה ארוכה על תמונה לאפשרויות הורדה ושיתוף
-          </p>
+          {cursor && (
+            <div className="flex justify-center mt-6">
+              <button className="btn-secondary" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />} טען עוד
+              </button>
+            </div>
+          )}
         </>
       )}
 
-      {selected && <Lightbox dish={selected} onClose={() => setSelected(null)} />}
-    </div>
+      <AssetModal
+        id={openId}
+        onClose={() => setOpenId(null)}
+        onChanged={(updated) => setItems((prev) => prev.map((i) => (i.id === updated.id ? { ...i, ...updated } : i)))}
+        onDeleted={(id) => { setItems((prev) => prev.filter((i) => i.id !== id)); setOpenId(null); }}
+      />
+    </>
+  );
+}
+
+function AssetModal({ id, onClose, onChanged, onDeleted }: {
+  id: string | null;
+  onClose: () => void;
+  onChanged: (a: Partial<GalleryItem> & { id: string }) => void;
+  onDeleted: (id: string) => void;
+}) {
+  const router = useRouter();
+  const [asset, setAsset] = useState<AssetDetails | null>(null);
+  const [error, setError] = useState('');
+  const [renaming, setRenaming] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showSource, setShowSource] = useState(false);
+
+  useEffect(() => {
+    setAsset(null);
+    setError('');
+    setRenaming(false);
+    setShowSource(false);
+    if (!id) return;
+    fetch(`/api/gallery/${id}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.success) { setAsset(d.data); setTitleDraft(d.data.title); } else setError('הפריט לא נמצא'); })
+      .catch(() => setError('שגיאה בטעינה'));
+  }, [id]);
+
+  async function saveTitle() {
+    if (!asset || !titleDraft.trim()) return;
+    setSaving(true);
+    try {
+      const d = await (await fetch(`/api/gallery/${asset.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: titleDraft }),
+      })).json();
+      if (d.success) {
+        setAsset({ ...asset, title: d.data.title });
+        onChanged({ id: asset.id, title: d.data.title });
+        setRenaming(false);
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!asset) return;
+    const res = await fetch(`/api/gallery/${asset.id}`, { method: 'DELETE' });
+    if (res.ok) onDeleted(asset.id);
+  }
+
+  return (
+    <>
+      <Modal open={!!id} onClose={onClose} title={asset?.title ?? ''} size="xl">
+        {error ? <ErrorBox message={error} /> : !asset ? <Spinner /> : (
+          <div className="grid md:grid-cols-[1fr_280px] gap-5">
+            <div className="space-y-3">
+              {asset.kind === 'video' ? (
+                <video src={asset.src} controls autoPlay loop muted playsInline className="w-full max-h-[70vh] rounded-xl bg-black" />
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={showSource ? `${asset.src}?variant=source` : asset.src} alt={asset.title} className="w-full max-h-[70vh] object-contain rounded-xl bg-[var(--surface2)]" />
+              )}
+              {asset.hasSource && asset.kind === 'image' && (
+                <div className="flex gap-1 p-1 rounded-xl bg-[var(--surface2)] w-fit">
+                  {[false, true].map((src) => (
+                    <button
+                      key={String(src)}
+                      onClick={() => setShowSource(src)}
+                      className={clsx('px-3 py-1 rounded-lg text-xs font-medium', showSource === src ? 'bg-[var(--surface)] shadow text-[var(--text)]' : 'text-[var(--text-muted)]')}
+                    >
+                      {src ? 'תמונת מקור' : 'תוצאה'}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4 text-sm">
+              {renaming ? (
+                <div className="flex gap-2">
+                  <input className="input" value={titleDraft} onChange={(e) => setTitleDraft(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && saveTitle()} aria-label="שם חדש" />
+                  <button className="btn-primary" onClick={saveTitle} disabled={saving || !titleDraft.trim()}>שמור</button>
+                </div>
+              ) : null}
+
+              <dl className="space-y-2">
+                <div className="flex justify-between gap-2"><dt className="text-[var(--text-muted)]">תאריך יצירה</dt><dd>{formatDate(asset.createdAt)}</dd></div>
+                <div className="flex justify-between gap-2"><dt className="text-[var(--text-muted)]">סגנון</dt><dd>{styleLabel(asset.styleKey)}</dd></div>
+              </dl>
+
+              {asset.prompt && (
+                <details className="rounded-xl border border-[var(--border)] p-3">
+                  <summary className="cursor-pointer text-[var(--text-muted)]">פרומפט</summary>
+                  <p className="mt-2 text-xs whitespace-pre-wrap max-h-48 overflow-y-auto" dir="ltr">{asset.prompt}</p>
+                </details>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <button className="btn-secondary justify-center" onClick={() => asset.kind === 'video' ? window.open(asset.src, '_blank') : downloadImage(asset.src, asset.title)}>
+                  <Download className="w-4 h-4" /> הורדה
+                </button>
+                {asset.kind === 'image' && (
+                  <button className="btn-secondary justify-center" onClick={() => router.push(`/studio?tab=single&variationOf=${asset.id}`)}>
+                    <Wand2 className="w-4 h-4" /> וריאציה
+                  </button>
+                )}
+                <button className="btn-secondary justify-center" onClick={() => setRenaming(true)}>
+                  <Pencil className="w-4 h-4" /> שינוי שם
+                </button>
+                <button className="btn-danger justify-center" onClick={() => setConfirmDelete(true)}>
+                  <Trash2 className="w-4 h-4" /> מחיקה
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Modal>
+      <ConfirmDialog
+        open={confirmDelete}
+        onClose={() => setConfirmDelete(false)}
+        onConfirm={remove}
+        title="למחוק את הפריט?"
+        message="הפריט יוסר מהגלריה."
+        confirmLabel="מחיקה"
+        danger
+      />
+    </>
   );
 }

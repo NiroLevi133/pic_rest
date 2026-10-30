@@ -121,10 +121,10 @@
 
   /* Status tones — one palette for every status badge in the system */
   .tone-neutral { @apply bg-[var(--surface2)] text-[var(--text-muted)]; }
-  .tone-info    { @apply bg-sky-500/12 text-sky-700 dark:text-sky-400; }
+  .tone-info    { @apply bg-sky-500/10 text-sky-700 dark:text-sky-400; }
   .tone-warning { @apply bg-amber-500/15 text-amber-700 dark:text-amber-400; }
-  .tone-success { @apply bg-green-500/12 text-green-700 dark:text-green-400; }
-  .tone-danger  { @apply bg-red-500/12 text-red-700 dark:text-red-400; }
+  .tone-success { @apply bg-green-500/10 text-green-700 dark:text-green-400; }
+  .tone-danger  { @apply bg-red-500/10 text-red-700 dark:text-red-400; }
   .tone-accent  { @apply bg-[var(--accent-dim)] text-[var(--accent)]; }
 
   .badge-pending    { @apply badge tone-neutral; }

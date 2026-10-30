@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
-import { checkOperation } from '@/lib/providers/video/veo';
+import { checkOperation, TURNTABLE_PROMPT } from '@/lib/providers/video/veo';
 import { uploadVideo } from '@/lib/storage';
 
 export const maxDuration = 120;
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
     // Verify ownership via the menu relation.
     const dish = await prisma.dish.findFirst({
       where: { id: dishId, menu: { userId } },
-      select: { id: true, status: true, videoUrl: true, videoOpId: true },
+      select: { id: true, name: true, status: true, videoUrl: true, videoOpId: true, referenceImage: true },
     });
     if (!dish) return NextResponse.json({ success: false, error: 'Not found' }, { status: 404 });
 
@@ -62,6 +62,22 @@ export async function POST(req: NextRequest) {
     await prisma.dish.update({
       where: { id: dish.id },
       data: { status: 'DONE', videoUrl, errorMessage: null },
+    });
+    // Same key the backfill uses, so the video shows up in the gallery exactly once.
+    await prisma.mediaAsset.upsert({
+      where: { legacyImageId: `video:${dish.id}` },
+      update: {},
+      create: {
+        userId,
+        kind: 'video',
+        url: videoUrl,
+        title: dish.name,
+        styleKey: '360',
+        prompt: TURNTABLE_PROMPT,
+        sourceImageUrl: dish.referenceImage && /^https?:/.test(dish.referenceImage) ? dish.referenceImage : null,
+        legacyDishId: dish.id,
+        legacyImageId: `video:${dish.id}`,
+      },
     });
 
     return NextResponse.json({ success: true, data: { status: 'DONE', videoUrl } });
