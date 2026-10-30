@@ -24,6 +24,8 @@ model User {
   role                  String   @default("STUDIO_ONLY")
   createdAt             DateTime @default(now())
   menus                 Menu[]
+  generationJobs        GenerationJob[]
+  mediaAssets           MediaAsset[]
 }
 
 model Menu {
@@ -83,4 +85,56 @@ model Settings {
   id        String   @id @default("singleton")
   data      String
   updatedAt DateTime @updatedAt
+}
+
+/// One AI generation request (single or part of a multi batch).
+model GenerationJob {
+  id             String      @id @default(cuid())
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batchId        String?
+  /// PENDING | GENERATING | DONE | ERROR
+  status         String      @default("PENDING")
+  title          String
+  prompt         String
+  styleKey       String?
+  options        Json?
+  referenceImage String?
+  extraImages    Json?
+  errorMessage   String?
+  retryCount     Int         @default(0)
+  mediaAssetId   String?     @unique
+  mediaAsset     MediaAsset? @relation(fields: [mediaAssetId], references: [id], onDelete: SetNull)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([batchId])
+}
+
+/// Every image/video the AI produced — independent of menus, customers or quotes.
+model MediaAsset {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// image | video
+  kind           String         @default("image")
+  url            String
+  title          String
+  styleKey       String?
+  prompt         String?
+  sourceImageUrl String?
+  parentAssetId  String?
+  customerId     String?
+  /// Set for assets backfilled from the legacy Dish/DishImage tables
+  legacyDishId   String?
+  legacyImageId  String?        @unique
+  deletedAt      DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  job            GenerationJob?
+
+  @@index([userId, createdAt])
+  @@index([customerId])
+  @@index([legacyDishId])
 }
