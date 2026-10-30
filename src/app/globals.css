@@ -5,7 +5,46 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light is the default; dark follows the OS unless the user picked a theme. */
   :root {
+    --bg: #FAF8F5;
+    --surface: #FFFFFF;
+    --surface2: #F3EFE9;
+    --border: #E7E0D6;
+    --text: #1C1917;
+    --text-muted: #766B60;
+    --accent: #B8862B;
+    --accent-hover: #A0731F;
+    --accent-fg: #FFFFFF;
+    --accent-dim: rgba(184, 134, 43, 0.12);
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #d97706;
+    --shadow: 0 1px 2px rgba(28, 25, 23, 0.04), 0 4px 16px rgba(28, 25, 23, 0.05);
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0C0A09;
+      --surface: #161210;
+      --surface2: #1E1A16;
+      --border: #2C2520;
+      --text: #F4EDE3;
+      --text-muted: #8A7A6A;
+      --accent: #C8962A;
+      --accent-hover: #DFA840;
+      --accent-fg: #0C0A09;
+      --accent-dim: rgba(200, 150, 42, 0.12);
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --shadow: none;
+      color-scheme: dark;
+    }
+  }
+
+  :root[data-theme="dark"] {
     --bg: #0C0A09;
     --surface: #161210;
     --surface2: #1E1A16;
@@ -14,10 +53,13 @@
     --text-muted: #8A7A6A;
     --accent: #C8962A;
     --accent-hover: #DFA840;
+    --accent-fg: #0C0A09;
     --accent-dim: rgba(200, 150, 42, 0.12);
     --success: #22c55e;
     --error: #ef4444;
     --warning: #f59e0b;
+    --shadow: none;
+    color-scheme: dark;
   }
 
   * { box-sizing: border-box; }
@@ -36,7 +78,7 @@
 
 @layer components {
   .card {
-    @apply rounded-2xl border bg-[var(--surface)] border-[var(--border)] p-6;
+    @apply rounded-2xl border bg-[var(--surface)] border-[var(--border)] p-6 shadow-[var(--shadow)];
   }
 
   .btn {
@@ -46,7 +88,7 @@
   }
 
   .btn-primary {
-    @apply btn bg-[var(--accent)] text-[#0C0A09] hover:bg-[var(--accent-hover)] font-semibold;
+    @apply btn bg-[var(--accent)] text-[var(--accent-fg)] hover:bg-[var(--accent-hover)] font-semibold;
   }
 
   .btn-secondary {
@@ -77,10 +119,18 @@
     @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
   }
 
-  .badge-pending    { @apply badge bg-[var(--surface2)] text-[var(--text-muted)]; }
-  .badge-generating { @apply badge bg-amber-900/30 text-amber-400 animate-pulse; }
-  .badge-done       { @apply badge bg-green-900/30 text-green-400; }
-  .badge-error      { @apply badge bg-red-900/30 text-red-400; }
+  /* Status tones — one palette for every status badge in the system */
+  .tone-neutral { @apply bg-[var(--surface2)] text-[var(--text-muted)]; }
+  .tone-info    { @apply bg-sky-500/12 text-sky-700 dark:text-sky-400; }
+  .tone-warning { @apply bg-amber-500/15 text-amber-700 dark:text-amber-400; }
+  .tone-success { @apply bg-green-500/12 text-green-700 dark:text-green-400; }
+  .tone-danger  { @apply bg-red-500/12 text-red-700 dark:text-red-400; }
+  .tone-accent  { @apply bg-[var(--accent-dim)] text-[var(--accent)]; }
+
+  .badge-pending    { @apply badge tone-neutral; }
+  .badge-generating { @apply badge tone-warning animate-pulse; }
+  .badge-done       { @apply badge tone-success; }
+  .badge-error      { @apply badge tone-danger; }
 }
 
 /* ── Animations ───────────────────────────────────────────────────── */
@@ -106,7 +156,7 @@
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #3D342C; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }

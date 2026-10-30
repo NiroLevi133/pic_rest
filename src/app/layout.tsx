@@ -1,20 +1,27 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import Navigation from '@/components/Navigation';
+import AppShell from '@/components/AppShell';
+import { themeInitScript } from '@/components/ThemeToggle';
 
 export const metadata: Metadata = {
-  title: 'Restorante – Menu to Images',
-  description: 'AI-powered restaurant menu image generator',
+  title: 'NIRO Workspace',
+  description: 'ניהול לקוחות, הצעות מחיר, קבלות וסטודיו AI',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="he" dir="rtl">
+    <html lang="he" dir="rtl" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="min-h-screen">
-        <Navigation />
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

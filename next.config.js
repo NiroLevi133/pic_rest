@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  async redirects() {
+    return [
+      // The old "lab" lives on as the AI Studio.
+      { source: '/menu', destination: '/studio', permanent: false },
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: '**.openai.com' },

@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect logged-in users away from login page
   if (userId && (pathname === '/login' || pathname === '/')) {
-    return NextResponse.redirect(new URL('/menu', req.url));
+    return NextResponse.redirect(new URL('/studio', req.url));
   }
 
   // Redirect unauthenticated users to login

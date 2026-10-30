@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2, UtensilsCrossed } from 'lucide-react';
+import { Loader2, Martini } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (!data.success) {
         setError(data.error || 'שגיאה בהתחברות');
       } else {
-        router.push('/menu');
+        router.push('/studio');
         router.refresh();
       }
     } catch {
@@ -56,15 +56,12 @@ export default function LoginPage() {
             className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-[var(--accent)] mb-5"
             style={{ boxShadow: '0 8px 32px rgba(200,150,42,0.22)' }}
           >
-            <UtensilsCrossed className="w-8 h-8 text-[#0C0A09]" />
+            <Martini className="w-8 h-8 text-[var(--accent-fg)]" />
           </div>
-          <h1
-            className="text-[28px] font-bold tracking-tight text-[var(--text)]"
-            style={{ fontFamily: "'Playfair Display', Georgia, serif" }}
-          >
-            Restorante AI
+          <h1 className="text-[28px] font-bold tracking-tight text-[var(--text)]" dir="ltr">
+            NIRO Workspace
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-muted)]">מחולל תמונות מנות חכם</p>
+          <p className="mt-2 text-sm text-[var(--text-muted)]">לקוחות, הצעות מחיר, קבלות וסטודיו AI</p>
         </div>
 
         {/* Form card */}
@@ -94,7 +91,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="rounded-xl px-4 py-3 text-sm text-right bg-red-500/8 border border-red-500/20 text-red-400">
+              <div className="rounded-xl px-4 py-3 text-sm text-right tone-danger border border-red-500/20">
                 {error}
               </div>
             )}
