@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { persistImage } from '@/lib/storage';
+import { completeJob } from '@/lib/generation';
 
 const BG_SECRET = process.env.BG_SECRET;
 
@@ -24,6 +25,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // New Studio jobs travel through the Lambda under the legacy `dishId` field.
+    const job = await prisma.generationJob.findUnique({ where: { id: dishId }, select: { id: true } });
+    if (job) {
+      await completeJob(job.id, { imageUrl, error });
+      return NextResponse.json({ ok: true });
+    }
+
     if (imageUrl) {
       // Upload to Storage (CDN) and persist the URL instead of base64.
       const storedUrl = await persistImage(imageUrl);
