@@ -46,7 +46,7 @@ function fireBg(dishId: string, referenceImage: string, prompt: string, extraIma
 }
 
 export async function POST(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {

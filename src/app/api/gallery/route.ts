@@ -4,7 +4,7 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import { getPreset } from '@/lib/style-presets';
 
 export async function GET(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   const menus = await prisma.menu.findMany({

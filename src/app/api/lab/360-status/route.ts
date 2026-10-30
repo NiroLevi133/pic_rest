@@ -12,7 +12,7 @@ export const maxDuration = 120;
  * every few seconds until status is DONE or ERROR.
  */
 export async function POST(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {

@@ -4,7 +4,7 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import { FIXED_PROMPT } from '@/lib/prompt-engine';
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {

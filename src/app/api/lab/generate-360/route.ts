@@ -10,7 +10,7 @@ export const maxDuration = 60;
  * the dishId + operation name; the client polls /api/lab/360-status until done.
  */
 export async function POST(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {

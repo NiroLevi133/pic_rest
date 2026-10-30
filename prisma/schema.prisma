@@ -20,6 +20,8 @@ model User {
   canSingleGenerate     Boolean  @default(true)
   canMultiGenerate      Boolean  @default(false)
   niroBarCustomFeatures String?
+  /// OWNER | MEMBER — full business access; STUDIO_ONLY — AI studio + own gallery only
+  role                  String   @default("STUDIO_ONLY")
   createdAt             DateTime @default(now())
   menus                 Menu[]
 }

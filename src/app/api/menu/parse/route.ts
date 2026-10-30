@@ -6,7 +6,7 @@ import { getUserIdFromRequest } from '@/lib/auth';
 import type { ParseMenuRequest } from '@/lib/types';
 
 export async function POST(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   try {

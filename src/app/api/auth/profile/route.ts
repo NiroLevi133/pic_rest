@@ -9,7 +9,7 @@ export async function GET() {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
-      phone: true, restaurantName: true, restaurantLogo: true, restaurantStyle: true,
+      phone: true, role: true, restaurantName: true, restaurantLogo: true, restaurantStyle: true,
       restaurantUrl: true, restaurantDescription: true, restaurantTheme: true, createdAt: true,
     },
   });
@@ -19,6 +19,7 @@ export async function GET() {
 
   return NextResponse.json({ success: true, data: {
     phone: user.phone,
+    role: user.role,
     restaurantName: user.restaurantName ?? '',
     restaurantLogo: user.restaurantLogo ?? null,
     restaurantStyle: user.restaurantStyle ?? '',

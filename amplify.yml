@@ -17,6 +17,8 @@ frontend:
         - echo "SETTINGS_ENCRYPTION_KEY=$SETTINGS_ENCRYPTION_KEY" >> .env.production
         - echo "LAMBDA_GENERATE_URL=$LAMBDA_GENERATE_URL" >> .env.production
         - echo "BG_SECRET=$BG_SECRET" >> .env.production
+        - echo "SESSION_SECRET=$SESSION_SECRET" >> .env.production
+        - echo "OWNER_PHONE=$OWNER_PHONE" >> .env.production
         - echo "APP_URL=$APP_URL" >> .env.production
         - echo "SUPABASE_URL=$SUPABASE_URL" >> .env.production
         - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production

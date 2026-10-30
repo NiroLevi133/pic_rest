@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from '@/lib/constants';
+import { verifySessionToken } from '@/lib/session';
 
 const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/generate-callback', '/r/', '/p/', '/api/public/', '/api/images/', '/api/dish-images/'];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow static files
@@ -14,7 +15,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const userId = req.cookies.get(SESSION_COOKIE)?.value;
+  const userId = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 
   // Redirect logged-in users away from login page
   if (userId && (pathname === '/login' || pathname === '/')) {

@@ -81,6 +81,7 @@ export default function SettingsPage() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [phone, setPhone] = useState('');
+  const [role, setRole] = useState('');
   const [generatedCount, setGeneratedCount] = useState(0);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState('');
@@ -117,6 +118,7 @@ export default function SettingsPage() {
           setRestaurantUrl(d.data.restaurantUrl || '');
           setRestaurantDescription(d.data.restaurantDescription || '');
           setPhone(d.data.phone || '');
+          setRole(d.data.role || '');
           setGeneratedCount(d.data.generatedCount || 0);
         }
       });
@@ -486,7 +488,7 @@ export default function SettingsPage() {
         )}
 
         {/* Admin link */}
-        {phone === '0507676706' && (
+        {role === 'OWNER' && (
           <div className="border-t border-[var(--border)] pt-4 mt-2">
             <a
               href="/admin"

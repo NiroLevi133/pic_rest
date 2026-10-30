@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getUserIdFromRequest } from '@/lib/auth';
-
-const ADMIN_PHONE = '0507676706';
+import { getSessionUser } from '@/lib/auth';
 
 async function isAdmin(req: NextRequest): Promise<boolean> {
-  const userId = getUserIdFromRequest(req);
-  if (!userId) return false;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
-  return user?.phone === ADMIN_PHONE;
+  return (await getSessionUser(req))?.role === 'OWNER';
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

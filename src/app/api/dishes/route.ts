@@ -19,7 +19,7 @@ function mapDish(d: {
 }
 
 export async function GET(req: NextRequest) {
-  const userId = getUserIdFromRequest(req);
+  const userId = await getUserIdFromRequest(req);
   if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
 
   const menuId = req.nextUrl.searchParams.get('menuId');
