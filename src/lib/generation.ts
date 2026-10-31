@@ -217,6 +217,16 @@ export async function startGeneration(input: StartGenerationInput): Promise<{ jo
   return { jobId: job.id };
 }
 
+/** Turn raw provider errors (often JSON blobs) into a short Hebrew message for the UI. */
+export function friendlyGenerationError(raw: string | undefined): string {
+  const msg = raw ?? '';
+  if (/\b402\b|credits are depleted|billing/i.test(msg)) return 'נגמר הקרדיט בחשבון Google AI — יש להטעין ב-AI Studio (ai.studio) ולנסות שוב.';
+  if (/\b429\b|RESOURCE_EXHAUSTED|quota/i.test(msg)) return 'חרגת ממכסת השימוש של Gemini — נסה שוב בעוד כמה דקות.';
+  if (/\b(401|403)\b|API key|PERMISSION_DENIED/i.test(msg)) return 'מפתח ה-API של Google לא תקין או חסום — בדוק את GOOGLE_API_KEY.';
+  if (/SAFETY|blocked/i.test(msg)) return 'המודל סירב ליצור את התמונה (סינון תוכן). נסה ניסוח או תמונה אחרים.';
+  return msg.length > 300 ? `${msg.slice(0, 300)}…` : msg || 'שגיאה לא ידועה ביצירת התמונה';
+}
+
 /** Finish a job: persist the image and create its MediaAsset, or record the error. */
 export async function completeJob(jobId: string, outcome: { imageUrl?: string; error?: string }): Promise<void> {
   const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
@@ -225,7 +235,7 @@ export async function completeJob(jobId: string, outcome: { imageUrl?: string; e
   if (!outcome.imageUrl) {
     await prisma.generationJob.update({
       where: { id: jobId },
-      data: { status: 'ERROR', errorMessage: outcome.error ?? 'Unknown error', retryCount: { increment: 1 } },
+      data: { status: 'ERROR', errorMessage: friendlyGenerationError(outcome.error), retryCount: { increment: 1 } },
     });
     return;
   }

@@ -47,3 +47,13 @@ describe('buildPrompt', () => {
     expect(p).toContain('the exact shirt from the shirt product image, classic blue jeans');
   });
 });
+
+describe('friendlyGenerationError', () => {
+  it('maps provider billing / quota / key errors to Hebrew', async () => {
+    const { friendlyGenerationError } = await import('./generation');
+    expect(friendlyGenerationError('Gemini 402: {"message":"Your prepayment credits are depleted"}')).toContain('נגמר הקרדיט');
+    expect(friendlyGenerationError('Gemini 429: RESOURCE_EXHAUSTED')).toContain('מכסת');
+    expect(friendlyGenerationError('Gemini 400: API key not valid')).toContain('מפתח');
+    expect(friendlyGenerationError('boom')).toBe('boom');
+  });
+});
