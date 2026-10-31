@@ -9,6 +9,7 @@
  *  3. `prisma migrate deploy` — applies pending migrations (all additive).
  *  4. Copy legacy menu/dish images into the gallery (MediaAsset) — idempotent.
  *  5. Make sure the business profile row exists.
+ *  6. Give OWNER_PHONE the OWNER role.
  *
  *   npm run setup
  */
@@ -95,6 +96,13 @@ try {
 
   // 5. Business profile singleton.
   await prisma.businessProfile.upsert({ where: { id: 'main' }, update: {}, create: { id: 'main' } });
+
+  // 6. The configured owner gets the OWNER role (also happens on their next login).
+  const ownerPhone = (process.env.OWNER_PHONE ?? loadDotEnvValue('OWNER_PHONE') ?? '').replace(/\D/g, '');
+  if (ownerPhone) {
+    const { count } = await prisma.user.updateMany({ where: { phone: ownerPhone, role: { not: 'OWNER' } }, data: { role: 'OWNER' } });
+    if (count > 0) log(`owner ${ownerPhone} promoted to OWNER`);
+  }
 
   log('database is ready ✓');
 } finally {
