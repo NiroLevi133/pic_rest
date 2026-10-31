@@ -103,7 +103,7 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
       </div>
 
       <footer className="mt-10 pt-4 border-t doc-rule text-xs doc-muted space-y-1">
-        <p>מסמך ממוחשב — הופק באמצעות {s.software} ואינו דורש חתימה. נוצר במערכת: {formatDateTime(s.issuedAt)}.</p>
+        <p>מסמך ממוחשב — הופק באמצעות {s.software} ואינו דורש חתימה.</p>
         {s.business.footer && <p>{s.business.footer}</p>}
         {!integrityOk && <p className="text-red-700 font-bold">אזהרה: תוכן המסמך אינו תואם לחתימה הדיגיטלית שנשמרה בעת ההפקה.</p>}
       </footer>

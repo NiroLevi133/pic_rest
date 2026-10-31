@@ -109,7 +109,7 @@ function ReceiptView({ id }: { id: string }) {
               {r.quote && <> · <Link href={`/quotes/${r.quote.id}`} className="hover:text-[var(--accent)]">הצעה {r.quote.number}</Link></>}
             </p>
             <p className="text-xs text-[var(--text-muted)] mt-1">
-              {r.originalChannel ? `המקור הופק ${r.originalChannel === 'PRINT' ? 'בהדפסה' : 'בשליחה דיגיטלית'}` : 'המקור טרם הופק — ההדפסה או השליחה הראשונה תהיה המקור'}
+              נוצרה במערכת {formatDateTime(r.issuedAt)} · {r.originalChannel ? `המקור הופק ${r.originalChannel === 'PRINT' ? 'בהדפסה' : 'בשליחה דיגיטלית'}` : 'המקור טרם הופק — ההדפסה או השליחה הראשונה תהיה המקור'}
               {r.printCount > 0 && ` · הודפסה ${r.printCount} פעמים`}
             </p>
           </div>
