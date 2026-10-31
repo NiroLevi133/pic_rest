@@ -136,6 +136,17 @@ export async function countUserImages(userId: string): Promise<number> {
   return prisma.mediaAsset.count({ where: { userId, kind: 'image' } });
 }
 
+/**
+ * The image quota (MAX_IMAGES_PER_USER) applies to studio-only users.
+ * The business owner and business users are unlimited. Returns an error message or null.
+ */
+export async function imageQuotaError(userId: string): Promise<string | null> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+  if (user?.role === 'OWNER' || user?.role === 'MEMBER') return null;
+  const max = maxImagesPerUser();
+  return (await countUserImages(userId)) >= max ? `הגעת למגבלת ${max} תמונות. צור קשר לשדרוג.` : null;
+}
+
 export interface StartGenerationInput {
   userId: string;
   title: string;

@@ -47,7 +47,6 @@ export default function QuoteDocument({ data }: { data: QuoteDocData }) {
           <>
             <p className="font-semibold">מס' {data.number}{data.version > 1 && ` · גרסה ${data.version}`}</p>
             <p className="doc-muted">תאריך: {formatDate(data.createdAt)}</p>
-            {d.validUntil && <p className="doc-muted">בתוקף עד: {formatDay(d.validUntil)}</p>}
           </>
         }
       />

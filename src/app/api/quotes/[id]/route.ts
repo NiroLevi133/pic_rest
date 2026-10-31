@@ -4,7 +4,7 @@ import { requireRole, BUSINESS_ROLES } from '@/lib/auth';
 import { logAudit } from '@/lib/audit';
 import { getBusinessProfile } from '@/lib/business';
 import { normalizeQuoteDraft, validateQuoteForSend } from '@/lib/quotes';
-import { draftToColumns, expireQuotes, paidByQuote, quoteToDraft } from '@/lib/quotes-server';
+import { draftToColumns, paidByQuote, quoteToDraft } from '@/lib/quotes-server';
 import { balanceDue } from '@/lib/quote-math';
 
 type Ctx = { params: { id: string } };
@@ -12,7 +12,6 @@ type Ctx = { params: { id: string } };
 export async function GET(req: NextRequest, { params }: Ctx) {
   const { error } = await requireRole(req, BUSINESS_ROLES);
   if (error) return error;
-  await expireQuotes();
 
   const quote = await prisma.quote.findUnique({
     where: { id: params.id },

@@ -31,7 +31,8 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
           <>
             <p className="text-lg font-bold">מס' {s.number}</p>
             <p className="doc-muted">תאריך: {s.documentDate ? formatDay(s.documentDate) : formatDateTime(s.issuedAt)}</p>
-            <p className="mt-1 inline-block rounded border border-neutral-900 px-2 py-0.5 text-xs font-bold">{copyLabel}</p>
+            {/* Plain bold label (no box): boxed text renders misaligned in the PDF rasterizer */}
+            <p className="mt-1.5 text-sm font-bold">{copyLabel}</p>
           </>
         }
       />

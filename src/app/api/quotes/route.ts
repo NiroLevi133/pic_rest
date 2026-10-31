@@ -6,13 +6,12 @@ import { allocateNumber } from '@/lib/documents';
 import { logAudit } from '@/lib/audit';
 import { getBusinessProfile } from '@/lib/business';
 import { emptyQuoteDraft, QUOTE_STATUSES, type QuoteTemplate } from '@/lib/quotes';
-import { draftToColumns, expireQuotes, newShareToken, paidByQuote, quoteLabel, quoteToDraft } from '@/lib/quotes-server';
+import { draftToColumns, newShareToken, paidByQuote, quoteLabel, quoteToDraft } from '@/lib/quotes-server';
 
 /** GET /api/quotes?q=&status=&customerId= */
 export async function GET(req: NextRequest) {
   const { error } = await requireRole(req, BUSINESS_ROLES);
   if (error) return error;
-  await expireQuotes();
 
   const sp = req.nextUrl.searchParams;
   const q = sp.get('q')?.trim();

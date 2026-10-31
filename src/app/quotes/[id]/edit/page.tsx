@@ -24,16 +24,9 @@ import {
 import { NIRO_BAR_EVENT_TYPES } from '@/lib/style-presets';
 import { formatILS } from '@/lib/money';
 import type { VatType } from '@/lib/quote-math';
-import { israelToday } from '@/lib/dates';
 
 const STEPS = ['לקוח ותבנית', 'פרטי האירוע', 'תמחור', 'תוכן ותנאים', 'סיכום ושליחה'] as const;
 const OTHER = '__other__';
-
-function addDays(iso: string, days: number) {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
 
 function Field({ label, optional, children, htmlFor, className }: { label: string; optional?: boolean; children: React.ReactNode; htmlFor?: string; className?: string }) {
   return (
@@ -88,7 +81,6 @@ function Wizard({ id }: { id: string }) {
       if (q.data.status !== 'DRAFT') { router.replace(`/quotes/${id}`); return; }
       const d: QuoteDraft = q.data.draft;
       // First open of a fresh draft: sensible defaults
-      if (!d.validUntil) d.validUntil = addDays(israelToday(), 14);
       if (d.template === 'NIRO_BAR' && d.niroFeatures.length === 0) setSeedNiro(true);
       if (d.priceMode === 'PER_PERSON' && d.tiers.length === 0) d.tiers = [{ max: 50, price: 0 }, { min: 51, max: 100, price: 0 }, { min: 101, price: 0 }];
       setCustomEventType(d.template === 'NIRO_BAR' && !!d.serviceType && !NIRO_BAR_EVENT_TYPES.includes(d.serviceType));
@@ -382,9 +374,6 @@ function Wizard({ id }: { id: string }) {
                 <Field label="תנאי תשלום" optional htmlFor="q-terms" className="sm:col-span-2">
                   <textarea id="q-terms" rows={3} className="input resize-none" value={draft.paymentTerms} onChange={(e) => update({ paymentTerms: e.target.value })}
                     placeholder="לדוגמה: מקדמה 30% לשריון התאריך, יתרה עד יום האירוע. העברה בנקאית / ביט." />
-                </Field>
-                <Field label="בתוקף עד" htmlFor="q-valid">
-                  <input id="q-valid" type="date" className="input" value={draft.validUntil} onChange={(e) => update({ validUntil: e.target.value })} />
                 </Field>
                 <Field label="הערות ללקוח" optional htmlFor="q-notes" className="sm:col-span-2">
                   <textarea id="q-notes" rows={3} className="input resize-none" value={draft.clientNotes} onChange={(e) => update({ clientNotes: e.target.value })} />

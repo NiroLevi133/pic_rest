@@ -2,13 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, BUSINESS_ROLES } from '@/lib/auth';
 import { israelDayBoundary, israelToday } from '@/lib/dates';
-import { expireQuotes } from '@/lib/quotes-server';
 
 /** Home screen numbers. Income = net of receipts (cancellations are negative). */
 export async function GET(req: NextRequest) {
   const { error } = await requireRole(req, BUSINESS_ROLES);
   if (error) return error;
-  await expireQuotes();
 
   const today = israelToday();
   const monthStart = israelDayBoundary(`${today.slice(0, 7)}-01`);

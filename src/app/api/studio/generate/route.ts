@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getUserIdFromRequest } from '@/lib/auth';
 import {
-  buildPrompt, analyzeStyleReference, startGeneration, countUserImages, maxImagesPerUser,
+  buildPrompt, analyzeStyleReference, startGeneration, imageQuotaError,
   type AdvancedOptions, type CaptionOverlay, type ProductImages,
 } from '@/lib/generation';
 
@@ -41,10 +41,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'אין הרשאה לגנרוט בודד' }, { status: 403 });
     }
 
-    const max = maxImagesPerUser();
-    if (await countUserImages(userId) >= max) {
-      return NextResponse.json({ success: false, error: `הגעת למגבלת ${max} תמונות. צור קשר לשדרוג.` }, { status: 429 });
-    }
+    const quotaError = await imageQuotaError(userId);
+    if (quotaError) return NextResponse.json({ success: false, error: quotaError }, { status: 429 });
 
     if (!body.referenceImage && !body.textOnly) {
       return NextResponse.json({ success: false, error: 'נא להעלות תמונת מקור' }, { status: 400 });

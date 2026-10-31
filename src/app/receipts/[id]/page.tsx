@@ -1,9 +1,10 @@
 'use client';
 
-import { Suspense, useCallback, useEffect, useState } from 'react';
+import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, Ban, Check, CheckCircle2, Copy, Loader2, Lock, Printer, Send } from 'lucide-react';
+import { ArrowRight, Ban, CheckCircle2, Download, Loader2, Lock, Printer, Send } from 'lucide-react';
+import { downloadElementAsPdf } from '@/lib/pdf';
 import BusinessGate from '@/components/BusinessGate';
 import Spinner, { ErrorBox } from '@/components/ui/Spinner';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -40,7 +41,9 @@ function ReceiptView({ id }: { id: string }) {
   const [actionError, setActionError] = useState('');
   const [cancelOpen, setCancelOpen] = useState(false);
   const [reason, setReason] = useState('');
-  const [copied, setCopied] = useState(false);
+  /** Label rendered on the off-screen copy used for the PDF */
+  const [pdfLabel, setPdfLabel] = useState<string | null>(null);
+  const pdfRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     const data = await (await fetch(`/api/receipts/${id}`)).json().catch(() => null);
@@ -49,21 +52,40 @@ function ReceiptView({ id }: { id: string }) {
   }, [id]);
   useEffect(() => { load(); }, [load]);
 
-  async function share(copy: boolean) {
-    setBusy(copy ? 'copy' : 'share');
+  async function share() {
+    setBusy('share');
     setActionError('');
     try {
       const data = await (await fetch(`/api/receipts/${id}/share`, { method: 'POST' })).json();
       if (!data.success) throw new Error(data.error);
-      if (copy) {
-        await navigator.clipboard.writeText(data.data.url);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } else window.open(data.data.whatsapp, '_blank', 'noopener');
+      window.open(data.data.whatsapp, '_blank', 'noopener');
       await load();
     } catch (err) {
       setActionError(err instanceof Error ? err.message : 'השיתוף נכשל');
     } finally {
+      setBusy(null);
+    }
+  }
+
+  async function downloadPdf() {
+    if (!r) return;
+    setBusy('pdf');
+    setActionError('');
+    try {
+      // Register the production first: the first one is the "מקור".
+      const data = await (await fetch(`/api/receipts/${id}/print?via=pdf`, { method: 'POST' })).json();
+      if (!data.success) throw new Error(data.error);
+      setPdfLabel(data.data.original ? 'מקור' : 'העתק נאמן למקור');
+      await new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve, 50)));
+      const el = pdfRef.current?.querySelector('article');
+      if (!el) throw new Error('יצירת הקובץ נכשלה');
+      const kind = r.type === 'CANCELLATION' ? 'ביטול קבלה' : 'קבלה';
+      await downloadElementAsPdf(el as HTMLElement, `${kind} ${r.number} - ${r.customer.name}`);
+      await load();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'ההורדה נכשלה');
+    } finally {
+      setPdfLabel(null);
       setBusy(null);
     }
   }
@@ -128,13 +150,13 @@ function ReceiptView({ id }: { id: string }) {
         )}
 
         <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-[var(--border)]">
-          <button className="btn-primary" onClick={() => share(false)} disabled={!!busy}>
+          <button className="btn-primary" onClick={share} disabled={!!busy}>
             {busy === 'share' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} שלח בוואטסאפ
           </button>
-          <button className="btn-secondary" onClick={() => window.open(`/print/receipt/${id}`, '_blank')}><Printer className="w-4 h-4" /> הדפסה / PDF</button>
-          <button className="btn-ghost" onClick={() => share(true)} disabled={!!busy}>
-            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />} {copied ? 'הקישור הועתק' : 'העתק קישור'}
+          <button className="btn-secondary" onClick={downloadPdf} disabled={!!busy}>
+            {busy === 'pdf' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />} הורדת PDF
           </button>
+          <button className="btn-ghost" onClick={() => window.open(`/print/receipt/${id}`, '_blank')}><Printer className="w-4 h-4" /> הדפסה</button>
           {!isCancellation && r.status === 'ISSUED' && (
             <button className="btn-ghost text-[var(--error)] ms-auto" onClick={() => setCancelOpen(true)}><Ban className="w-4 h-4" /> ביטול קבלה</button>
           )}
@@ -146,6 +168,13 @@ function ReceiptView({ id }: { id: string }) {
       <div className="overflow-x-auto">
         <ReceiptDocument snapshot={r.snapshot} copyLabel={`תצוגה · ההפקה הבאה: ${nextLabel}`} cancelled={r.cancelledBy} integrityOk={r.integrityOk} />
       </div>
+
+      {/* Off-screen, fixed A4 width copy that becomes the PDF */}
+      {pdfLabel && (
+        <div ref={pdfRef} aria-hidden className="fixed top-0 -left-[10000px] w-[794px] pointer-events-none [&_.doc-paper]:shadow-none [&_.doc-paper]:rounded-none">
+          <ReceiptDocument snapshot={r.snapshot} copyLabel={pdfLabel} cancelled={r.cancelledBy} integrityOk={r.integrityOk} />
+        </div>
+      )}
 
       <ConfirmDialog
         open={cancelOpen}

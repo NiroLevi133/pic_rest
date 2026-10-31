@@ -4,7 +4,7 @@ import { requireRole, BUSINESS_ROLES } from '@/lib/auth';
 import { buildNiroBarQuotePrompt } from '@/lib/style-presets';
 import { quoteToNiroFields, validateQuoteForSend } from '@/lib/quotes';
 import { quoteLabel, quoteToDraft } from '@/lib/quotes-server';
-import { startGeneration, countUserImages, maxImagesPerUser } from '@/lib/generation';
+import { startGeneration, imageQuotaError } from '@/lib/generation';
 import { getNiroBarReferenceImage, NIRO_BAR_QUOTE_KEY } from '@/lib/niro-bar';
 import { logAudit } from '@/lib/audit';
 import { getSettings } from '@/lib/settings';
@@ -28,10 +28,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const issues = validateQuoteForSend(draft, quote.total);
   if (issues.length > 0) return NextResponse.json({ success: false, error: 'חסרים פרטים להצעה המעוצבת', issues }, { status: 400 });
 
-  const max = maxImagesPerUser();
-  if (await countUserImages(user.id) >= max) {
-    return NextResponse.json({ success: false, error: `הגעת למגבלת ${max} תמונות.` }, { status: 429 });
-  }
+  const quotaError = await imageQuotaError(user.id);
+  if (quotaError) return NextResponse.json({ success: false, error: quotaError }, { status: 429 });
 
   const settings = await getSettings();
   const engine = settings.quoteDesignEngine === 'gemini' || !settings.openaiApiKey ? 'gemini' : 'openai';
