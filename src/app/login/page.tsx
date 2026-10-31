@@ -24,7 +24,7 @@ export default function LoginPage() {
       if (!data.success) {
         setError(data.error || 'שגיאה בהתחברות');
       } else {
-        router.push('/studio');
+        router.push(data.data?.role === 'STUDIO_ONLY' ? '/studio' : '/dashboard');
         router.refresh();
       }
     } catch {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from '@/lib/constants';
 import { verifySessionToken } from '@/lib/session';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/generate-callback', '/r/', '/p/', '/api/public/', '/api/images/', '/api/dish-images/', '/d/'];
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/generate-callback', '/api/images/', '/api/dish-images/', '/d/'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,7 +19,7 @@ export async function middleware(req: NextRequest) {
 
   // Redirect logged-in users away from login page
   if (userId && (pathname === '/login' || pathname === '/')) {
-    return NextResponse.redirect(new URL('/studio', req.url));
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
   // Redirect unauthenticated users to login

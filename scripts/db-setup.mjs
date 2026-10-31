@@ -26,6 +26,21 @@ if (!process.env.DATABASE_URL && !fs.existsSync(path.join(root, '.env'))) {
   process.exit(1);
 }
 
+// Migrations need a direct connection. When DIRECT_URL isn't set, derive it:
+// Supabase pooler transaction port 6543 → session port 5432; otherwise reuse DATABASE_URL.
+function loadDotEnvValue(name) {
+  const file = path.join(root, '.env');
+  if (!fs.existsSync(file)) return undefined;
+  const line = fs.readFileSync(file, 'utf8').split('\n').find((l) => l.startsWith(`${name}=`));
+  return line?.slice(name.length + 1).trim().replace(/^"|"$/g, '');
+}
+if (!process.env.DIRECT_URL) {
+  const db = process.env.DATABASE_URL ?? loadDotEnvValue('DATABASE_URL') ?? '';
+  process.env.DIRECT_URL = db.includes('pooler.supabase.com:6543')
+    ? db.replace(':6543/', ':5432/').replace(/[?&]pgbouncer=true/, '').replace(/\?&/, '?')
+    : db;
+}
+
 run('npx prisma generate > /dev/null');
 const { PrismaClient } = await import('@prisma/client');
 const prisma = new PrismaClient();

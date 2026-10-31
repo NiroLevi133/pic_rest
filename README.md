@@ -1,150 +1,69 @@
-# 🍽 Restorante – Menu to AI Images
+# NIRO Workspace
 
-מערכת Web מלאה שמקבלת תפריט של מסעדה, מפרקת אותו למנות, מייצרת פרומטים שיווקיים בעברית, ושולחת לAPI של מחולל תמונות.
+מערכת ניהול עסק אחת ל-NIRO BAR: סטודיו AI לתמונות, גלריה, לקוחות, הצעות מחיר וקבלות.
 
----
+Next.js 14 (App Router) · TypeScript · Tailwind · Prisma + PostgreSQL (Supabase) · Gemini / OpenAI
 
-## Architecture
+## מודולים
 
-```
-Next.js 14 (App Router)
-  ├── Frontend (React + TypeScript + Tailwind)
-  └── Backend API Routes (secure proxy)
-       ├── /api/menu/parse   – LLM menu parsing
-       ├── /api/dishes       – CRUD
-       ├── /api/generate/[id] – single image generation
-       ├── /api/generate/all  – batch generation
-       └── /api/settings     – encrypted key storage
+| מסך | מה יש בו |
+|---|---|
+| `/dashboard` | הכנסות החודש והשנה, הצעות פתוחות, יתרות לגבייה, אירועים קרובים, פעילות אחרונה |
+| `/studio` | גנרוט בודד, גנרוט מרובה (עד 20, הורדת ZIP), סט צילומים/החלפת בגדים, סרטון 360° |
+| `/gallery` | כל התמונות, חיפוש וסינון, שיוך ללקוח, וריאציה |
+| `/customers` | CRM: כרטיס לקוח עם הצעות, תשלומים, יתרות וציר פעילות |
+| `/quotes` | אשף ב-5 שלבים, תבנית כללית או NIRO BAR, PDF, שליחה בוואטסאפ, גרסאות והצעה מעוצבת (GPT/Gemini) |
+| `/receipts` | קבלות חוקיות: מספור רציף, נעילה, מסמך ביטול, מקור/העתק, ייצוא CSV |
+| `/settings` | פרטי העסק, מספור, מפתחות AI, ייצוא נתונים |
 
-SQLite (Prisma) for MVP
-Provider Abstraction:
-  LLM: OpenAI (GPT-4o) | Anthropic (Claude)
-  Image: DALL-E 3 | Stability AI | Replicate (FLUX)
-```
+## הרצה מקומית
 
-## Folder Structure
-
-```
-restorante/
-├── prisma/
-│   └── schema.prisma          # DB schema (Menu, Dish, Settings)
-├── src/
-│   ├── app/
-│   │   ├── menu/page.tsx      # הזנת תפריט
-│   │   ├── dishes/page.tsx    # טבלת מנות + סטטוסים
-│   │   ├── gallery/page.tsx   # גלריית תמונות
-│   │   ├── history/page.tsx   # היסטוריית תפריטים
-│   │   ├── settings/page.tsx  # הגדרות + API keys
-│   │   └── api/               # Backend routes (secure)
-│   ├── components/
-│   │   └── Navigation.tsx
-│   └── lib/
-│       ├── types.ts           # TypeScript types
-│       ├── prisma.ts          # DB client
-│       ├── settings.ts        # Encrypted settings
-│       ├── menu-parser.ts     # LLM + heuristic parsing
-│       ├── prompt-engine.ts   # Category-based prompt templates
-│       └── providers/
-│           ├── llm/           # OpenAI | Anthropic
-│           └── image/         # DALL-E | Stability | Replicate
-```
-
-## הרצה מהירה
-
-### 1. התקן Node.js
-הורד מ: https://nodejs.org (גרסה 18+)
-
-### 2. הגדר environment
 ```bash
-# הקובץ .env.local כבר קיים, אבל ניתן לשנות את ה-encryption key:
-SETTINGS_ENCRYPTION_KEY="your-secret-32-char-key-here!!!!"
-```
-
-### 3. הרץ setup
-```bash
-# Windows (double-click)
-setup.bat
-
-# או ידנית:
 npm install
-npx prisma generate
-npx prisma db push
+cp .env.example .env   # ממלאים ערכים
+npm run dev            # מריץ קודם את סידור מסד הנתונים (npm run setup)
 ```
 
-### 4. הפעל שרת פיתוח
+משתני סביבה:
+
+| משתנה | חובה | תפקיד |
+|---|---|---|
+| `DATABASE_URL` | ✓ | Postgres. ב-Supabase: חיבור ה-pooler עם `?pgbouncer=true` |
+| `DIRECT_URL` | בפרודקשן | חיבור ישיר להרצת migrations. אם חסר, `npm run setup` מחשב אותו לבד |
+| `SESSION_SECRET` | ✓ | חתימת ההתחברות (מחרוזת אקראית ארוכה) |
+| `OWNER_PHONE` | ✓ | הטלפון של בעל העסק, מקבל הרשאת OWNER |
+| `SETTINGS_ENCRYPTION_KEY` | ✓ | הצפנת מפתחות שנשמרים במסך ההגדרות (32 תווים) |
+| `GOOGLE_API_KEY` | ✓ | Gemini: תמונות סטודיו ו-360° |
+| `OPENAI_API_KEY` | מומלץ | הצעה מעוצבת (gpt-image-2) וניתוח תמונת רפרנס |
+| `LLM_PROVIDER` | | `gemini` או `openai`, לכתיבת טקסטים |
+| `APP_URL` | בפרודקשן | כתובת האתר, לקישורי שיתוף ול-callback |
+| `LAMBDA_GENERATE_URL`, `BG_SECRET` | בפרודקשן | שירות היצירה ברקע (Gemini) |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_BUCKET` | בפרודקשן | אחסון תמונות |
+
+## מסד הנתונים
+
+`npm run setup` (`scripts/db-setup.mjs`) רץ אוטומטית ב-`npm run dev` ובכל build ב-Amplify. אפשר להריץ אותו כמה פעמים:
+
+1. מסד ישן בלי היסטוריית migrations: מסמן את `0_init` כמוחל.
+2. עוצר אם migration עתידי מוחק מידע. מריצים מחדש עם `ALLOW_DESTRUCTIVE_MIGRATIONS=1` רק אחרי גיבוי.
+3. `prisma migrate deploy`.
+4. מעביר תמונות מהמבנה הישן (Menu/Dish) לגלריה.
+5. יוצר את רשומת העסק.
+
+שינויי מבנה מוסיפים בלבד, ולא מוחקים טבלאות. טבלאות התפריטים הישנות נשארות במסד.
+
+**קבלות ותשלומים נעולים ברמת מסד הנתונים** (triggers): אי אפשר למחוק קבלה או לשנות את תוכנה. מותר רק לשנות סטטוס לביטול ולספור הדפסות.
+
+## בדיקות
+
 ```bash
-npm run dev
-# פתח: http://localhost:3000
+npm test              # vitest: חישובי כסף, חוקי קבלה, תאריכים, הצעות, התחברות
+npx tsc --noEmit
+npm run build
 ```
 
-### 5. הגדר API Keys
-- פתח http://localhost:3000/settings
-- הכנס את ה-API Key שלך (OpenAI / Anthropic / Stability / Replicate)
-- **המפתחות לא נחשפים ל-frontend – נשמרים מוצפנים בשרת**
+## הרשאות
 
----
-
-## שימוש – Input/Output
-
-### Input (תפריט לדוגמה)
-```
-מסעדת "הזית הכסוף" - תפריט
-
-מנות פתיחה
----
-חומוס ביתי עם פטריות מוקפצות ושמן זית ₪32
-פלאפל קריספי עם טחינה ועלי נענע ₪28
-
-מנות עיקריות
----
-פילה סלמון צלוי עם ירקות שורש קלויים ₪89
-המבורגר בלאק אנגוס עם צ'דר וצ'יפס ₪78
-```
-
-### Output (פרומט שיווקי שנוצר)
-```
-מנה פתיחה מפתה ויפהפייה: "חומוס ביתי" עם פטריות מוקפצות, שמן זית.
-סגנון: צילום אוכל מקצועי, סגנון Mediterranean.
-תאורה: תאורה רכה טבעית מהצד.
-אווירה: קליל, מזמין, תיאבון.
-פרטים נוספים: צלחת לבנה אלגנטית, עשבי תיבול טריים.
-רקע: שיש לבן נקי או עץ טבעי.
-איכות: ultra-realistic, 8K, professional food magazine photography, appetizing.
-אין: אנשים, טקסט, לוגו, watermark.
-```
-
----
-
-## Features
-
-| Feature | Status |
-|---------|--------|
-| הזנת תפריט | ✅ |
-| LLM parsing (GPT-4o/Claude) | ✅ |
-| Heuristic fallback | ✅ |
-| זיהוי קטגוריה | ✅ (20 קטגוריות) |
-| חילוץ מרכיבים | ✅ |
-| Prompt engine לפי קטגוריה | ✅ |
-| עריכת פרומט ידנית | ✅ |
-| Generate one | ✅ |
-| Generate all (concurrency) | ✅ |
-| Retry on failure | ✅ (max 3) |
-| סטטוסים בזמן אמת | ✅ (polling) |
-| גלריית תוצאות | ✅ |
-| Lightbox + הורדה | ✅ |
-| הצפנת API keys | ✅ |
-| Settings UI | ✅ |
-| DALL-E 3 | ✅ |
-| Stability AI | ✅ |
-| Replicate (FLUX) | ✅ |
-| OpenAI LLM | ✅ |
-| Anthropic LLM | ✅ |
-| היסטוריית תפריטים | ✅ |
-
-## הרחבות עתידיות
-- החלפת polling ב-WebSockets/SSE
-- Queue אמיתי (BullMQ + Redis)
-- Export לPDF/ZIP
-- AES-256 encryption (במקום XOR)
-- PostgreSQL ב-production
-- Authentication
+- `OWNER`: הכול, כולל מפתחות AI, משתמשים וייצוא.
+- `MEMBER`: מודולים עסקיים.
+- `STUDIO_ONLY`: סטודיו וגלריה (רק התמונות שלו).

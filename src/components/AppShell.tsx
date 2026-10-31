@@ -24,7 +24,7 @@ const NAV: NavItem[] = [
 ];
 
 /** Screens rendered without the app chrome (auth, print views, public share pages). */
-const BARE_PREFIXES = ['/login', '/print/', '/d/', '/r/', '/p/'];
+const BARE_PREFIXES = ['/login', '/print/', '/d/'];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/');

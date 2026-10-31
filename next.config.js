@@ -4,6 +4,10 @@ const nextConfig = {
     return [
       // The old "lab" lives on as the AI Studio.
       { source: '/menu', destination: '/studio', permanent: false },
+      // Removed legacy screens
+      { source: '/history', destination: '/gallery', permanent: false },
+      { source: '/dishes', destination: '/gallery', permanent: false },
+      { source: '/restaurant', destination: '/settings', permanent: false },
     ];
   },
   images: {

@@ -5,7 +5,10 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
+  /// Direct (non-pooled) connection for migrations. Supabase's transaction
+  /// pooler (port 6543) can't run migrations. db-setup fills it in when unset.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {

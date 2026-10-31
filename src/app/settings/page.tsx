@@ -1,45 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Save, Loader2, Eye, EyeOff, CheckCircle, ChevronDown, ChevronUp,
-  User, LogOut, Camera,
-} from 'lucide-react';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { clsx } from 'clsx';
+import { Building2, CheckCircle, Download, Eye, EyeOff, Loader2, LogOut, Save, Sparkles, User, Users } from 'lucide-react';
 import type { SafeSettings, AppSettings, LLMProvider } from '@/lib/types';
+import { useCurrentUser, hasBusinessAccess } from '@/components/CurrentUser';
 import BusinessProfileForm from '@/components/business/BusinessProfileForm';
+import Tabs from '@/components/ui/Tabs';
+import Spinner, { ErrorBox } from '@/components/ui/Spinner';
 
-/* ── Reusable components ─────────────────────────────────────────── */
-function KeyInput({ label, name, placeholder, value, onChange, hasKey }: {
-  label: string; name: string; placeholder: string;
-  value: string; onChange: (v: string) => void; hasKey: boolean;
+type TabKey = 'business' | 'ai' | 'account';
+
+const ROLE_LABELS: Record<string, string> = { OWNER: 'בעל העסק', MEMBER: 'משתמש עסקי', STUDIO_ONLY: 'סטודיו בלבד' };
+
+function KeyInput({ label, value, onChange, hasKey, placeholder, id }: {
+  label: string; value: string; onChange: (v: string) => void; hasKey: boolean; placeholder: string; id: string;
 }) {
   const [show, setShow] = useState(false);
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="label mb-0 text-sm">{label}</label>
-        {hasKey && !value && (
-          <span className="flex items-center gap-1 text-xs text-green-400">
-            <CheckCircle className="w-3 h-3" /> שמור
-          </span>
-        )}
+        <label className="label !mb-0" htmlFor={id}>{label}</label>
+        {hasKey && !value && <span className="flex items-center gap-1 text-xs text-[var(--success)]"><CheckCircle className="w-3 h-3" /> מוגדר</span>}
       </div>
       <div className="relative">
-        <input
-          type={show ? 'text' : 'password'}
-          className="input pr-10 text-sm"
-          name={name}
-          placeholder={hasKey ? '••••••••••••• (שמור)' : placeholder}
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          autoComplete="off"
-        />
-        <button
-          type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
-          onClick={() => setShow(!show)}
-        >
+        <input id={id} type={show ? 'text' : 'password'} className="input pe-10 font-mono text-sm" dir="ltr" autoComplete="off"
+          placeholder={hasKey ? '••••••••••••' : placeholder} value={value} onChange={(e) => onChange(e.target.value)} />
+        <button type="button" className="absolute end-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" onClick={() => setShow(!show)} aria-label={show ? 'הסתר' : 'הצג'}>
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
         </button>
       </div>
@@ -47,294 +35,186 @@ function KeyInput({ label, name, placeholder, value, onChange, hasKey }: {
   );
 }
 
-function Section({ title, icon, children, accent }: {
-  title: string; icon: React.ReactNode; children: React.ReactNode; accent?: boolean;
-}) {
+function Choice<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { key: T; label: string; hint?: string }[] }) {
   return (
-    <div className={`card ${accent ? 'border-[var(--accent)]/30' : ''}`}>
-      <div className="flex items-center gap-2 mb-5">
-        <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center text-[var(--accent)]">
-          {icon}
-        </div>
-        <h2 className="font-semibold">{title}</h2>
-      </div>
-      {children}
+    <div className="grid sm:grid-cols-2 gap-2">
+      {options.map((o) => (
+        <button key={o.key} type="button" aria-pressed={value === o.key} onClick={() => onChange(o.key)}
+          className={clsx('text-start rounded-xl border p-3 transition-colors', value === o.key ? 'border-[var(--accent)] bg-[var(--accent-dim)]' : 'border-[var(--border)] hover:bg-[var(--surface2)]')}>
+          <span className={clsx('block text-sm font-medium', value === o.key && 'text-[var(--accent)]')}>{o.label}</span>
+          {o.hint && <span className="block text-xs text-[var(--text-muted)] mt-0.5">{o.hint}</span>}
+        </button>
+      ))}
     </div>
   );
 }
 
-const LLM_PROVIDERS: { id: LLMProvider; label: string }[] = [
-  { id: 'openai', label: 'OpenAI' },
-  { id: 'anthropic', label: 'Anthropic' },
-  { id: 'gemini', label: 'Google Gemini' },
-];
-
-/* ── Main page ───────────────────────────────────────────────────── */
-export default function SettingsPage() {
-  const router = useRouter();
-
-  /* Account */
-  const [phone, setPhone] = useState('');
-  const [role, setRole] = useState('');
-  const [generatedCount, setGeneratedCount] = useState(0);
-
-  /* AI settings */
-  const [aiOpen, setAiOpen] = useState(false);
-  const [safeSettings, setSafeSettings] = useState<SafeSettings | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiSaving, setAiSaving] = useState(false);
-  const [aiSaved, setAiSaved] = useState(false);
-  const [aiError, setAiError] = useState('');
-  const [openaiKey, setOpenaiKey] = useState('');
-  const [anthropicKey, setAnthropicKey] = useState('');
+/** AI keys and engines — owner only. */
+function AiSettings() {
+  const [s, setS] = useState<SafeSettings | null>(null);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [googleKey, setGoogleKey] = useState('');
-  const [llmProvider, setLlmProvider] = useState<LLMProvider>('openai');
-  const [openaiModel, setOpenaiModel] = useState('gpt-4o');
-  const [anthropicModel, setAnthropicModel] = useState('claude-sonnet-4-6');
-  const [geminiLlmModel, setGeminiLlmModel] = useState('gemini-2.5-flash');
-  const [geminiImageModel, setGeminiImageModel] = useState('gemini-2.0-flash-exp');
-  const [imageSize, setImageSize] = useState('1024x1024');
-  const [concurrency, setConcurrency] = useState(3);
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [form, setForm] = useState<Partial<AppSettings>>({});
 
-  /* Load profile */
   useEffect(() => {
-    fetch('/api/auth/profile')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          setPhone(d.data.phone || '');
-          setRole(d.data.role || '');
-          setGeneratedCount(d.data.generatedCount || 0);
-        }
+    fetch('/api/settings').then((r) => r.json()).then((d) => {
+      if (!d.success) { setError(d.error || 'טעינה נכשלה'); return; }
+      setS(d.data);
+      setForm({
+        quoteDesignEngine: d.data.quoteDesignEngine ?? 'openai',
+        llmProvider: d.data.llmProvider,
+        geminiImageModel: d.data.geminiImageModel,
+        openaiImageModel: d.data.openaiImageModel ?? 'gpt-image-2',
       });
+    });
   }, []);
 
-  /* Load AI settings (only when section opens) */
-  useEffect(() => {
-    if (!aiOpen || safeSettings) return;
-    setAiLoading(true);
-    fetch('/api/settings')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          const s: SafeSettings = d.data;
-          setSafeSettings(s);
-          setLlmProvider(s.llmProvider ?? 'openai');
-          setOpenaiModel(s.openaiModel ?? 'gpt-4o');
-          setAnthropicModel(s.anthropicModel ?? 'claude-sonnet-4-6');
-          setGeminiLlmModel(s.geminiLlmModel ?? 'gemini-2.5-flash');
-          setGeminiImageModel(s.geminiImageModel ?? 'gemini-2.0-flash-exp');
-          setImageSize(s.imageSize ?? '1024x1024');
-          setConcurrency(s.concurrency ?? 3);
-        }
-      })
-      .finally(() => setAiLoading(false));
-  }, [aiOpen, safeSettings]);
-
-  async function saveAiSettings(e: React.FormEvent) {
+  async function save(e: React.FormEvent) {
     e.preventDefault();
-    setAiSaving(true); setAiError(''); setAiSaved(false);
-    const updates: Partial<AppSettings> = {
-      llmProvider, openaiModel, anthropicModel,
-      geminiLlmModel, geminiImageModel, imageSize, concurrency,
-    };
-    if (openaiKey) updates.openaiApiKey = openaiKey;
-    if (anthropicKey) updates.anthropicApiKey = anthropicKey;
-    if (googleKey) updates.googleApiKey = googleKey;
+    setSaving(true); setError(''); setSaved(false);
+    const updates: Partial<AppSettings> = { ...form };
+    if (googleKey) updates.googleApiKey = googleKey.trim();
+    if (openaiKey) updates.openaiApiKey = openaiKey.trim();
     try {
-      const res = await fetch('/api/settings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error);
-      setSafeSettings(data.data);
-      setAiSaved(true);
-      setOpenaiKey(''); setAnthropicKey(''); setGoogleKey('');
+      const d = await (await fetch('/api/settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })).json();
+      if (!d.success) throw new Error(d.error);
+      setS(d.data); setSaved(true); setGoogleKey(''); setOpenaiKey('');
     } catch (err) {
-      setAiError(err instanceof Error ? err.message : 'שגיאה');
+      setError(err instanceof Error ? err.message : 'השמירה נכשלה');
     } finally {
-      setAiSaving(false);
+      setSaving(false);
     }
   }
 
-  async function handleLogout() {
+  if (error && !s) return <ErrorBox message={error} />;
+  if (!s) return <Spinner />;
+  const set = (patch: Partial<AppSettings>) => { setForm({ ...form, ...patch }); setSaved(false); };
+
+  return (
+    <form onSubmit={save} className="space-y-5">
+      <section className="card space-y-3">
+        <h2 className="font-semibold">מנוע להצעת מחיר מעוצבת</h2>
+        <Choice value={form.quoteDesignEngine ?? 'openai'} onChange={(v) => set({ quoteDesignEngine: v })} options={[
+          { key: 'openai', label: 'GPT (מומלץ)', hint: 'עברית מדויקת יותר בתוך התמונה. כ-1–3 דקות.' },
+          { key: 'gemini', label: 'Gemini', hint: 'המנוע המקורי. מהיר וזול יותר.' },
+        ]} />
+        {form.quoteDesignEngine !== 'gemini' && !s.hasOpenaiKey && <p className="text-xs text-[var(--warning)]">אין מפתח OpenAI — ההצעה המעוצבת תיווצר ב-Gemini עד שתוסיף מפתח.</p>}
+      </section>
+
+      <section className="card space-y-4">
+        <h2 className="font-semibold">מפתחות</h2>
+        <KeyInput id="k-google" label="Google (Gemini) — תמונות בסטודיו וסרטוני 360°" value={googleKey} onChange={setGoogleKey} hasKey={s.hasGoogleKey} placeholder="AIza…" />
+        <KeyInput id="k-openai" label="OpenAI — הצעה מעוצבת וניתוח תמונת רפרנס" value={openaiKey} onChange={setOpenaiKey} hasKey={s.hasOpenaiKey} placeholder="sk-…" />
+        <p className="text-xs text-[var(--text-muted)]">מפתחות שנשמרים כאן מוצפנים ועוקפים את המפתחות שבהגדרות השרת.</p>
+      </section>
+
+      <section className="card space-y-4">
+        <h2 className="font-semibold">מתקדם</h2>
+        <div>
+          <p className="label">כתיבת טקסטים (כיתוב לאינסטגרם)</p>
+          <Choice<LLMProvider> value={form.llmProvider ?? 'gemini'} onChange={(v) => set({ llmProvider: v })} options={[
+            { key: 'gemini', label: 'Gemini' },
+            { key: 'openai', label: 'GPT' },
+          ]} />
+        </div>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className="label" htmlFor="m-gemini">מודל תמונות Gemini</label>
+            <input id="m-gemini" className="input font-mono text-sm" dir="ltr" value={form.geminiImageModel ?? ''} onChange={(e) => set({ geminiImageModel: e.target.value })} />
+          </div>
+          <div>
+            <label className="label" htmlFor="m-openai">מודל תמונות GPT</label>
+            <input id="m-openai" className="input font-mono text-sm" dir="ltr" value={form.openaiImageModel ?? ''} onChange={(e) => set({ openaiImageModel: e.target.value })} />
+          </div>
+        </div>
+      </section>
+
+      {error && <ErrorBox message={error} />}
+      <div className="flex items-center justify-end gap-3">
+        {saved && <span className="text-sm text-[var(--success)] inline-flex items-center gap-1"><CheckCircle className="w-4 h-4" /> נשמר</span>}
+        <button type="submit" disabled={saving} className="btn-primary">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} שמירה
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Account() {
+  const router = useRouter();
+  const { user } = useCurrentUser();
+  const [count, setCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/profile').then((r) => r.json()).then((d) => d.success && setCount(d.data.generatedCount ?? 0));
+  }, []);
+
+  async function logout() {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
     router.refresh();
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5" dir="rtl">
-      {/* ── 1. Business details (used on quotes and receipts) ─────── */}
-      {(role === 'OWNER' || role === 'MEMBER') && (
-        <section>
-          <h1 className="text-xl font-bold">הגדרות</h1>
-          <p className="text-sm text-[var(--text-muted)] mt-1 mb-4">פרטי העסק מופיעים בכל הצעת מחיר וקבלה חדשה. קבלות שכבר הופקו לא משתנות.</p>
-          <BusinessProfileForm />
+    <div className="space-y-5">
+      <section className="card">
+        <dl className="grid sm:grid-cols-3 gap-4 text-sm">
+          <div><dt className="text-xs text-[var(--text-muted)]">טלפון</dt><dd className="font-medium mt-0.5" dir="ltr" style={{ textAlign: 'right' }}>{user?.phone}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">הרשאה</dt><dd className="font-medium mt-0.5">{ROLE_LABELS[user?.role ?? ''] ?? '—'}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">תמונות שיצרת</dt><dd className="font-medium mt-0.5">{count ?? '…'}</dd></div>
+        </dl>
+      </section>
+
+      {user?.role === 'OWNER' && (
+        <section className="card space-y-3">
+          <h2 className="font-semibold">ניהול</h2>
+          <div className="flex flex-wrap gap-2">
+            <a href="/admin" className="btn-secondary"><Users className="w-4 h-4" /> ניהול משתמשים והרשאות</a>
+            <a href="/api/export" className="btn-secondary"><Download className="w-4 h-4" /> ייצוא כל הנתונים (JSON)</a>
+          </div>
+          <p className="text-xs text-[var(--text-muted)]">הייצוא כולל פרטי עסק, לקוחות, הצעות, קבלות ויומן פעולות — לגיבוי או להעברה לרואה החשבון.</p>
         </section>
       )}
 
-      {/* ── 2. AI Settings (collapsible) ─────────────────────────── */}
-      <div className="card p-0 overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setAiOpen(!aiOpen)}
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-[var(--surface2)]/50 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/15 flex items-center justify-center text-[var(--accent)]">
-              <Camera className="w-4 h-4" />
-            </div>
-            <div className="text-right">
-              <p className="font-semibold text-sm">הגדרות AI</p>
-              <p className="text-xs text-[var(--text-muted)]">API keys, מודלים וספקים</p>
-            </div>
-          </div>
-          {aiOpen ? <ChevronUp className="w-4 h-4 text-[var(--text-muted)]" /> : <ChevronDown className="w-4 h-4 text-[var(--text-muted)]" />}
-        </button>
-
-        {aiOpen && (
-          <div className="border-t border-[var(--border)] px-5 py-5">
-            {aiLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-[var(--accent)]" /></div>
-            ) : (
-              <form onSubmit={saveAiSettings} className="space-y-5">
-                {/* LLM Provider */}
-                <div>
-                  <p className="text-sm font-medium mb-3">LLM Provider (ניתוח תפריט)</p>
-                  <div className="grid grid-cols-3 gap-2 mb-3">
-                    {LLM_PROVIDERS.map(({ id, label }) => (
-                      <button key={id} type="button"
-                        className={`p-2.5 rounded-xl border text-xs font-medium transition-all ${llmProvider === id ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[var(--border)] bg-[var(--surface2)] text-[var(--text-muted)]'}`}
-                        onClick={() => setLlmProvider(id)}>{label}</button>
-                    ))}
-                  </div>
-                  {llmProvider === 'openai' && (
-                    <div className="space-y-2">
-                      <KeyInput label="OpenAI API Key" name="openaiKey" placeholder="sk-..." value={openaiKey} onChange={setOpenaiKey} hasKey={safeSettings?.hasOpenaiKey ?? false} />
-                      <div>
-                        <label className="label text-sm mb-1">מודל</label>
-                        <select className="input text-sm" value={openaiModel} onChange={e => setOpenaiModel(e.target.value)}>
-                          <option value="gpt-4o">GPT-4o</option>
-                          <option value="gpt-4o-mini">GPT-4o Mini</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  {llmProvider === 'anthropic' && (
-                    <div className="space-y-2">
-                      <KeyInput label="Anthropic API Key" name="anthropicKey" placeholder="sk-ant-..." value={anthropicKey} onChange={setAnthropicKey} hasKey={safeSettings?.hasAnthropicKey ?? false} />
-                      <div>
-                        <label className="label text-sm mb-1">מודל</label>
-                        <select className="input text-sm" value={anthropicModel} onChange={e => setAnthropicModel(e.target.value)}>
-                          <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
-                          <option value="claude-opus-4-6">Claude Opus 4.6</option>
-                          <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  {llmProvider === 'gemini' && (
-                    <div className="space-y-2">
-                      <KeyInput label="Google API Key" name="googleKey" placeholder="AIza..." value={googleKey} onChange={setGoogleKey} hasKey={safeSettings?.hasGoogleKey ?? false} />
-                      <div>
-                        <label className="label text-sm mb-1">מודל Gemini</label>
-                        <input className="input text-sm font-mono" value={geminiLlmModel} onChange={e => setGeminiLlmModel(e.target.value)} placeholder="gemini-2.5-flash" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Image Generation (Gemini – hardcoded) */}
-                <div>
-                  <p className="text-sm font-medium mb-3">Image Generation (Gemini)</p>
-                  <div className="space-y-2">
-                    <KeyInput label="Google API Key" name="googleKey" placeholder="AIza..." value={googleKey} onChange={setGoogleKey} hasKey={safeSettings?.hasGoogleKey ?? false} />
-                    <div>
-                      <label className="label text-sm mb-1">מודל Gemini Image</label>
-                      <input className="input text-sm font-mono" value={geminiImageModel} onChange={e => setGeminiImageModel(e.target.value)} placeholder="gemini-2.0-flash-preview-image-generation" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Image size + concurrency */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label text-sm mb-1">גודל תמונה</label>
-                    <select className="input text-sm" value={imageSize} onChange={e => setImageSize(e.target.value)}>
-                      <option value="1024x1024">1024×1024</option>
-                      <option value="1792x1024">1792×1024</option>
-                      <option value="1024x1792">1024×1792</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="label text-sm mb-1">מקביליות</label>
-                    <input type="number" min={1} max={10} className="input text-sm" value={concurrency} onChange={e => setConcurrency(Number(e.target.value))} />
-                  </div>
-                </div>
-
-                {aiError && (
-                  <div className="rounded-lg bg-red-900/20 border border-red-900/50 px-3 py-2 text-red-400 text-sm">{aiError}</div>
-                )}
-
-                <button type="submit" disabled={aiSaving} className="btn-primary gap-2">
-                  {aiSaving ? <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</>
-                    : aiSaved ? <><CheckCircle className="w-4 h-4" /> נשמר!</>
-                    : <><Save className="w-4 h-4" /> שמור הגדרות AI</>}
-                </button>
-              </form>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── 3. Account management ────────────────────────────────── */}
-      <Section title="ניהול חשבון" icon={<User className="w-4 h-4" />}>
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 mb-5">
-          <div className="bg-[var(--surface2)] rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-[var(--accent)]">{generatedCount}</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">תמונות שנוצרו</div>
-          </div>
-          <div className="bg-[var(--surface2)] rounded-xl p-4 text-center">
-            <div className="text-3xl font-bold text-green-400">∞</div>
-            <div className="text-xs text-[var(--text-muted)] mt-1">תמונות שנותרו</div>
-          </div>
-        </div>
-
-        {/* Phone */}
-        {phone && (
-          <div className="flex items-center justify-between py-3 border-t border-[var(--border)]">
-            <span className="text-sm text-[var(--text-muted)]">מספר טלפון</span>
-            <span className="text-sm font-mono" dir="ltr">{phone}</span>
-          </div>
-        )}
-
-        {/* Admin link */}
-        {role === 'OWNER' && (
-          <div className="border-t border-[var(--border)] pt-4 mt-2 space-y-2">
-            <a
-              href="/admin"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors text-sm font-medium"
-            >
-              <User className="w-4 h-4" /> ניהול משתמשים
-            </a>
-          </div>
-        )}
-
-        {/* Logout */}
-        <div className="border-t border-[var(--border)] pt-4 mt-2">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-900/50 text-red-400 hover:bg-red-500/10 transition-colors text-sm font-medium"
-          >
-            <LogOut className="w-4 h-4" /> יציאה מהמערכת
-          </button>
-        </div>
-      </Section>
+      <button type="button" onClick={logout} className="btn-secondary text-[var(--error)]"><LogOut className="w-4 h-4" /> יציאה מהמערכת</button>
     </div>
   );
+}
+
+function SettingsContent() {
+  const router = useRouter();
+  const params = useSearchParams();
+  const { user, loading } = useCurrentUser();
+  if (loading) return <Spinner />;
+
+  const business = hasBusinessAccess(user);
+  const tabs = [
+    ...(business ? [{ key: 'business' as const, label: 'פרטי העסק', icon: Building2 }] : []),
+    ...(user?.role === 'OWNER' ? [{ key: 'ai' as const, label: 'AI', icon: Sparkles }] : []),
+    { key: 'account' as const, label: 'חשבון', icon: User },
+  ];
+  const requested = params.get('tab') as TabKey | null;
+  const tab: TabKey = tabs.some((t) => t.key === requested) ? requested! : tabs[0].key;
+
+  return (
+    <div className="max-w-2xl">
+      <h1 className="text-xl font-bold mb-4">הגדרות</h1>
+      <Tabs<TabKey> value={tab} onChange={(k) => router.replace(`/settings?tab=${k}`, { scroll: false })} tabs={tabs} />
+      {tab === 'business' && (
+        <>
+          <p className="text-sm text-[var(--text-muted)] mb-4">הפרטים מופיעים בכל הצעת מחיר וקבלה חדשה. קבלות שכבר הופקו לא משתנות.</p>
+          <BusinessProfileForm />
+        </>
+      )}
+      {tab === 'ai' && <AiSettings />}
+      {tab === 'account' && <Account />}
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  return <Suspense fallback={<Spinner />}><SettingsContent /></Suspense>;
 }
