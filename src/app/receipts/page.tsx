@@ -84,7 +84,7 @@ function ReceiptsList() {
         subtitle={!loading && !error ? `${rows.length} מסמכים · נטו ${formatILS(net)}${sum !== net ? ` (מתוך ${formatILS(sum)})` : ''}` : undefined}
         actions={
           <>
-            <a href={`/api/receipts/export?${query()}`} className="btn-secondary"><Download className="w-4 h-4" /> ייצוא CSV</a>
+            <a href={`/api/receipts/export?${query()}`} className="btn-secondary"><Download className="w-4 h-4" /> ייצוא לאקסל</a>
             <Link href="/receipts/new" className="btn-primary"><Plus className="w-4 h-4" /> קבלה חדשה</Link>
           </>
         }

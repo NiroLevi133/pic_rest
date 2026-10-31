@@ -10,15 +10,16 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'קבלה', robots: { index: false, follow: false } };
 
 /**
- * Public view of a receipt sent to the payer. It is the "מקור" only when the
- * digital delivery produced the original (nothing was printed before sharing).
+ * Public view of a receipt (link sent to the payer, or from the Excel export).
+ * It is the "מקור" only when the digital delivery produced the original;
+ * every other view is a copy.
  */
 export default async function SharedReceiptPage({ params }: { params: { token: string } }) {
   const r = await prisma.receipt.findUnique({ where: { shareToken: params.token }, include: { cancelledBy: { select: { number: true } } } });
-  if (!r || !r.originalChannel) notFound();
+  if (!r) notFound();
   return (
     <main className="doc-screen">
-      <PrintToolbar />
+      <PrintToolbar pdfFileName={`${r.type === 'CANCELLATION' ? 'ביטול קבלה' : 'קבלה'} ${r.number}`} />
       <ReceiptDocument
         snapshot={r.snapshot as unknown as ReceiptSnapshot}
         copyLabel={r.originalChannel === 'SHARE' ? ORIGINAL_LABEL : COPY_LABEL}

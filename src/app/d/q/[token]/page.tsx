@@ -24,7 +24,7 @@ export default async function SharedQuotePage({ params }: { params: { token: str
           <img src={design.url} alt="הצעת מחיר מעוצבת" className="w-full max-w-md mx-auto rounded-2xl shadow-lg" />
         </div>
       )}
-      <PrintToolbar />
+      <PrintToolbar pdfFileName={`הצעת מחיר ${quote.number}`} />
       <QuoteDocument data={await quoteDocData(quote)} />
     </main>
   );
