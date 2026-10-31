@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Save, Loader2, Eye, EyeOff, CheckCircle, ChevronDown, ChevronUp,
-  Store, Sparkles, User, LogOut, Camera, X, Image as ImageIcon, Globe, Wand2,
+  User, LogOut, Camera,
 } from 'lucide-react';
 import type { SafeSettings, AppSettings, LLMProvider } from '@/lib/types';
+import BusinessProfileForm from '@/components/business/BusinessProfileForm';
 
 /* ── Reusable components ─────────────────────────────────────────── */
 function KeyInput({ label, name, placeholder, value, onChange, hasKey }: {
@@ -72,21 +73,10 @@ const LLM_PROVIDERS: { id: LLMProvider; label: string }[] = [
 export default function SettingsPage() {
   const router = useRouter();
 
-  /* Profile */
-  const [restaurantName, setRestaurantName] = useState('');
-  const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
-  const [restaurantStyle, setRestaurantStyle] = useState('');
-  const [restaurantUrl, setRestaurantUrl] = useState('');
-  const [restaurantDescription, setRestaurantDescription] = useState('');
-  const [profileSaving, setProfileSaving] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
+  /* Account */
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState('');
   const [generatedCount, setGeneratedCount] = useState(0);
-  const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState('');
-  const [generateDone, setGenerateDone] = useState(false);
-  const logoRef = useRef<HTMLInputElement>(null);
 
   /* AI settings */
   const [aiOpen, setAiOpen] = useState(false);
@@ -112,11 +102,6 @@ export default function SettingsPage() {
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-          setRestaurantName(d.data.restaurantName || '');
-          setRestaurantLogo(d.data.restaurantLogo || null);
-          setRestaurantStyle(d.data.restaurantStyle || '');
-          setRestaurantUrl(d.data.restaurantUrl || '');
-          setRestaurantDescription(d.data.restaurantDescription || '');
           setPhone(d.data.phone || '');
           setRole(d.data.role || '');
           setGeneratedCount(d.data.generatedCount || 0);
@@ -145,49 +130,6 @@ export default function SettingsPage() {
       })
       .finally(() => setAiLoading(false));
   }, [aiOpen, safeSettings]);
-
-  async function saveProfile() {
-    setProfileSaving(true);
-    await fetch('/api/auth/profile', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ restaurantName, restaurantLogo, restaurantStyle, restaurantUrl, restaurantDescription }),
-    });
-    setProfileSaving(false);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 2500);
-  }
-
-  async function generateStyle() {
-    if (!restaurantUrl.startsWith('http')) { setGenerateError('הכנס URL תקין (מתחיל ב-http)'); return; }
-    setGenerating(true); setGenerateError(''); setGenerateDone(false);
-    try {
-      const res = await fetch('/api/generate-restaurant-style', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: restaurantUrl }),
-      });
-      const data = await res.json() as { success: boolean; error?: string; data?: { shortDescription: string; atmosphereStyle: string } };
-      if (!data.success) throw new Error(data.error);
-      setRestaurantDescription(data.data!.shortDescription);
-      setRestaurantStyle(data.data!.atmosphereStyle);
-      setGenerateDone(true);
-      setTimeout(() => setGenerateDone(false), 3000);
-    } catch (err) {
-      setGenerateError(err instanceof Error ? err.message : 'שגיאה');
-    } finally {
-      setGenerating(false);
-    }
-  }
-
-  function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => setRestaurantLogo(ev.target?.result as string);
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }
 
   async function saveAiSettings(e: React.FormEvent) {
     e.preventDefault();
@@ -225,131 +167,14 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-5" dir="rtl">
-      {/* ── 1. Business Identity ──────────────────────────────────── */}
-      <Section title="זהות העסק" icon={<Store className="w-4 h-4" />} accent>
-        {/* Logo + Name row */}
-        <div className="flex items-center gap-4 mb-5">
-          {/* Logo */}
-          <div className="relative flex-shrink-0">
-            <button
-              type="button"
-              onClick={() => logoRef.current?.click()}
-              className="w-20 h-20 rounded-2xl border-2 border-dashed border-[var(--border)] hover:border-[var(--accent)] overflow-hidden flex items-center justify-center bg-[var(--surface2)] transition-colors"
-            >
-              {restaurantLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={restaurantLogo} alt="לוגו" className="w-full h-full object-cover" />
-              ) : (
-                <div className="flex flex-col items-center gap-1 text-[var(--text-muted)]">
-                  <ImageIcon className="w-6 h-6" />
-                  <span className="text-[10px]">לוגו</span>
-                </div>
-              )}
-            </button>
-            {restaurantLogo && (
-              <button
-                onClick={() => setRestaurantLogo(null)}
-                className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full p-0.5"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-            <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={handleLogoFile} />
-          </div>
-
-          {/* Name */}
-          <div className="flex-1">
-            <label className="label text-sm mb-1">שם המסעדה</label>
-            <input
-              className="input"
-              placeholder="לדוגמה: מסעדת הזית הכסוף"
-              value={restaurantName}
-              onChange={e => setRestaurantName(e.target.value)}
-              dir="rtl"
-            />
-          </div>
-        </div>
-
-        {/* Restaurant URL + Generate */}
-        <div className="mb-5 p-4 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent)]/5 space-y-3">
-          <p className="text-sm font-medium flex items-center gap-1.5">
-            <Wand2 className="w-3.5 h-3.5 text-[var(--accent)]" />
-            גנרט סגנון מהאתר שלך
-          </p>
-          <div>
-            <label className="label text-xs mb-1 flex items-center gap-1"><Globe className="w-3 h-3" /> כתובת האתר</label>
-            <input
-              className="input text-sm"
-              placeholder="https://www.hamis'ada-sheli.co.il"
-              value={restaurantUrl}
-              onChange={e => setRestaurantUrl(e.target.value)}
-              dir="ltr"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={generateStyle}
-            disabled={generating || !restaurantUrl}
-            className="btn-primary gap-2 text-sm disabled:opacity-40"
-          >
-            {generating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> מנתח אתר...</>
-              : generateDone
-              ? <><CheckCircle className="w-4 h-4" /> הסגנון עודכן!</>
-              : <><Wand2 className="w-4 h-4" /> גנרט סגנון</>}
-          </button>
-          {generateError && <p className="text-red-400 text-xs">{generateError}</p>}
-          <p className="text-xs text-[var(--text-muted)]">AI ינתח את האתר ויחלץ צבעי ברנד + תיאור — יעדכן את השדות למטה אוטומטית</p>
-        </div>
-
-        {/* Short description */}
-        <div className="mb-4">
-          <label className="label text-sm mb-1">תיאור קצר (מוצג בעמוד הציבורי)</label>
-          <textarea
-            className="input resize-none text-sm"
-            rows={2}
-            dir="rtl"
-            placeholder="1-2 משפטים — לדוגמה: מסעדת דגים טרים על שפת הים, מתמחה במנות ים-תיכוניות."
-            value={restaurantDescription}
-            onChange={e => setRestaurantDescription(e.target.value)}
-          />
-        </div>
-
-        {/* Style description */}
-        <div className="mb-5">
-          <label className="label text-sm mb-1 flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-[var(--accent)]" />
-            סגנון הבית – לתמונות AI
-          </label>
-          <textarea
-            className="input resize-none text-sm"
-            rows={3}
-            dir="rtl"
-            placeholder="לדוגמה: מסעדה ים-תיכונית כפרית וחמה, עם אווירה של בית, שולחנות עץ ישן ונרות. האוכל הוא הכוכב – כל מנה מוגשת בפשטות אך בסגנון..."
-            value={restaurantStyle}
-            onChange={e => setRestaurantStyle(e.target.value)}
-          />
-          <p className="text-xs text-[var(--text-muted)] mt-1.5">
-            ישולב בפרומפטים של ה-AI לתמונות אוכל מותאמות לאופי המסעדה
-          </p>
-        </div>
-
-        {/* Save */}
-        <button
-          type="button"
-          onClick={saveProfile}
-          disabled={profileSaving}
-          className="btn-primary gap-2"
-        >
-          {profileSaving ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> שומר...</>
-          ) : profileSaved ? (
-            <><CheckCircle className="w-4 h-4" /> נשמר!</>
-          ) : (
-            <><Save className="w-4 h-4" /> שמור שינויים</>
-          )}
-        </button>
-      </Section>
+      {/* ── 1. Business details (used on quotes and receipts) ─────── */}
+      {(role === 'OWNER' || role === 'MEMBER') && (
+        <section>
+          <h1 className="text-xl font-bold">הגדרות</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1 mb-4">פרטי העסק מופיעים בכל הצעת מחיר וקבלה חדשה. קבלות שכבר הופקו לא משתנות.</p>
+          <BusinessProfileForm />
+        </section>
+      )}
 
       {/* ── 2. AI Settings (collapsible) ─────────────────────────── */}
       <div className="card p-0 overflow-hidden">
@@ -490,12 +315,6 @@ export default function SettingsPage() {
         {/* Admin link */}
         {role === 'OWNER' && (
           <div className="border-t border-[var(--border)] pt-4 mt-2 space-y-2">
-            <a
-              href="/setup"
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors text-sm font-medium"
-            >
-              <User className="w-4 h-4" /> פרטי העסק, מספור ומסמכים
-            </a>
             <a
               href="/admin"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors text-sm font-medium"

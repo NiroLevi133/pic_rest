@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       s.payer.name,
       s.payer.taxId,
       s.description,
-      s.payments.map((p) => `${PAYMENT_METHOD_LABELS[p.method as PaymentMethod]}${p.chequeNumber ? ` ${p.chequeNumber}` : ''}`).join(' + '),
+      s.payments.map((p) => PAYMENT_METHOD_LABELS[p.method as PaymentMethod] ?? p.method).join(' + '),
       (r.total / 100).toFixed(2),
       s.cancels ? s.cancels.number : '',
     ];

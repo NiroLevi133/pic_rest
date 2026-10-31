@@ -9,29 +9,24 @@
  *  - payer name and address (address may be omitted only by explicit exemption)
  *  - amount received and what it was received for (מהות התקבול)
  *  - signature, or a computerized document — every receipt here is computerized
- *  - for cheques: cheque number, bank, branch and due date
+ *
+ * Accepted payment methods: cash, bank transfer and Bit.
  */
 
-export const PAYMENT_METHODS = ['CASH', 'TRANSFER', 'BIT', 'CREDIT', 'CHEQUE', 'OTHER'] as const;
+export const PAYMENT_METHODS = ['TRANSFER', 'BIT', 'CASH'] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  CASH: 'מזומן',
   TRANSFER: 'העברה בנקאית',
-  BIT: 'ביט / פייבוקס',
-  CREDIT: 'כרטיס אשראי',
-  CHEQUE: 'שיק',
-  OTHER: 'אחר',
+  BIT: 'ביט',
+  CASH: 'מזומן',
 };
 
 /** Label for the free "reference" field per method. */
 export const PAYMENT_REFERENCE_LABELS: Record<PaymentMethod, string> = {
-  CASH: 'הערה',
   TRANSFER: 'אסמכתא / מספר העברה',
   BIT: 'אסמכתא',
-  CREDIT: '4 ספרות אחרונות / אישור',
-  CHEQUE: 'הערה',
-  OTHER: 'פירוט',
+  CASH: 'הערה',
 };
 
 export interface PaymentLineDraft {
@@ -41,12 +36,6 @@ export interface PaymentLineDraft {
   /** yyyy-mm-dd */
   receivedAt: string;
   reference: string;
-  chequeNumber: string;
-  chequeBank: string;
-  chequeBranch: string;
-  chequeAccount: string;
-  /** yyyy-mm-dd */
-  chequeDueDate: string;
 }
 
 export interface PayerDraft {
@@ -80,10 +69,7 @@ export type FieldErrors = Record<string, string>;
 export const MAX_PAYMENT_LINES = 12;
 
 export function emptyPaymentLine(method: PaymentMethod = 'TRANSFER', today = isoDate(new Date())): PaymentLineDraft {
-  return {
-    method, amount: 0, receivedAt: today, reference: '',
-    chequeNumber: '', chequeBank: '', chequeBranch: '', chequeAccount: '', chequeDueDate: '',
-  };
+  return { method, amount: 0, receivedAt: today, reference: '' };
 }
 
 export function isoDate(d: Date): string {
@@ -145,14 +131,6 @@ export function validateReceiptDraft(d: ReceiptDraft, today = isoDate(new Date()
     if (!Number.isInteger(p.amount) || p.amount <= 0) errors[k('amount')] = 'סכום התקבול חייב להיות גדול מ-0';
     if (!isDateString(p.receivedAt)) errors[k('receivedAt')] = 'תאריך לא תקין';
     else if (p.receivedAt > today) errors[k('receivedAt')] = 'תאריך התשלום לא יכול להיות עתידי';
-
-    if (p.method === 'CHEQUE') {
-      if (!p.chequeNumber.trim()) errors[k('chequeNumber')] = 'חסר מספר שיק';
-      if (!p.chequeBank.trim()) errors[k('chequeBank')] = 'חסר בנק';
-      if (!p.chequeBranch.trim()) errors[k('chequeBranch')] = 'חסר סניף';
-      if (!p.chequeDueDate) errors[k('chequeDueDate')] = 'חסר תאריך פירעון';
-      else if (!isDateString(p.chequeDueDate)) errors[k('chequeDueDate')] = 'תאריך לא תקין';
-    }
   });
 
   return errors;

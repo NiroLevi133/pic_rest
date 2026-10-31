@@ -6,11 +6,6 @@ export interface ReceiptSnapshotPayment {
   amount: number;
   receivedAt: string;
   reference: string;
-  chequeNumber?: string;
-  chequeBank?: string;
-  chequeBranch?: string;
-  chequeAccount?: string;
-  chequeDueDate?: string;
 }
 
 export interface ReceiptSnapshot {

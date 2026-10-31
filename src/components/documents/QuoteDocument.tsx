@@ -41,6 +41,7 @@ export default function QuoteDocument({ data }: { data: QuoteDocData }) {
     <article className="doc-paper" dir="rtl">
       <BusinessHeader
         business={business}
+        showTaxId={false}
         title="הצעת מחיר"
         subtitle={
           <>

@@ -137,7 +137,7 @@ function NewReceipt() {
         <div className="card tone-warning !border-0 space-y-3">
           <p className="font-semibold flex items-center gap-2"><AlertTriangle className="w-5 h-5" /> לפני הפקת קבלות צריך להשלים את פרטי העסק</p>
           <ul className="list-disc ps-5 text-sm">{businessMissing.map((m) => <li key={m}>{m}</li>)}</ul>
-          <Link href="/setup?return=/receipts/new" className="btn-primary">להשלמת פרטי העסק</Link>
+          <Link href="/settings" className="btn-primary">להשלמת פרטי העסק בהגדרות</Link>
         </div>
       ) : (
         <div className="space-y-5">
@@ -231,36 +231,17 @@ function NewReceipt() {
                       </button>
                     )}
                   </div>
-                  {p.method === 'CHEQUE' ? (
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                      {([
-                        ['chequeNumber', 'מספר שיק'], ['chequeBank', 'בנק'], ['chequeBranch', 'סניף'], ['chequeAccount', 'חשבון (אופציונלי)'],
-                      ] as const).map(([f, label]) => (
-                        <div key={f}>
-                          <label className="label text-xs" htmlFor={`r-${f}-${i}`}>{label}</label>
-                          <input id={`r-${f}-${i}`} className="input" inputMode="numeric" value={p[f]} onChange={(ev) => setLine(i, { [f]: ev.target.value })} />
-                          <Err msg={k(f)} />
-                        </div>
-                      ))}
-                      <div>
-                        <label className="label text-xs" htmlFor={`r-due-${i}`}>תאריך פירעון</label>
-                        <input id={`r-due-${i}`} type="date" className="input" value={p.chequeDueDate} onChange={(ev) => setLine(i, { chequeDueDate: ev.target.value })} />
-                        <Err msg={k('chequeDueDate')} />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="sm:w-1/2">
+                  <div className="sm:w-1/2">
                       <label className="label text-xs" htmlFor={`r-ref-${i}`}>{PAYMENT_REFERENCE_LABELS[p.method]} <span className="font-normal">(אופציונלי)</span></label>
                       <input id={`r-ref-${i}`} className="input" value={p.reference} onChange={(ev) => setLine(i, { reference: ev.target.value })} />
-                    </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
             <Err msg={e.payments} />
             {payments.length < MAX_PAYMENT_LINES && (
-              <button type="button" className="btn-ghost !px-2" onClick={() => setPayments([...payments, emptyPaymentLine(payments[payments.length - 1]?.method === 'CHEQUE' ? 'CHEQUE' : 'TRANSFER', today)])}>
-                <Plus className="w-4 h-4" /> אמצעי תשלום נוסף (למשל כמה שיקים)
+              <button type="button" className="btn-ghost !px-2" onClick={() => setPayments([...payments, emptyPaymentLine('TRANSFER', today)])}>
+                <Plus className="w-4 h-4" /> אמצעי תשלום נוסף (למשל חלק בביט וחלק במזומן)
               </button>
             )}
             <div className="flex justify-between items-center pt-3 border-t border-[var(--border)]">

@@ -62,6 +62,9 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
           <section className="mb-4 text-sm">
             <p className="doc-muted text-xs">עבור (מהות התקבול)</p>
             <p className="font-medium whitespace-pre-wrap">{s.description}</p>
+            {new Set(s.payments.map((p) => p.receivedAt)).size === 1 && (
+              <p className="mt-1"><span className="doc-muted">תאריך התקבול: </span>{formatDay(s.payments[0].receivedAt)}</p>
+            )}
             {s.quote && <p className="doc-muted text-xs mt-1">בהתאם להצעת מחיר מס' {s.quote.number}{s.quote.version > 1 ? `/${s.quote.version}` : ''}</p>}
           </section>
 
@@ -78,15 +81,7 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
               {s.payments.map((p, i) => (
                 <tr key={i}>
                   <td>{PAYMENT_METHOD_LABELS[p.method as PaymentMethod] ?? p.method}</td>
-                  <td className="text-xs">
-                    {p.method === 'CHEQUE' ? (
-                      <>
-                        שיק מס' {p.chequeNumber} · בנק {p.chequeBank} · סניף {p.chequeBranch}
-                        {p.chequeAccount && ` · חשבון ${p.chequeAccount}`}
-                        <br />תאריך פירעון: {formatDay(p.chequeDueDate)}
-                      </>
-                    ) : p.reference}
-                  </td>
+                  <td className="text-xs">{p.reference}</td>
                   <td className="tabular-nums">{formatDay(p.receivedAt)}</td>
                   <td className="text-end tabular-nums">{formatAmount(p.amount)}</td>
                 </tr>

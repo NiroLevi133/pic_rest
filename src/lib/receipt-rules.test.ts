@@ -64,18 +64,9 @@ describe('validateReceiptDraft', () => {
     expect(e['payments.1.receivedAt']).toBeTruthy();
   });
 
-  it('cheques require number, bank, branch and due date', () => {
-    const e = validateReceiptDraft(draft({ payments: [{ ...emptyPaymentLine('CHEQUE', TODAY), amount: 5000 }] }), TODAY);
-    expect(Object.keys(e).sort()).toEqual([
-      'payments.0.chequeBank', 'payments.0.chequeBranch', 'payments.0.chequeDueDate', 'payments.0.chequeNumber',
-    ]);
-    const ok = validateReceiptDraft(draft({
-      payments: [{
-        ...emptyPaymentLine('CHEQUE', TODAY), amount: 5000,
-        chequeNumber: '1234', chequeBank: '12', chequeBranch: '600', chequeDueDate: '2026-12-01',
-      }],
-    }), TODAY);
-    expect(ok).toEqual({});
+  it('only transfer, Bit and cash are accepted', () => {
+    const e = validateReceiptDraft(draft({ payments: [{ ...emptyPaymentLine('BIT', TODAY), method: 'CHEQUE' as never, amount: 5000 }] }), TODAY);
+    expect(e['payments.0.method']).toBeTruthy();
   });
 
   it('sums the payment lines', () => {
