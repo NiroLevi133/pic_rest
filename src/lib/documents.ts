@@ -37,7 +37,7 @@ export async function getCounterStates(): Promise<Record<DocumentKey, CounterSta
       (SELECT "next" FROM "DocumentCounter" WHERE "key" = 'receipt') AS receipt_next,
       EXISTS (SELECT 1 FROM "Quote")   AS has_quote,
       EXISTS (SELECT 1 FROM "Receipt") AS has_receipt,
-      (SELECT MAX("documentDate") FROM "Receipt") AS last_receipt_date`;
+      (SELECT MAX("documentDate") FROM "Receipt" WHERE "type" = 'RECEIPT' AND "status" = 'ISSUED') AS last_receipt_date`;
   return {
     quote: { next: row.quote_next ?? 1, locked: row.has_quote },
     receipt: { next: row.receipt_next ?? 1, locked: row.has_receipt, lastDate: row.last_receipt_date?.toISOString().slice(0, 10) ?? null },

@@ -82,9 +82,15 @@ export async function issueReceipt(draft: ReceiptDraft, userId: string): Promise
 
   return prisma.$transaction(async (tx) => {
     const number = await allocateNumber(tx, 'receipt');
-    // Numbers must follow dates: a receipt can't be dated before the previous one.
+    // Numbers follow dates: a receipt can't be dated before the latest valid receipt.
+    // Cancelled receipts and cancellation documents don't count, so a mistaken
+    // receipt can be cancelled and reissued with its correct date.
     // (The counter row lock above serializes issuers, so this check is race-free.)
-    const last = await tx.receipt.findFirst({ orderBy: { documentDate: 'desc' }, select: { number: true, documentDate: true } });
+    const last = await tx.receipt.findFirst({
+      where: { type: 'RECEIPT', status: 'ISSUED' },
+      orderBy: { documentDate: 'desc' },
+      select: { number: true, documentDate: true },
+    });
     if (last && toDay(last.documentDate) > documentDate) {
       throw new ReceiptError(
         `תאריך התשלום (${formatDay(documentDate)}) מוקדם מהקבלה האחרונה (מס' ${last.number} מתאריך ${formatDay(last.documentDate)}). ` +
