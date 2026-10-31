@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/db-setup.mjs",
     "dev": "next dev",
     "build": "prisma generate && next build",
     "start": "next start",
@@ -11,7 +12,8 @@
     "db:generate": "prisma generate",
     "test": "vitest run",
     "db:migrate": "prisma migrate dev",
-    "db:deploy": "prisma migrate deploy"
+    "db:deploy": "prisma migrate deploy",
+    "setup": "node scripts/db-setup.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.17.0",

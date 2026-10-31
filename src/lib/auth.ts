@@ -64,3 +64,12 @@ export async function findOrCreateUser(phone: string): Promise<{ id: string; pho
     create: { phone: normalized, role: isOwner ? 'OWNER' : 'STUDIO_ONLY' },
   });
 }
+
+/** Session user for server components (print pages). Null when logged out or not in `roles`. */
+export async function getPageUser(roles: UserRole[] = BUSINESS_ROLES): Promise<SessionUser | null> {
+  const userId = await getUserId();
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, phone: true, role: true } });
+  if (!user || !roles.includes(user.role as UserRole)) return null;
+  return { ...user, role: user.role as UserRole };
+}

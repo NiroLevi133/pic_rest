@@ -52,8 +52,8 @@ const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 6 * 60 * 1000;
 
 /** Start a Studio generation and poll it to completion. Throws a Hebrew error message on failure. */
-export async function runGenerationJob(body: Record<string, unknown>): Promise<JobResult> {
-  const res = await fetch('/api/studio/generate', {
+export async function runGenerationJob(body: Record<string, unknown>, endpoint = '/api/studio/generate'): Promise<JobResult> {
+  const res = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -62,7 +62,10 @@ export async function runGenerationJob(body: Record<string, unknown>): Promise<J
   if (!text) throw new Error('השרת לא הגיב — נסה שוב');
   let data: { success: boolean; error?: string; data?: { jobId: string } };
   try { data = JSON.parse(text); } catch { throw new Error(`שגיאת שרת (${res.status})`); }
-  if (!data.success || !data.data) throw new Error(data.error || 'שגיאה בייצור תמונה');
+  if (!data.success || !data.data) {
+    const issues = (data as { issues?: string[] }).issues;
+    throw new Error([data.error || 'שגיאה בייצור תמונה', ...(issues ?? [])].join(' · '));
+  }
   const jobId = data.data.jobId;
 
   const deadline = Date.now() + POLL_TIMEOUT_MS;

@@ -6,6 +6,8 @@ export interface CurrentUser {
   userId: string;
   phone: string;
   role: 'OWNER' | 'MEMBER' | 'STUDIO_ONLY';
+  /** Owner hasn't completed the first-run business setup */
+  setupRequired?: boolean;
 }
 
 const Ctx = createContext<{ user: CurrentUser | null; loading: boolean }>({ user: null, loading: true });

@@ -489,7 +489,13 @@ export default function SettingsPage() {
 
         {/* Admin link */}
         {role === 'OWNER' && (
-          <div className="border-t border-[var(--border)] pt-4 mt-2">
+          <div className="border-t border-[var(--border)] pt-4 mt-2 space-y-2">
+            <a
+              href="/setup"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors text-sm font-medium"
+            >
+              <User className="w-4 h-4" /> פרטי העסק, מספור ומסמכים
+            </a>
             <a
               href="/admin"
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[var(--accent)]/40 text-[var(--accent)] hover:bg-[var(--accent)]/10 transition-colors text-sm font-medium"

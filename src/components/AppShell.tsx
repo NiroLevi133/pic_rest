@@ -50,6 +50,11 @@ function Shell({ children }: { children: ReactNode }) {
 
   useEffect(() => { setMoreOpen(false); }, [pathname]);
 
+  // First run: the owner sets up the business (needed for quotes and receipts) before anything else.
+  useEffect(() => {
+    if (user?.setupRequired && pathname !== '/setup') router.replace('/setup');
+  }, [user, pathname, router]);
+
   const items = NAV.filter((i) => !i.business || hasBusinessAccess(user));
   // Mobile: up to 4 primary destinations in the bottom bar, the rest under "עוד".
   const mobilePrimary = items.length > 5 ? items.slice(0, 4) : items;

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from '@/lib/constants';
 import { verifySessionToken } from '@/lib/session';
 
-const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/generate-callback', '/r/', '/p/', '/api/public/', '/api/images/', '/api/dish-images/'];
+const PUBLIC_PATHS = ['/login', '/api/auth/login', '/api/generate-callback', '/r/', '/p/', '/api/public/', '/api/images/', '/api/dish-images/', '/d/'];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

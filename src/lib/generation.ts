@@ -146,6 +146,12 @@ export interface StartGenerationInput {
   extraImages?: string[];
   batchId?: string | null;
   parentAssetId?: string | null;
+  /** Keep a copy of referenceImage as the asset's "source" (false for design references like the NIRO BAR template). */
+  storeSource?: boolean;
+  /** Link the finished asset to a customer */
+  customerId?: string | null;
+  /** Finished asset becomes this quote's designed version */
+  quoteId?: string | null;
 }
 
 function fireLambda(jobId: string, referenceImage: string, prompt: string, extraImages?: string[]): void {
@@ -171,7 +177,7 @@ function fireLambda(jobId: string, referenceImage: string, prompt: string, extra
 export async function startGeneration(input: StartGenerationInput): Promise<{ jobId: string }> {
   const extraImages = input.extraImages?.filter(Boolean) ?? [];
   // Keep a durable, compressed copy of the source for the gallery's before/after view.
-  const storedSource = input.referenceImage ? await persistImage(input.referenceImage, 'sources') : null;
+  const storedSource = input.referenceImage && input.storeSource !== false ? await persistImage(input.referenceImage, 'sources') : null;
 
   const job = await prisma.generationJob.create({
     data: {
@@ -181,7 +187,12 @@ export async function startGeneration(input: StartGenerationInput): Promise<{ jo
       title: input.title.trim() || 'ללא שם',
       prompt: input.prompt,
       styleKey: input.styleKey ?? null,
-      options: { ...(input.options ?? {}), parentAssetId: input.parentAssetId ?? null },
+      options: {
+        ...(input.options ?? {}),
+        parentAssetId: input.parentAssetId ?? null,
+        customerId: input.customerId ?? null,
+        quoteId: input.quoteId ?? null,
+      },
       referenceImage: storedSource,
       extraImages: extraImages.length > 0 ? extraImages : undefined,
     },
@@ -220,7 +231,7 @@ export async function completeJob(jobId: string, outcome: { imageUrl?: string; e
   }
 
   const url = await persistImage(outcome.imageUrl);
-  const parentAssetId = (job.options as { parentAssetId?: string | null } | null)?.parentAssetId ?? null;
+  const opts = (job.options ?? {}) as { parentAssetId?: string | null; customerId?: string | null; quoteId?: string | null };
   await prisma.$transaction(async (tx) => {
     const asset = await tx.mediaAsset.create({
       data: {
@@ -231,9 +242,13 @@ export async function completeJob(jobId: string, outcome: { imageUrl?: string; e
         styleKey: job.styleKey,
         prompt: job.prompt,
         sourceImageUrl: job.referenceImage,
-        parentAssetId,
+        parentAssetId: opts.parentAssetId ?? null,
+        customerId: opts.customerId ?? null,
       },
     });
+    if (opts.quoteId) {
+      await tx.quote.updateMany({ where: { id: opts.quoteId }, data: { designAssetId: asset.id } });
+    }
     await tx.generationJob.update({
       where: { id: jobId },
       data: { status: 'DONE', errorMessage: null, mediaAssetId: asset.id },

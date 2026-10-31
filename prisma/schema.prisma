@@ -157,6 +157,10 @@ model BusinessProfile {
   defaultPaymentTerms String   @default("")
   /// Saved services for quotes: [{ description, unitPrice (agorot) }]
   savedServices       Json     @default("[]")
+  /// VAT percent applied by LICENSED/COMPANY businesses
+  vatRate             Int      @default(18)
+  /// Set when the first-run business setup was completed
+  setupCompletedAt    DateTime?
   updatedAt           DateTime @updatedAt
 }
 
@@ -175,6 +179,9 @@ model Customer {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   mediaAssets MediaAsset[]
+  quotes      Quote[]
+  payments    Payment[]
+  receipts    Receipt[]
 
   @@index([name])
   @@index([phone])
@@ -197,4 +204,147 @@ model AuditLog {
   @@index([customerId, createdAt])
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+/// Gapless sequential numbering per document type ("quote", "receipt").
+/// `next` is the number the next document will get; incremented in the same
+/// transaction that creates the document.
+model DocumentCounter {
+  key       String   @id
+  next      Int
+  updatedAt DateTime @updatedAt
+}
+
+/// Money fields are integer agorot.
+model Quote {
+  id               String    @id @default(cuid())
+  number           Int
+  version          Int       @default(1)
+  parentQuoteId    String?
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  /// DRAFT | SENT | APPROVED | REJECTED | EXPIRED
+  status           String    @default("DRAFT")
+  /// GENERAL | NIRO_BAR
+  template         String    @default("GENERAL")
+  title            String    @default("")
+  /// Event / service type, e.g. "חתונה"
+  serviceType      String    @default("")
+  clientRole       String    @default("")
+  eventDate        DateTime?
+  location         String    @default("")
+  guestCount       Int?
+  /// TOTAL (package price) | PER_PERSON (tiers by guest count) | ITEMS (line items only)
+  priceMode        String    @default("TOTAL")
+  packagePrice     Int       @default(0)
+  /// [{ min?: number, max?: number, price: agorot }]
+  tiers            Json      @default("[]")
+  /// AMOUNT (agorot) | PERCENT (basis points, 1000 = 10%)
+  discountType     String    @default("AMOUNT")
+  discountValue    Int       @default(0)
+  pricesIncludeVat Boolean   @default(false)
+  extraHourPrice   Int?
+  depositAmount    Int?
+  paymentTerms     String    @default("")
+  validUntil       DateTime?
+  clientNotes      String    @default("")
+  internalNotes    String    @default("")
+  /// NIRO BAR "מה מחכה לכם?" checklist: [{ title, description }]
+  niroFeatures     Json      @default("[]")
+  gift             String    @default("")
+  /// Totals — always recomputed on the server by quote-math
+  subtotal         Int       @default(0)
+  discountAmount   Int       @default(0)
+  vatRate          Int       @default(0)
+  vatAmount        Int       @default(0)
+  total            Int       @default(0)
+  shareToken       String    @unique
+  /// Designed NIRO BAR flyer (MediaAsset id)
+  designAssetId    String?
+  sentAt           DateTime?
+  approvedAt       DateTime?
+  rejectedAt       DateTime?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  items            QuoteItem[]
+  payments         Payment[]
+  receipts         Receipt[]
+
+  @@unique([number, version])
+  @@index([customerId])
+  @@index([status])
+}
+
+model QuoteItem {
+  id          String @id @default(cuid())
+  quoteId     String
+  quote       Quote  @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Float  @default(1)
+  unitPrice   Int
+  sortOrder   Int    @default(0)
+
+  @@index([quoteId])
+}
+
+/// One payment line of a receipt. Immutable (enforced by a DB trigger).
+model Payment {
+  id            String    @id @default(cuid())
+  receiptId     String
+  receipt       Receipt   @relation(fields: [receiptId], references: [id], onDelete: Restrict)
+  customerId    String
+  customer      Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quoteId       String?
+  quote         Quote?    @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  /// CASH | TRANSFER | BIT | CREDIT | CHEQUE | OTHER
+  method        String
+  amount        Int
+  receivedAt    DateTime
+  /// Transfer reference / last 4 digits / app reference
+  reference     String    @default("")
+  chequeNumber  String    @default("")
+  chequeBank    String    @default("")
+  chequeBranch  String    @default("")
+  chequeAccount String    @default("")
+  chequeDueDate DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([quoteId])
+  @@index([receiptId])
+}
+
+/// Legal receipt. Rendered only from `snapshot`; immutable except status
+/// (ISSUED → CANCELLED), printCount and originalChannel — enforced by a DB trigger.
+model Receipt {
+  id               String    @id @default(cuid())
+  number           Int       @unique
+  /// RECEIPT | CANCELLATION
+  type             String    @default("RECEIPT")
+  /// ISSUED | CANCELLED
+  status           String    @default("ISSUED")
+  issuedAt         DateTime  @default(now())
+  customerId       String
+  customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  quoteId          String?
+  quote            Quote?    @relation(fields: [quoteId], references: [id], onDelete: Restrict)
+  total            Int
+  description      String
+  snapshot         Json
+  contentHash      String
+  cancelsReceiptId String?   @unique
+  cancels          Receipt?  @relation("ReceiptCancellation", fields: [cancelsReceiptId], references: [id], onDelete: Restrict)
+  cancelledBy      Receipt?  @relation("ReceiptCancellation")
+  cancelReason     String    @default("")
+  shareToken       String    @unique
+  printCount       Int       @default(0)
+  /// PRINT | SHARE — which channel produced the single "מקור"
+  originalChannel  String?
+  createdById      String?
+  createdAt        DateTime  @default(now())
+  payments         Payment[]
+
+  @@index([customerId])
+  @@index([issuedAt])
 }

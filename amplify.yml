@@ -24,6 +24,9 @@ frontend:
         - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production
         - echo "SUPABASE_BUCKET=$SUPABASE_BUCKET" >> .env.production
 
+        # Bring the database to the current schema (baseline, migrations, legacy image sync) — idempotent
+        - node scripts/db-setup.mjs
+
     build:
       commands:
         - npm run build

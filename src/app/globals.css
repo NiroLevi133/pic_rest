@@ -160,3 +160,26 @@
 
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+
+/* ─── Printable documents (quotes, receipts) ─────────────────────────────
+   Always rendered as white paper, independent of the app theme. */
+.doc-paper {
+  @apply bg-white text-neutral-900 mx-auto w-full max-w-[210mm] rounded-2xl shadow-[0_2px_24px_rgba(0,0,0,0.08)];
+  padding: clamp(20px, 5vw, 14mm);
+  color-scheme: light;
+}
+.doc-paper .doc-muted { @apply text-neutral-500; }
+.doc-paper .doc-rule { @apply border-neutral-200; }
+.doc-paper table.doc-table { @apply w-full text-sm border-collapse; }
+.doc-paper table.doc-table th { @apply text-start font-medium text-neutral-500 text-xs border-b border-neutral-300 py-2 px-2; }
+.doc-paper table.doc-table td { @apply border-b border-neutral-200 py-2 px-2 align-top; }
+.doc-screen { @apply min-h-screen py-6 px-4 bg-neutral-100; color-scheme: light; }
+
+@media print {
+  @page { size: A4; margin: 12mm; }
+  html, body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .doc-screen { padding: 0 !important; background: #fff !important; min-height: 0; }
+  .doc-paper { box-shadow: none !important; border-radius: 0 !important; max-width: none; padding: 0 !important; }
+  .doc-paper table.doc-table tr { break-inside: avoid; }
+}

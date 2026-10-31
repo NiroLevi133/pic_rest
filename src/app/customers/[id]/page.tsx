@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Clock, FileText, Image as ImageIcon, Loader2, Mail, MapPin, Pencil, Phone, Receipt, User } from 'lucide-react';
+import { ArrowRight, Clock, FileText, Image as ImageIcon, Loader2, Mail, MapPin, Pencil, Phone, Plus, Receipt, User } from 'lucide-react';
+import { formatILS } from '@/lib/money';
+import { formatDate, formatDay } from '@/lib/dates';
+import type { QuoteListItem } from '@/components/quotes/types';
 import { formatPhone, CUSTOMER_STATUSES } from '@/lib/customers';
 import BusinessGate from '@/components/BusinessGate';
 import Tabs from '@/components/ui/Tabs';
@@ -15,6 +18,8 @@ import type { Customer, CustomerDraft } from '@/components/customers/types';
 type TabKey = 'details' | 'quotes' | 'payments' | 'activity';
 
 interface ActivityEntry { id: string; action: string; summary: string; createdAt: string }
+interface Finance { approvedTotal: number; paid: number; balance: number }
+interface ReceiptRow { id: string; number: number; type: string; status: string; issuedAt: string; total: number; description: string }
 
 function toDraft(c: Customer): CustomerDraft {
   const { name, phone, email, taxId, address, notes, status } = c;
@@ -26,7 +31,9 @@ function formatDateTime(iso: string) {
 }
 
 function CustomerCard({ id }: { id: string }) {
-  const [customer, setCustomer] = useState<(Customer & { mediaCount: number }) | null>(null);
+  const [customer, setCustomer] = useState<(Customer & { mediaCount: number; quoteCount: number; finance: Finance }) | null>(null);
+  const [quotes, setQuotes] = useState<QuoteListItem[] | null>(null);
+  const [receipts, setReceipts] = useState<ReceiptRow[] | null>(null);
   const [loadError, setLoadError] = useState('');
   const [tab, setTab] = useState<TabKey>('details');
   const [activity, setActivity] = useState<ActivityEntry[] | null>(null);
@@ -52,6 +59,10 @@ function CustomerCard({ id }: { id: string }) {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { if (tab === 'activity') loadActivity(); }, [tab, loadActivity]);
+  useEffect(() => {
+    if (tab === 'quotes' && !quotes) fetch(`/api/quotes?customerId=${id}`).then((r) => r.json()).then((d) => setQuotes(d.success ? d.data : []));
+    if (tab === 'payments' && !receipts) fetch(`/api/receipts?customerId=${id}`).then((r) => r.json()).then((d) => setReceipts(d.success ? d.data : []));
+  }, [tab, id, quotes, receipts]);
 
   async function patch(body: Partial<CustomerDraft>): Promise<boolean> {
     const res = await fetch(`/api/customers/${id}`, {
@@ -141,7 +152,7 @@ function CustomerCard({ id }: { id: string }) {
         onChange={setTab}
         tabs={[
           { key: 'details', label: 'פרטים', icon: User },
-          { key: 'quotes', label: 'הצעות מחיר', icon: FileText },
+          { key: 'quotes', label: 'הצעות מחיר', icon: FileText, count: customer.quoteCount },
           { key: 'payments', label: 'קבלות ותשלומים', icon: Receipt },
           { key: 'activity', label: 'פעילות', icon: Clock },
         ]}
@@ -200,11 +211,72 @@ function CustomerCard({ id }: { id: string }) {
       )}
 
       {tab === 'quotes' && (
-        <EmptyState icon={FileText} title="אין עדיין הצעות מחיר" description="הצעות מחיר שתוציא ללקוח יופיעו כאן, עם הסכומים והסטטוסים." />
+        !quotes ? <Spinner /> : (
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <Link href={`/quotes/new?customerId=${customer.id}`} className="btn-primary"><Plus className="w-4 h-4" /> הצעה חדשה</Link>
+            </div>
+            {quotes.length === 0 ? (
+              <EmptyState icon={FileText} title="אין עדיין הצעות מחיר" description="הצעות מחיר שתוציא ללקוח יופיעו כאן, עם הסכומים והסטטוסים." />
+            ) : (
+              <ul className="card !p-0 divide-y divide-[var(--border)]">
+                {quotes.map((q) => (
+                  <li key={q.id}>
+                    <Link href={q.status === 'DRAFT' ? `/quotes/${q.id}/edit` : `/quotes/${q.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface2)]/60">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">הצעה {q.number}{q.version > 1 && `/${q.version}`} · {q.title || q.serviceType || 'ללא נושא'}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{q.eventDate ? `אירוע ${formatDay(q.eventDate)} · ` : ''}נוצרה {formatDate(q.createdAt)}</p>
+                      </div>
+                      <div className="text-end">
+                        <p className="text-sm font-semibold tabular-nums">{formatILS(q.total)}</p>
+                        {q.paid > 0 && <p className="text-xs text-[var(--success)] tabular-nums">שולם {formatILS(q.paid)}</p>}
+                      </div>
+                      <StatusBadge status={q.status} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
       )}
 
       {tab === 'payments' && (
-        <EmptyState icon={Receipt} title="אין עדיין תשלומים" description="תשלומים וקבלות של הלקוח יופיעו כאן, כולל יתרות לתשלום." />
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-3">
+            {([
+              ['הצעות שאושרו', customer.finance.approvedTotal, ''],
+              ['שולם', customer.finance.paid, 'text-[var(--success)]'],
+              ['יתרה לתשלום', customer.finance.balance, customer.finance.balance > 0 ? 'text-[var(--warning)]' : ''],
+            ] as const).map(([label, value, cls]) => (
+              <div key={label} className="card !p-4">
+                <p className="text-xs text-[var(--text-muted)]">{label}</p>
+                <p className={`text-lg sm:text-xl font-bold tabular-nums ${cls}`}>{formatILS(value)}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Link href={`/receipts/new?customerId=${customer.id}`} className="btn-primary"><Plus className="w-4 h-4" /> קבלה חדשה</Link>
+          </div>
+          {!receipts ? <Spinner /> : receipts.length === 0 ? (
+            <EmptyState icon={Receipt} title="אין עדיין תשלומים" description="קבלות שתפיק ללקוח יופיעו כאן." />
+          ) : (
+            <ul className="card !p-0 divide-y divide-[var(--border)]">
+              {receipts.map((r) => (
+                <li key={r.id}>
+                  <Link href={`/receipts/${r.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface2)]/60">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{r.type === 'CANCELLATION' ? 'מסמך ביטול' : 'קבלה'} {r.number} · {r.description}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{formatDate(r.issuedAt)}</p>
+                    </div>
+                    <p className={`text-sm font-semibold tabular-nums ${r.status === 'CANCELLED' ? 'line-through text-[var(--text-muted)]' : ''}`}>{formatILS(r.total)}</p>
+                    {r.status === 'CANCELLED' && <StatusBadge status="CANCELLED" />}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
 
       {tab === 'activity' && (

@@ -30,10 +30,13 @@ export async function GET(req: NextRequest) {
     where,
     orderBy: { updatedAt: 'desc' },
     take: limit,
-    select: { id: true, name: true, phone: true, email: true, status: true, createdAt: true, updatedAt: true },
+    select: {
+      id: true, name: true, phone: true, email: true, status: true, createdAt: true, updatedAt: true,
+      _count: { select: { quotes: true } },
+    },
   });
 
-  return NextResponse.json({ success: true, data: customers.map((c) => ({ ...c, quoteCount: 0 })) });
+  return NextResponse.json({ success: true, data: customers.map(({ _count, ...c }) => ({ ...c, quoteCount: _count.quotes })) });
 }
 
 export async function POST(req: NextRequest) {
