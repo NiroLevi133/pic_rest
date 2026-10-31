@@ -64,6 +64,8 @@ function envDefaults(): AppSettings {
     imageSize:         process.env.IMAGE_SIZE         ?? '1024x1024',
     imageQuality:      process.env.IMAGE_QUALITY      ?? 'medium',
     concurrency:       Number(process.env.CONCURRENCY ?? 3),
+    openaiImageModel:  process.env.OPENAI_IMAGE_MODEL ?? 'gpt-image-2',
+    quoteDesignEngine: 'openai',
   };
 }
 

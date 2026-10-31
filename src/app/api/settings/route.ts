@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSettings, saveSettings, toSafeSettings } from '@/lib/settings';
-import { getUserIdFromRequest } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import type { AppSettings } from '@/lib/types';
 
-export async function GET() {
+/** AI settings and API keys — owner only. */
+export async function GET(req: NextRequest) {
+  const { error } = await requireRole(req, ['OWNER']);
+  if (error) return error;
   try {
     const settings = await getSettings();
     return NextResponse.json({ success: true, data: toSafeSettings(settings) });
@@ -16,8 +19,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await getUserIdFromRequest(req);
-  if (!userId) return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+  const { error } = await requireRole(req, ['OWNER']);
+  if (error) return error;
 
   try {
     const updates = await req.json() as Partial<AppSettings>;

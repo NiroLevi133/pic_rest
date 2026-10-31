@@ -7,6 +7,7 @@ import { quoteLabel, quoteToDraft } from '@/lib/quotes-server';
 import { startGeneration, countUserImages, maxImagesPerUser } from '@/lib/generation';
 import { getNiroBarReferenceImage, NIRO_BAR_QUOTE_KEY } from '@/lib/niro-bar';
 import { logAudit } from '@/lib/audit';
+import { getSettings } from '@/lib/settings';
 
 export const maxDuration = 300;
 
@@ -32,6 +33,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ success: false, error: `הגעת למגבלת ${max} תמונות.` }, { status: 429 });
   }
 
+  const settings = await getSettings();
+  const engine = settings.quoteDesignEngine === 'gemini' || !settings.openaiApiKey ? 'gemini' : 'openai';
   const prompt = buildNiroBarQuotePrompt(quoteToNiroFields(draft, quote.customer.name, quote.total));
   const { jobId } = await startGeneration({
     userId: user.id,
@@ -43,11 +46,12 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     storeSource: false,
     customerId: quote.customerId,
     quoteId: quote.id,
+    engine,
   });
 
   await logAudit({
     userId: user.id, action: 'quote.design', entityType: 'quote', entityId: quote.id, customerId: quote.customerId,
-    summary: `נוצרה הצעה מעוצבת להצעת מחיר ${quoteLabel(quote)}`,
+    summary: `נוצרה הצעה מעוצבת להצעת מחיר ${quoteLabel(quote)} (${engine === "openai" ? "GPT" : "Gemini"})`,
   });
   return NextResponse.json({ success: true, data: { jobId } });
 }

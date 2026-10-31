@@ -11,6 +11,7 @@ import { prisma } from './prisma';
 import { getSettings } from './settings';
 import { getImageProvider } from './providers';
 import { persistImage } from './storage';
+import { checkOpenAIImage, startOpenAIImage } from './providers/image/openai-background';
 import { getPresetPrompt } from './style-presets';
 import { FIXED_PROMPT } from './prompt-engine';
 
@@ -152,7 +153,11 @@ export interface StartGenerationInput {
   customerId?: string | null;
   /** Finished asset becomes this quote's designed version */
   quoteId?: string | null;
+  /** Image engine: Gemini (default, via Lambda when configured) or OpenAI (background mode) */
+  engine?: ImageEngine;
 }
+
+export type ImageEngine = 'gemini' | 'openai';
 
 function fireLambda(jobId: string, referenceImage: string, prompt: string, extraImages?: string[]): void {
   const url = process.env.LAMBDA_GENERATE_URL!;
@@ -198,6 +203,26 @@ export async function startGeneration(input: StartGenerationInput): Promise<{ jo
     },
   });
 
+  if (input.engine === 'openai') {
+    try {
+      const settings = await getSettings();
+      if (!settings.openaiApiKey) throw new Error('OpenAI API key not configured');
+      const responseId = await startOpenAIImage(settings.openaiApiKey, {
+        prompt: input.prompt,
+        images: [input.referenceImage, ...extraImages].filter(Boolean) as string[],
+        model: settings.openaiImageModel || 'gpt-image-2',
+        size: '1024x1536',
+      });
+      await prisma.generationJob.update({
+        where: { id: job.id },
+        data: { options: { ...(job.options as object), engine: 'openai', openaiResponseId: responseId } },
+      });
+    } catch (err) {
+      await completeJob(job.id, { error: err instanceof Error ? err.message : String(err) });
+    }
+    return { jobId: job.id };
+  }
+
   if (process.env.LAMBDA_GENERATE_URL) {
     fireLambda(job.id, input.referenceImage || '', input.prompt, extraImages.length > 0 ? extraImages : undefined);
     return { jobId: job.id };
@@ -215,6 +240,27 @@ export async function startGeneration(input: StartGenerationInput): Promise<{ jo
     await completeJob(job.id, { error: err instanceof Error ? err.message : String(err) });
   }
   return { jobId: job.id };
+}
+
+/**
+ * Advance a job that runs at an external provider without a callback
+ * (OpenAI background mode). Called from the status poll; cheap when not due.
+ */
+export async function refreshJob(jobId: string): Promise<void> {
+  const job = await prisma.generationJob.findUnique({ where: { id: jobId } });
+  const opts = (job?.options ?? {}) as { openaiResponseId?: string };
+  if (!job || job.status !== 'GENERATING' || !opts.openaiResponseId) return;
+  const settings = await getSettings();
+  try {
+    const status = await checkOpenAIImage(settings.openaiApiKey ?? '', opts.openaiResponseId);
+    if (status.state === 'done') await completeJob(jobId, { imageUrl: status.imageDataUrl });
+    else if (status.state === 'error') await completeJob(jobId, { error: status.message });
+  } catch (err) {
+    // Transient network errors: keep polling; give up after 15 minutes.
+    if (Date.now() - job.createdAt.getTime() > 15 * 60_000) {
+      await completeJob(jobId, { error: err instanceof Error ? err.message : String(err) });
+    }
+  }
 }
 
 /** Turn raw provider errors (often JSON blobs) into a short Hebrew message for the UI. */

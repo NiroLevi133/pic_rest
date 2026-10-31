@@ -77,6 +77,9 @@ export interface AppSettings {
   imageSize?: string;           // 1024x1024
   imageQuality?: string;        // low | medium | high
   concurrency?: number;         // parallel image generations
+  openaiImageModel?: string;    // e.g. gpt-image-2
+  /** Which engine draws the designed NIRO BAR quote */
+  quoteDesignEngine?: 'openai' | 'gemini';
 }
 
 export type SafeSettings = Omit<
