@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     orderBy: { number: 'desc' },
     take: 500,
     select: {
-      id: true, number: true, type: true, status: true, issuedAt: true, total: true, description: true,
+      id: true, number: true, type: true, status: true, issuedAt: true, documentDate: true, total: true, description: true,
       customer: { select: { id: true, name: true } },
       quote: { select: { id: true, number: true, version: true } },
       payments: { select: { method: true } },

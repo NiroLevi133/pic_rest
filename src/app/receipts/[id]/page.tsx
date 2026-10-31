@@ -11,7 +11,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import ReceiptDocument from '@/components/documents/ReceiptDocument';
 import type { ReceiptSnapshot } from '@/lib/receipt-snapshot';
 import { formatILS } from '@/lib/money';
-import { formatDateTime } from '@/lib/dates';
+import { formatDateTime, formatDay } from '@/lib/dates';
 
 interface ReceiptDetail {
   id: string;
@@ -19,6 +19,7 @@ interface ReceiptDetail {
   type: 'RECEIPT' | 'CANCELLATION';
   status: 'ISSUED' | 'CANCELLED';
   issuedAt: string;
+  documentDate: string;
   total: number;
   snapshot: ReceiptSnapshot;
   printCount: number;
@@ -104,7 +105,7 @@ function ReceiptView({ id }: { id: string }) {
             </div>
             <p className="text-sm mt-1">
               <Link href={`/customers/${r.customer.id}`} className="font-medium hover:text-[var(--accent)]">{r.customer.name}</Link>
-              <span className="text-[var(--text-muted)]"> · {formatDateTime(r.issuedAt)}</span>
+              <span className="text-[var(--text-muted)]"> · תאריך הקבלה {formatDay(r.documentDate)}</span>
               {r.quote && <> · <Link href={`/quotes/${r.quote.id}`} className="hover:text-[var(--accent)]">הצעה {r.quote.number}</Link></>}
             </p>
             <p className="text-xs text-[var(--text-muted)] mt-1">

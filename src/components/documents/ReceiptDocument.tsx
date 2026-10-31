@@ -30,7 +30,7 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
         subtitle={
           <>
             <p className="text-lg font-bold">מס' {s.number}</p>
-            <p className="doc-muted">תאריך: {formatDateTime(s.issuedAt)}</p>
+            <p className="doc-muted">תאריך: {s.documentDate ? formatDay(s.documentDate) : formatDateTime(s.issuedAt)}</p>
             <p className="mt-1 inline-block rounded border border-neutral-900 px-2 py-0.5 text-xs font-bold">{copyLabel}</p>
           </>
         }
@@ -52,7 +52,7 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
       {isCancellation && s.cancels ? (
         <section className="text-sm space-y-2 mb-4">
           <p>
-            מסמך זה מבטל את קבלה מס' <b>{s.cancels.number}</b> מתאריך {formatDateTime(s.cancels.issuedAt)}
+            מסמך זה מבטל את קבלה מס' <b>{s.cancels.number}</b> מתאריך {s.cancels.documentDate ? formatDay(s.cancels.documentDate) : formatDateTime(s.cancels.issuedAt)}
             {' '}על סך <b>{formatILS(s.cancels.total)}</b>.
           </p>
           <p><span className="doc-muted">סיבת הביטול: </span>{s.cancelReason}</p>
@@ -62,9 +62,6 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
           <section className="mb-4 text-sm">
             <p className="doc-muted text-xs">עבור (מהות התקבול)</p>
             <p className="font-medium whitespace-pre-wrap">{s.description}</p>
-            {new Set(s.payments.map((p) => p.receivedAt)).size === 1 && (
-              <p className="mt-1"><span className="doc-muted">תאריך התקבול: </span>{formatDay(s.payments[0].receivedAt)}</p>
-            )}
             {s.quote && <p className="doc-muted text-xs mt-1">בהתאם להצעת מחיר מס' {s.quote.number}{s.quote.version > 1 ? `/${s.quote.version}` : ''}</p>}
           </section>
 
@@ -106,7 +103,7 @@ export default function ReceiptDocument({ snapshot: s, copyLabel, cancelled, int
       </div>
 
       <footer className="mt-10 pt-4 border-t doc-rule text-xs doc-muted space-y-1">
-        <p>מסמך ממוחשב — הופק באמצעות {s.software} ואינו דורש חתימה.</p>
+        <p>מסמך ממוחשב — הופק באמצעות {s.software} ואינו דורש חתימה. נוצר במערכת: {formatDateTime(s.issuedAt)}.</p>
         {s.business.footer && <p>{s.business.footer}</p>}
         {!integrityOk && <p className="text-red-700 font-bold">אזהרה: תוכן המסמך אינו תואם לחתימה הדיגיטלית שנשמרה בעת ההפקה.</p>}
       </footer>

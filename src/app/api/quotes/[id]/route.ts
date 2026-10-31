@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
       customer: { select: { id: true, name: true, phone: true, email: true, address: true, taxId: true } },
       receipts: {
         orderBy: { number: 'desc' },
-        select: { id: true, number: true, type: true, status: true, total: true, issuedAt: true },
+        select: { id: true, number: true, type: true, status: true, total: true, issuedAt: true, documentDate: true },
       },
     },
   });

@@ -14,5 +14,7 @@ export function docBusiness(p: BusinessProfile) {
 
 /** The single business profile — created on first access. */
 export async function getBusinessProfile(): Promise<BusinessProfile> {
-  return prisma.businessProfile.upsert({ where: { id: 'main' }, update: {}, create: { id: 'main' } });
+  // Read first: an upsert costs extra round trips on every call.
+  return (await prisma.businessProfile.findUnique({ where: { id: 'main' } }))
+    ?? prisma.businessProfile.upsert({ where: { id: 'main' }, update: {}, create: { id: 'main' } });
 }

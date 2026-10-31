@@ -1,6 +1,9 @@
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x"]
+  /// Load relations with one SQL query (JOIN) instead of one query per relation —
+  /// every round trip to the remote DB costs ~200ms.
+  previewFeatures = ["relationJoins"]
 }
 
 datasource db {
@@ -327,7 +330,10 @@ model Receipt {
   type             String    @default("RECEIPT")
   /// ISSUED | CANCELLED
   status           String    @default("ISSUED")
+  /// When the document was actually produced (system time)
   issuedAt         DateTime  @default(now())
+  /// The date printed on the receipt: the date the payment was received
+  documentDate     DateTime  @db.Date
   customerId       String
   customer         Customer  @relation(fields: [customerId], references: [id], onDelete: Restrict)
   quoteId          String?
@@ -350,4 +356,5 @@ model Receipt {
 
   @@index([customerId])
   @@index([issuedAt])
+  @@index([documentDate])
 }

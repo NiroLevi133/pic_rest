@@ -32,11 +32,29 @@ export async function getUserIdFromRequest(req: NextRequest): Promise<string | n
   return verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
 }
 
+// Short-lived per-instance cache: every API call needs the user's role, and each
+// DB round trip costs ~200ms. Role changes call forgetSessionUser().
+const USER_CACHE_TTL_MS = 60_000;
+const userCache = new Map<string, { user: SessionUser | null; expires: number }>();
+
+async function loadSessionUser(userId: string): Promise<SessionUser | null> {
+  const hit = userCache.get(userId);
+  if (hit && hit.expires > Date.now()) return hit.user;
+  const row = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, phone: true, role: true } });
+  const user = row ? { ...row, role: row.role as UserRole } : null;
+  userCache.set(userId, { user, expires: Date.now() + USER_CACHE_TTL_MS });
+  return user;
+}
+
+/** Drop a cached user after their role/permissions change. */
+export function forgetSessionUser(userId: string): void {
+  userCache.delete(userId);
+}
+
 export async function getSessionUser(req: NextRequest): Promise<SessionUser | null> {
   const userId = await getUserIdFromRequest(req);
   if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, phone: true, role: true } });
-  return user ? { ...user, role: user.role as UserRole } : null;
+  return loadSessionUser(userId);
 }
 
 /**
@@ -58,18 +76,19 @@ export async function findOrCreateUser(phone: string): Promise<{ id: string; pho
   const normalized = normalizePhone(phone);
   const ownerPhone = normalizePhone(process.env.OWNER_PHONE ?? '');
   const isOwner = ownerPhone !== '' && normalized === ownerPhone;
-  return prisma.user.upsert({
+  const user = await prisma.user.upsert({
     where: { phone: normalized },
     update: isOwner ? { role: 'OWNER' } : {},
     create: { phone: normalized, role: isOwner ? 'OWNER' : 'STUDIO_ONLY' },
   });
+  forgetSessionUser(user.id);
+  return user;
 }
 
 /** Session user for server components (print pages). Null when logged out or not in `roles`. */
 export async function getPageUser(roles: UserRole[] = BUSINESS_ROLES): Promise<SessionUser | null> {
   const userId = await getUserId();
   if (!userId) return null;
-  const user = await prisma.user.findUnique({ where: { id: userId }, select: { id: true, phone: true, role: true } });
-  if (!user || !roles.includes(user.role as UserRole)) return null;
-  return { ...user, role: user.role as UserRole };
+  const user = await loadSessionUser(userId);
+  return user && roles.includes(user.role) ? user : null;
 }

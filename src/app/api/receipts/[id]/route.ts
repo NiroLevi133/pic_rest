@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     include: {
       customer: { select: { id: true, name: true, phone: true } },
       quote: { select: { id: true, number: true, version: true } },
-      cancelledBy: { select: { id: true, number: true, issuedAt: true } },
+      cancelledBy: { select: { id: true, number: true, issuedAt: true, documentDate: true } },
       cancels: { select: { id: true, number: true } },
     },
   });
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({
     success: true,
     data: {
-      id: r.id, number: r.number, type: r.type, status: r.status, issuedAt: r.issuedAt, total: r.total,
+      id: r.id, number: r.number, type: r.type, status: r.status, issuedAt: r.issuedAt, documentDate: r.documentDate, total: r.total,
       snapshot: r.snapshot, printCount: r.printCount, originalChannel: r.originalChannel,
       customer: r.customer, quote: r.quote, cancelledBy: r.cancelledBy, cancels: r.cancels, cancelReason: r.cancelReason,
       integrityOk: verifyReceipt(r),

@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     take: 300,
     select: {
       id: true, number: true, version: true, status: true, template: true, title: true, serviceType: true,
-      eventDate: true, total: true, createdAt: true, updatedAt: true, validUntil: true,
+      eventDate: true, total: true, createdAt: true, updatedAt: true, validUntil: true, depositAmount: true,
       customer: { select: { id: true, name: true } },
     },
   });

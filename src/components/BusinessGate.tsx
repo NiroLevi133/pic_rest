@@ -4,13 +4,16 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Lock } from 'lucide-react';
 import { useCurrentUser, hasBusinessAccess } from './CurrentUser';
-import Spinner from './ui/Spinner';
 import EmptyState from './ui/EmptyState';
 
-/** Renders business screens only for OWNER/MEMBER users (the API enforces this too). */
+/**
+ * Renders business screens only for OWNER/MEMBER users. The API enforces access,
+ * so while the user is still loading we render the screen right away — its data
+ * request then runs in parallel instead of waiting for /api/auth/me.
+ */
 export default function BusinessGate({ children }: { children: ReactNode }) {
   const { user, loading } = useCurrentUser();
-  if (loading) return <Spinner />;
+  if (loading) return <>{children}</>;
   if (!hasBusinessAccess(user)) {
     return (
       <EmptyState

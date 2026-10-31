@@ -2,15 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, BUSINESS_ROLES } from '@/lib/auth';
 import { getBusinessProfile, VAT_TYPES } from '@/lib/business';
-import { getCounterState, setCounterStart } from '@/lib/documents';
+import { getCounterState, getCounterStates, setCounterStart } from '@/lib/documents';
 import { validateBusinessForReceipts } from '@/lib/receipt-rules';
 import { persistImage } from '@/lib/storage';
 import { logAudit } from '@/lib/audit';
 import type { VatType } from '@/lib/quote-math';
 
 async function state() {
-  const [profile, quote, receipt] = await Promise.all([getBusinessProfile(), getCounterState('quote'), getCounterState('receipt')]);
-  return { profile, counters: { quote, receipt }, receiptIssues: validateBusinessForReceipts(profile) };
+  const [profile, counters] = await Promise.all([getBusinessProfile(), getCounterStates()]);
+  return { profile, counters, receiptIssues: validateBusinessForReceipts(profile) };
 }
 
 export async function GET(req: NextRequest) {

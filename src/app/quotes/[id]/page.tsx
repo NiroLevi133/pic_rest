@@ -15,7 +15,7 @@ import QuoteDesignPanel from '@/components/quotes/QuoteDesignPanel';
 import { docBusinessFrom, type BusinessState, type QuoteDetail } from '@/components/quotes/types';
 import { QUOTE_TRANSITIONS, type QuoteStatus } from '@/lib/quotes';
 import { formatILS } from '@/lib/money';
-import { formatDate, formatDateTime } from '@/lib/dates';
+import { formatDate, formatDateTime, formatDay } from '@/lib/dates';
 
 function QuoteView({ id }: { id: string }) {
   const router = useRouter();
@@ -178,7 +178,7 @@ function QuoteView({ id }: { id: string }) {
                 {quote.receipts.map((r) => (
                   <li key={r.id}>
                     <Link href={`/receipts/${r.id}`} className="flex items-center justify-between gap-2 hover:text-[var(--accent)]">
-                      <span>{r.type === 'CANCELLATION' ? 'ביטול' : 'קבלה'} {r.number} · {formatDate(r.issuedAt)}</span>
+                      <span>{r.type === 'CANCELLATION' ? 'ביטול' : 'קבלה'} {r.number} · {formatDay(r.documentDate)}</span>
                       <span className="flex items-center gap-2">
                         <span className="tabular-nums">{formatILS(r.total)}</span>
                         {r.status === 'CANCELLED' && <StatusBadge status="CANCELLED" />}

@@ -12,8 +12,10 @@ export interface ReceiptSnapshot {
   schema: 1;
   type: 'RECEIPT' | 'CANCELLATION';
   number: number;
-  /** ISO timestamp */
+  /** ISO timestamp — when the document was actually produced */
   issuedAt: string;
+  /** yyyy-mm-dd printed as the receipt date: the date the payment was received (absent on early receipts) */
+  documentDate?: string;
   business: {
     name: string;
     taxId: string;
@@ -38,7 +40,7 @@ export interface ReceiptSnapshot {
   notes: string;
   quote: { number: number; version: number } | null;
   /** For a cancellation document: the receipt it cancels */
-  cancels: { number: number; issuedAt: string; total: number } | null;
+  cancels: { number: number; issuedAt: string; documentDate?: string; total: number } | null;
   cancelReason: string;
   /** Every receipt is a computerized document (no handwritten signature required) */
   computerized: true;

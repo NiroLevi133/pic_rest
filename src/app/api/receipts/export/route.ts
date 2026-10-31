@@ -4,7 +4,7 @@ import { requireRole, BUSINESS_ROLES } from '@/lib/auth';
 import { receiptFilters } from '@/lib/receipt-filters';
 import { PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/lib/receipt-rules';
 import type { ReceiptSnapshot } from '@/lib/receipt-snapshot';
-import { formatDate } from '@/lib/dates';
+import { formatDay } from '@/lib/dates';
 
 function csvCell(v: string | number): string {
   const s = String(v);
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   const receipts = await prisma.receipt.findMany({
     where: receiptFilters(req.nextUrl.searchParams),
     orderBy: { number: 'asc' },
-    select: { number: true, type: true, status: true, issuedAt: true, total: true, snapshot: true },
+    select: { number: true, type: true, status: true, documentDate: true, total: true, snapshot: true },
   });
 
   const header = ['מספר', 'סוג', 'סטטוס', 'תאריך', 'שם המשלם', 'מזהה משלם', 'מהות התקבול', 'אמצעי תשלום', 'סכום (₪)', 'מבטל קבלה'];
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
       r.number,
       r.type === 'CANCELLATION' ? 'מסמך ביטול' : 'קבלה',
       r.status === 'CANCELLED' ? 'בוטלה' : 'תקפה',
-      formatDate(r.issuedAt),
+      formatDay(r.documentDate),
       s.payer.name,
       s.payer.taxId,
       s.description,

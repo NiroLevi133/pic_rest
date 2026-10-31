@@ -16,7 +16,7 @@ export interface QuoteDetail {
   totals: { subtotal: number; discountAmount: number; vatRate: number; vatAmount: number; total: number };
   paid: number;
   balance: number;
-  receipts: { id: string; number: number; type: string; status: string; total: number; issuedAt: string }[];
+  receipts: { id: string; number: number; type: string; status: string; total: number; issuedAt: string; documentDate: string }[];
   versions: { id: string; version: number; status: string; total: number; createdAt: string }[];
   designAssetId: string | null;
   sendIssues: string[];
@@ -36,6 +36,7 @@ export interface QuoteListItem {
   paid: number;
   createdAt: string;
   validUntil: string | null;
+  depositAmount: number | null;
   customer: { id: string; name: string };
 }
 
@@ -46,7 +47,7 @@ export interface BusinessState {
     savedServices: { description: string; unitPrice: number }[];
     setupCompletedAt: string | null;
   };
-  counters: { quote: { next: number; locked: boolean }; receipt: { next: number; locked: boolean } };
+  counters: { quote: { next: number; locked: boolean }; receipt: { next: number; locked: boolean; lastDate?: string | null } };
   receiptIssues: Record<string, string>;
 }
 

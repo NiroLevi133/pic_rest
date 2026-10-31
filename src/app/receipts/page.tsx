@@ -11,7 +11,7 @@ import EmptyState from '@/components/ui/EmptyState';
 import Spinner, { ErrorBox } from '@/components/ui/Spinner';
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/lib/receipt-rules';
 import { formatILS } from '@/lib/money';
-import { formatDate } from '@/lib/dates';
+import { formatDay } from '@/lib/dates';
 
 interface ReceiptRow {
   id: string;
@@ -19,6 +19,7 @@ interface ReceiptRow {
   type: 'RECEIPT' | 'CANCELLATION';
   status: 'ISSUED' | 'CANCELLED';
   issuedAt: string;
+  documentDate: string;
   total: number;
   description: string;
   customer: { id: string; name: string };
@@ -127,7 +128,7 @@ function ReceiptsList() {
                 {rows.map((r) => (
                   <tr key={r.id} onClick={() => router.push(`/receipts/${r.id}`)} className="border-t border-[var(--border)] hover:bg-[var(--surface2)]/60 cursor-pointer">
                     <td className="px-4 py-3 font-medium tabular-nums">{r.number}</td>
-                    <td className="px-4 py-3 text-[var(--text-muted)]">{formatDate(r.issuedAt)}</td>
+                    <td className="px-4 py-3 text-[var(--text-muted)]">{formatDay(r.documentDate)}</td>
                     <td className="px-4 py-3">{r.customer.name}</td>
                     <td className="px-4 py-3 text-[var(--text-muted)] max-w-[16rem] truncate">{r.description}</td>
                     <td className="px-4 py-3 text-[var(--text-muted)]">{r.methods.map((m) => PAYMENT_METHOD_LABELS[m]).join(', ') || '—'}</td>
@@ -145,7 +146,7 @@ function ReceiptsList() {
                 <Link href={`/receipts/${r.id}`} className="card !p-4 flex items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="font-medium truncate">{r.number} · {r.customer.name}</p>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{formatDate(r.issuedAt)} · {r.description}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{formatDay(r.documentDate)} · {r.description}</p>
                   </div>
                   <div className="text-end shrink-0">
                     <p className={`text-sm font-semibold tabular-nums ${r.status === 'CANCELLED' ? 'line-through text-[var(--text-muted)]' : ''}`}>{formatILS(r.total)}</p>

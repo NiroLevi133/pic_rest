@@ -21,14 +21,27 @@ export interface CounterState {
   next: number;
   /** True once a document of this type exists — the start number can no longer change. */
   locked: boolean;
+  /** Receipts: date (yyyy-mm-dd) of the latest receipt — new receipts can't be dated earlier */
+  lastDate?: string | null;
 }
 
 export async function getCounterState(key: DocumentKey): Promise<CounterState> {
-  const [counter, count] = await Promise.all([
-    prisma.documentCounter.findUnique({ where: { key } }),
-    key === 'receipt' ? prisma.receipt.count() : prisma.quote.count(),
-  ]);
-  return { next: counter?.next ?? 1, locked: count > 0 };
+  return (await getCounterStates())[key];
+}
+
+/** Both series in one round trip. */
+export async function getCounterStates(): Promise<Record<DocumentKey, CounterState>> {
+  const [row] = await prisma.$queryRaw<{ quote_next: number | null; receipt_next: number | null; has_quote: boolean; has_receipt: boolean; last_receipt_date: Date | null }[]>`
+    SELECT
+      (SELECT "next" FROM "DocumentCounter" WHERE "key" = 'quote')   AS quote_next,
+      (SELECT "next" FROM "DocumentCounter" WHERE "key" = 'receipt') AS receipt_next,
+      EXISTS (SELECT 1 FROM "Quote")   AS has_quote,
+      EXISTS (SELECT 1 FROM "Receipt") AS has_receipt,
+      (SELECT MAX("documentDate") FROM "Receipt") AS last_receipt_date`;
+  return {
+    quote: { next: row.quote_next ?? 1, locked: row.has_quote },
+    receipt: { next: row.receipt_next ?? 1, locked: row.has_receipt, lastDate: row.last_receipt_date?.toISOString().slice(0, 10) ?? null },
+  };
 }
 
 /** Set the first number of a series. Only allowed before the first document was issued. */

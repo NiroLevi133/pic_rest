@@ -19,7 +19,7 @@ type TabKey = 'details' | 'quotes' | 'payments' | 'activity';
 
 interface ActivityEntry { id: string; action: string; summary: string; createdAt: string }
 interface Finance { approvedTotal: number; paid: number; balance: number }
-interface ReceiptRow { id: string; number: number; type: string; status: string; issuedAt: string; total: number; description: string }
+interface ReceiptRow { id: string; number: number; type: string; status: string; issuedAt: string; documentDate: string; total: number; description: string }
 
 function toDraft(c: Customer): CustomerDraft {
   const { name, phone, email, taxId, address, notes, status } = c;
@@ -267,7 +267,7 @@ function CustomerCard({ id }: { id: string }) {
                   <Link href={`/receipts/${r.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-[var(--surface2)]/60">
                     <div className="flex-1 min-w-0">
                       <p className="font-medium truncate">{r.type === 'CANCELLATION' ? 'מסמך ביטול' : 'קבלה'} {r.number} · {r.description}</p>
-                      <p className="text-xs text-[var(--text-muted)]">{formatDate(r.issuedAt)}</p>
+                      <p className="text-xs text-[var(--text-muted)]">{formatDay(r.documentDate)}</p>
                     </div>
                     <p className={`text-sm font-semibold tabular-nums ${r.status === 'CANCELLED' ? 'line-through text-[var(--text-muted)]' : ''}`}>{formatILS(r.total)}</p>
                     {r.status === 'CANCELLED' && <StatusBadge status="CANCELLED" />}

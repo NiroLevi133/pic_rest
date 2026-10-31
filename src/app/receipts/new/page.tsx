@@ -4,11 +4,14 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { clsx } from 'clsx';
-import { AlertTriangle, ArrowRight, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Loader2, Plus, ShieldCheck, Trash2 } from 'lucide-react';
 import BusinessGate from '@/components/BusinessGate';
 import PageHeader from '@/components/ui/PageHeader';
 import Spinner, { ErrorBox } from '@/components/ui/Spinner';
-import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Modal from '@/components/ui/Modal';
+import ReceiptDocument from '@/components/documents/ReceiptDocument';
+import { docBusinessFrom } from '@/components/quotes/types';
+import type { ReceiptSnapshot } from '@/lib/receipt-snapshot';
 import CustomerPicker, { type PickedCustomer } from '@/components/customers/CustomerPicker';
 import MoneyInput from '@/components/quotes/MoneyInput';
 import type { BusinessState, QuoteListItem } from '@/components/quotes/types';
@@ -19,7 +22,7 @@ import {
 import { formatILS } from '@/lib/money';
 import { israelToday } from '@/lib/dates';
 
-interface OpenQuote extends QuoteListItem { balance: number; depositAmount: number | null }
+interface OpenQuote extends QuoteListItem { balance: number }
 
 const EMPTY_PAYER: PayerDraft = { name: '', taxId: '', address: '', addressExempt: false, phone: '', email: '' };
 
@@ -42,6 +45,7 @@ function NewReceipt() {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [showErrors, setShowErrors] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [issuing, setIssuing] = useState(false);
   const [serverError, setServerError] = useState('');
 
   useEffect(() => { fetch('/api/business').then((r) => r.json()).then((d) => d.success && setBusiness(d.data)); }, []);
@@ -76,13 +80,9 @@ function NewReceipt() {
         setPayer({ name: c.data.name, taxId: c.data.taxId, address: c.data.address, addressExempt: false, phone: c.data.phone, email: c.data.email });
       }
       if (q.success) {
-        const open = (q.data as QuoteListItem[]).filter((x) => ['SENT', 'APPROVED', 'EXPIRED'].includes(x.status) && x.total > x.paid);
-        // Deposit amounts come from the quote details
-        const detailed = await Promise.all(open.map(async (x) => {
-          const d = await (await fetch(`/api/quotes/${x.id}`)).json();
-          return { ...x, balance: d.data?.balance ?? x.total - x.paid, depositAmount: d.data?.draft.depositAmount ?? null } as OpenQuote;
-        }));
-        setQuotes(detailed);
+        setQuotes((q.data as OpenQuote[])
+          .filter((x) => ['SENT', 'APPROVED', 'EXPIRED'].includes(x.status) && x.total > x.paid)
+          .map((x) => ({ ...x, balance: x.total - x.paid })));
       }
     })();
   }, [customer]);
@@ -99,7 +99,19 @@ function NewReceipt() {
 
   const total = receiptTotal(payments);
   const draft = useMemo(() => ({ customerId: customer?.id ?? '', quoteId: quoteId || null, payer, description, payments, notes }), [customer, quoteId, payer, description, payments, notes]);
-  useEffect(() => { setErrors(validateReceiptDraft(draft, today)); }, [draft, today]);
+  const lastDate = business?.counters.receipt.lastDate ?? null;
+  useEffect(() => {
+    const errs = validateReceiptDraft(draft, today);
+    // Receipt numbers follow dates: a new receipt can't be dated before the latest one.
+    if (lastDate) {
+      payments.forEach((p, i) => {
+        if (p.receivedAt && p.receivedAt < lastDate && !errs[`payments.${i}.receivedAt`]) {
+          errs[`payments.${i}.receivedAt`] = `לא לפני ${lastDate.split('-').reverse().join('.')} (תאריך הקבלה האחרונה)`;
+        }
+      });
+    }
+    setErrors(errs);
+  }, [draft, today, lastDate, payments]);
   const overBalance = quote ? total > quote.balance : false;
   const e = showErrors ? errors : {};
 
@@ -113,14 +125,46 @@ function NewReceipt() {
   }
 
   async function issue() {
-    const res = await fetch('/api/receipts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
-    const data = await res.json();
-    if (!data.success) {
-      if (data.fields) setErrors(data.fields);
-      setServerError(data.error);
-      throw new Error(data.error);
+    setIssuing(true);
+    setServerError('');
+    try {
+      const res = await fetch('/api/receipts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(draft) });
+      const data = await res.json();
+      if (!data.success) {
+        if (data.fields) setErrors(data.fields);
+        setServerError(data.error);
+        setIssuing(false);
+        return;
+      }
+      router.replace(`/receipts/${data.data.id}?issued=1`);
+    } catch {
+      setServerError('הפקת הקבלה נכשלה — בדוק את החיבור ונסה שוב');
+      setIssuing(false);
     }
-    router.replace(`/receipts/${data.data.id}?issued=1`);
+  }
+
+  /** What the receipt will look like — built from the same data the server will freeze. */
+  function previewSnapshot(): ReceiptSnapshot | null {
+    if (!business) return null;
+    const b = docBusinessFrom(business.profile);
+    return {
+      schema: 1,
+      type: 'RECEIPT',
+      number: business.counters.receipt.next,
+      issuedAt: new Date().toISOString(),
+      documentDate: payments.map((p) => p.receivedAt).sort().at(-1),
+      business: b,
+      payer: { ...payer, addressExempt: !payer.address.trim() && payer.addressExempt },
+      description: description.trim(),
+      payments: payments.map((p) => ({ method: p.method, amount: p.amount, receivedAt: p.receivedAt, reference: p.reference.trim() })),
+      total,
+      notes: notes.trim(),
+      quote: quote ? { number: quote.number, version: quote.version } : null,
+      cancels: null,
+      cancelReason: '',
+      computerized: true,
+      software: 'NIRO Workspace',
+    };
   }
 
   if (!business) return <Spinner />;
@@ -221,8 +265,8 @@ function NewReceipt() {
                       <Err msg={k('amount')} />
                     </div>
                     <div>
-                      <label className="label text-xs" htmlFor={`r-d-${i}`}>תאריך התשלום</label>
-                      <input id={`r-d-${i}`} type="date" max={today} className="input" value={p.receivedAt} onChange={(ev) => setLine(i, { receivedAt: ev.target.value })} />
+                      <label className="label text-xs" htmlFor={`r-d-${i}`}>{i === 0 ? 'תאריך התשלום (יופיע על הקבלה)' : 'תאריך התשלום'}</label>
+                      <input id={`r-d-${i}`} type="date" max={today} min={lastDate ?? undefined} className="input" value={p.receivedAt} onChange={(ev) => setLine(i, { receivedAt: ev.target.value })} />
                       <Err msg={k('receivedAt')} />
                     </div>
                     {payments.length > 1 && (
@@ -265,20 +309,30 @@ function NewReceipt() {
         </div>
       )}
 
-      <ConfirmDialog
+      <Modal
         open={confirming}
-        onClose={() => setConfirming(false)}
-        onConfirm={issue}
-        title={`להפיק קבלה מס' ${business.counters.receipt.next}?`}
-        confirmLabel="הפק קבלה"
-        message={
-          <div className="space-y-2">
-            <p><b>{payer.name}</b> · {formatILS(total)}</p>
-            <p>{description}</p>
-            <p className="text-[var(--warning)]">קבלה שהופקה נעולה — אי אפשר לערוך או למחוק אותה. לתיקון יש להפיק מסמך ביטול.</p>
-          </div>
+        onClose={() => !issuing && setConfirming(false)}
+        title="תצוגה מקדימה של הקבלה"
+        size="xl"
+        footer={
+          <>
+            <button type="button" className="btn-secondary" onClick={() => setConfirming(false)} disabled={issuing}>ביטול</button>
+            <button type="button" className="btn-primary" onClick={issue} disabled={issuing}>
+              {issuing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />} הפקה
+            </button>
+          </>
         }
-      />
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--warning)]">אחרי ההפקה הקבלה ננעלת — אי אפשר לערוך או למחוק אותה. לתיקון מפיקים מסמך ביטול.</p>
+          {serverError && <ErrorBox message={serverError} />}
+          <div className="overflow-x-auto -mx-2 px-2 pb-1">
+            {confirming && previewSnapshot() && (
+              <ReceiptDocument snapshot={previewSnapshot()!} copyLabel="תצוגה מקדימה — טרם הופקה" />
+            )}
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

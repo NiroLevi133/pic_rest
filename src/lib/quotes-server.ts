@@ -104,8 +104,12 @@ export async function paidByQuote(quoteIds: string[]): Promise<Map<string, numbe
   return new Map(rows.map((r) => [r.quoteId!, r._sum.amount ?? 0]));
 }
 
-/** SENT quotes past their validity date become EXPIRED. */
+let lastExpiryCheck = 0;
+
+/** SENT quotes past their validity date become EXPIRED. Runs at most once a minute per instance. */
 export async function expireQuotes(): Promise<void> {
+  if (Date.now() - lastExpiryCheck < 60_000) return;
+  lastExpiryCheck = Date.now();
   const today = new Date(new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z');
   await prisma.quote.updateMany({ where: { status: 'SENT', validUntil: { lt: today } }, data: { status: 'EXPIRED' } });
 }

@@ -11,7 +11,7 @@ import { allocateNumber } from './documents';
 import { getBusinessProfile } from './business';
 import { logAudit } from './audit';
 import { formatILS } from './money';
-import { israelToday } from './dates';
+import { formatDay, israelToday } from './dates';
 import { paidByQuote } from './quotes-server';
 import { balanceDue } from './quote-math';
 import {
@@ -43,6 +43,10 @@ export function verifyReceipt(r: Pick<Receipt, 'snapshot' | 'contentHash'>): boo
   return hashSnapshot(r.snapshot) === r.contentHash;
 }
 
+/** DATE column ↔ yyyy-mm-dd */
+const toDay = (d: Date) => d.toISOString().slice(0, 10);
+const dayToDate = (day: string) => new Date(`${day}T00:00:00.000Z`);
+
 function newShareToken(): string {
   return crypto.randomBytes(24).toString('base64url');
 }
@@ -73,14 +77,28 @@ export async function issueReceipt(draft: ReceiptDraft, userId: string): Promise
     if (total > due) throw new ReceiptError(`הסכום (${formatILS(total)}) גבוה מהיתרה לתשלום בהצעה (${formatILS(due)})`);
   }
 
+  // The receipt is dated with the date the money was received (latest line if several).
+  const documentDate = draft.payments.map((p) => p.receivedAt).sort().at(-1)!;
+
   return prisma.$transaction(async (tx) => {
     const number = await allocateNumber(tx, 'receipt');
+    // Numbers must follow dates: a receipt can't be dated before the previous one.
+    // (The counter row lock above serializes issuers, so this check is race-free.)
+    const last = await tx.receipt.findFirst({ orderBy: { documentDate: 'desc' }, select: { number: true, documentDate: true } });
+    if (last && toDay(last.documentDate) > documentDate) {
+      throw new ReceiptError(
+        `תאריך התשלום (${formatDay(documentDate)}) מוקדם מהקבלה האחרונה (מס' ${last.number} מתאריך ${formatDay(last.documentDate)}). ` +
+        'כדי שמספרי הקבלות יישארו לפי סדר התאריכים, יש להפיק קבלות מהישנה לחדשה.',
+        { 'payments.0.receivedAt': `התאריך המוקדם ביותר האפשרי: ${formatDay(last.documentDate)}` },
+      );
+    }
     const issuedAt = new Date();
     const snapshot: ReceiptSnapshot = {
       schema: 1,
       type: 'RECEIPT',
       number,
       issuedAt: issuedAt.toISOString(),
+      documentDate,
       business: {
         name: business.businessName,
         taxId: business.taxId,
@@ -120,6 +138,7 @@ export async function issueReceipt(draft: ReceiptDraft, userId: string): Promise
         number,
         type: 'RECEIPT',
         issuedAt,
+        documentDate: dayToDate(documentDate),
         customerId: customer.id,
         quoteId: quote?.id ?? null,
         total,
@@ -182,12 +201,14 @@ export async function cancelReceipt(id: string, reason: string, userId: string):
     const orig = original.snapshot as unknown as ReceiptSnapshot;
     const number = await allocateNumber(tx, 'receipt');
     const issuedAt = new Date();
+    const documentDate = israelToday();
     const business = await tx.businessProfile.findUnique({ where: { id: 'main' } });
     const snapshot: ReceiptSnapshot = {
       ...orig,
       type: 'CANCELLATION',
       number,
       issuedAt: issuedAt.toISOString(),
+      documentDate,
       business: business ? {
         name: business.businessName, taxId: business.taxId, vatType: business.vatType, address: business.address,
         phone: business.phone, email: business.email, logoUrl: business.logoUrl, footer: business.documentFooter,
@@ -196,7 +217,7 @@ export async function cancelReceipt(id: string, reason: string, userId: string):
       payments: [],
       total: -original.total,
       notes: '',
-      cancels: { number: original.number, issuedAt: original.issuedAt.toISOString(), total: original.total },
+      cancels: { number: original.number, issuedAt: original.issuedAt.toISOString(), documentDate: toDay(original.documentDate), total: original.total },
       cancelReason: reason.trim(),
     };
 
@@ -205,6 +226,7 @@ export async function cancelReceipt(id: string, reason: string, userId: string):
         number,
         type: 'CANCELLATION',
         issuedAt,
+        documentDate: dayToDate(documentDate),
         customerId: original.customerId,
         quoteId: original.quoteId,
         total: -original.total,

@@ -1,6 +1,5 @@
 import type { Prisma } from '@prisma/client';
 import { PAYMENT_METHODS } from './receipt-rules';
-import { israelDayBoundary } from './dates';
 
 /** Shared list/export filters: q (number/customer/description), from, to (yyyy-mm-dd), method, customerId, quoteId. */
 export function receiptFilters(sp: URLSearchParams): Prisma.ReceiptWhereInput {
@@ -19,10 +18,11 @@ export function receiptFilters(sp: URLSearchParams): Prisma.ReceiptWhereInput {
       ...(n ? [{ number: n }] : []),
     ];
   }
+  // Filter by the receipt's date (payment date), which is a plain calendar date.
   if (from || to) {
-    where.issuedAt = {
-      ...(from ? { gte: israelDayBoundary(from) } : {}),
-      ...(to ? { lte: israelDayBoundary(to, true) } : {}),
+    where.documentDate = {
+      ...(from ? { gte: new Date(`${from}T00:00:00.000Z`) } : {}),
+      ...(to ? { lte: new Date(`${to}T00:00:00.000Z`) } : {}),
     };
   }
   if (method && (PAYMENT_METHODS as readonly string[]).includes(method)) where.payments = { some: { method } };
