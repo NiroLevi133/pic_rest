@@ -8,8 +8,8 @@ import { getStyle } from '../styles';
 import { useCart } from '../cart';
 import { FRAMES, formatPrice, orderTotals, TILE, TILE_PRICE, type FrameId } from '../pricing';
 import type { PublicGeneration, PublicVariant } from '../types';
-import { estimateProgress, expectedSeconds, recordDuration } from '../progress';
-import FramedTile, { TileImage } from '../components/FramedTile';
+import { estimateProgress, expectedSeconds, recordDuration, tileProgress } from '../progress';
+import FramedTile, { PendingTile, TileImage } from '../components/FramedTile';
 import RoomScene from '../components/RoomScene';
 
 const POLL_MS = 4000;
@@ -103,6 +103,7 @@ export default function ResultsView({ id }: { id: string }) {
   const serverSec = gen?.createdAt ? (now - new Date(gen.createdAt).getTime()) / 1000 : NaN;
   const elapsed = Number.isFinite(serverSec) && serverSec >= 0 && serverSec < pageSec + 900 ? Math.max(serverSec, pageSec) : pageSec;
   const progress = estimateProgress(elapsed, expected.current, variants.length, settledCount);
+  const pendingTile = tileProgress(elapsed, expected.current);
 
   // The whole set: every ready version, in the frame currently chosen.
   const ready = variants.flatMap((v, i) => (v.status === 'done' && v.url ? [{ i, url: v.url }] : []));
@@ -172,7 +173,7 @@ export default function ResultsView({ id }: { id: string }) {
         <RoomScene className="aspect-[5/4] lg:sticky lg:top-24" tileWidth="54%">
           {variants.map((v, i) => (
             <FramedTile key={i} frame={frame}>
-              {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`גרסה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <div className="w-full h-full k-shimmer" />}
+              {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`גרסה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <PendingTile progress={pendingTile} />}
             </FramedTile>
           ))}
         </RoomScene>
@@ -187,7 +188,7 @@ export default function ResultsView({ id }: { id: string }) {
                   <FramedTile frame={frame} shadow={false}>
                     {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`גרסה ${i + 1}`} />
                       : v.status === 'error' ? <div className="w-full h-full flex items-center justify-center text-xs text-[var(--k-muted)] p-2 text-center bg-[#F1ECE4]">הגרסה הזו לא הצליחה</div>
-                      : <div className="w-full h-full k-shimmer" />}
+                      : <PendingTile progress={pendingTile} />}
                   </FramedTile>
                   {v.status === 'done' && <span className="absolute top-2 start-2 bg-white/90 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"><Maximize2 className="w-4 h-4" /></span>}
                 </button>

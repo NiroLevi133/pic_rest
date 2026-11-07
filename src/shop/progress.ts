@@ -22,6 +22,12 @@ function timeFraction(t: number, expected: number): number {
   return 0.9 + 0.08 * (1 - Math.exp(-(t - expected) / 45));
 }
 
+/** Progress (0…0.98) of one image that is still being generated, for the thin line inside its frame. */
+export function tileProgress(elapsedSec: number, expectedSec: number): number {
+  const e = Math.min(MAX_EXPECTED_SEC, Math.max(MIN_EXPECTED_SEC, expectedSec));
+  return Math.max(0.02, timeFraction(Math.max(0, elapsedSec), e));
+}
+
 export function estimateProgress(elapsedSec: number, expectedSec: number, total: number, settled: number): ProgressEstimate {
   const t = Math.max(0, elapsedSec);
   const e = Math.min(MAX_EXPECTED_SEC, Math.max(MIN_EXPECTED_SEC, expectedSec));
