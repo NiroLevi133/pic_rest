@@ -52,3 +52,17 @@ export async function storeResult(base64: string): Promise<string> {
   const jpeg = await sharp(Buffer.from(base64, 'base64')).jpeg({ quality: 92 }).toBuffer();
   return upload(jpeg, 'results');
 }
+
+/** Remove stored shop files (ignores data URLs and anything outside our shop/ folder). */
+export async function deleteStored(urls: string[]): Promise<void> {
+  if (!SUPABASE_URL || !SERVICE_KEY) return;
+  const prefix = `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/`;
+  const paths = urls.filter((u) => u.startsWith(prefix + 'shop/')).map((u) => u.slice(prefix.length));
+  if (paths.length === 0) return;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prefixes: paths }),
+  });
+  if (!res.ok) throw new Error(`storage delete failed ${res.status}`);
+}

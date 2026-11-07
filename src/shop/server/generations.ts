@@ -65,6 +65,7 @@ export async function refreshGeneration(id: string): Promise<PublicGeneration | 
       }
     } catch (e) {
       // A failed check is retried on the next poll, unless we've waited too long.
+      console.error(`[shop] checking variation ${i} of ${id} failed:`, e);
       if (expired) { variants[i] = { ...v, status: 'error', error: String(e).slice(0, 300) }; changed = true; }
     }
   }));

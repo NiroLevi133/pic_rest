@@ -4,7 +4,8 @@
  * so we start it, keep the response id, and check it on later polls.
  */
 
-const API = 'https://api.openai.com/v1/responses';
+/** Overridable for tests or an API gateway; defaults to OpenAI. */
+const API = `${(process.env.SHOP_OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '')}/responses`;
 /** The text model only routes the request to the image tool. */
 const ROUTER_MODEL = process.env.SHOP_OPENAI_ROUTER_MODEL || 'gpt-5.4-mini';
 const IMAGE_MODEL = process.env.SHOP_OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2';
@@ -24,6 +25,8 @@ async function call(path: string, init?: RequestInit) {
     ...init,
     headers: { Authorization: `Bearer ${apiKey()}`, 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
     signal: AbortSignal.timeout(30_000),
+    // Next.js caches fetch() on the server by default; a status check must always hit the API.
+    cache: 'no-store',
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${data?.error?.message ?? 'request failed'}`);

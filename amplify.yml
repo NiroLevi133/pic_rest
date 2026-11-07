@@ -23,6 +23,12 @@ frontend:
         - echo "SUPABASE_URL=$SUPABASE_URL" >> .env.production
         - echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> .env.production
         - echo "SUPABASE_BUCKET=$SUPABASE_BUCKET" >> .env.production
+        # Photo store (/shop). Empty values fall back to the defaults in src/shop.
+        - echo "NEXT_PUBLIC_SHOP_WHATSAPP=$NEXT_PUBLIC_SHOP_WHATSAPP" >> .env.production
+        - echo "NEXT_PUBLIC_SHOP_URL=$NEXT_PUBLIC_SHOP_URL" >> .env.production
+        - echo "SHOP_DAILY_LIMIT_PER_CLIENT=$SHOP_DAILY_LIMIT_PER_CLIENT" >> .env.production
+        - echo "SHOP_DAILY_LIMIT_TOTAL=$SHOP_DAILY_LIMIT_TOTAL" >> .env.production
+        - echo "SHOP_RETENTION_DAYS=$SHOP_RETENTION_DAYS" >> .env.production
 
         # Bring the database to the current schema (baseline, migrations, legacy image sync) — idempotent
         - node scripts/db-setup.mjs

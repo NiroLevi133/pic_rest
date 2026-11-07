@@ -11,6 +11,7 @@ import type { CheckoutDetails } from '../types';
 import { db } from './db';
 import { createGeneration, refreshGeneration, variantImage } from './generations';
 import { checkDailyLimit, clientHash } from './limits';
+import { purgeExpiredGenerations } from './cleanup';
 import { isImageGenerationConfigured } from './openai';
 import { hasStylePrompt } from './prompts';
 import { InvalidImageError, storeUpload } from './storage';
@@ -49,6 +50,8 @@ export async function postGeneration(req: Request) {
 
   try {
     const generation = await createGeneration(body.styleId, photo, hash);
+    // Privacy: drop old, never-ordered uploads. Never let it fail the upload.
+    await purgeExpiredGenerations().catch((e) => console.error('[shop] cleanup failed', e));
     return NextResponse.json({ success: true, data: generation });
   } catch (e) {
     console.error('[shop] generation failed', e);
