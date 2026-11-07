@@ -11,6 +11,7 @@ import type { PublicGeneration, PublicVariant } from '../types';
 import { estimateProgress, expectedSeconds, recordDuration, tileProgress } from '../progress';
 import FramedTile, { PendingTile, TileImage } from '../components/FramedTile';
 import RoomScene from '../components/RoomScene';
+import Lightbox from '../components/Lightbox';
 
 const POLL_MS = 4000;
 const MESSAGES = ['מנתחים את התמונה…', 'בוחרים צבעים…', 'מציירים את הפרטים…', 'מוסיפים את הנגיעות האחרונות…', 'עוד רגע…'];
@@ -74,13 +75,6 @@ export default function ResultsView({ id }: { id: string }) {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [gen]);
-
-  useEffect(() => {
-    if (zoom === null) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setZoom(null); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [zoom]);
 
   if (error) {
     return (
@@ -163,9 +157,11 @@ export default function ResultsView({ id }: { id: string }) {
         {/* The 4 versions together, as a gallery wall */}
         <RoomScene className="aspect-[5/4] lg:sticky lg:top-24" tileWidth="54%">
           {variants.map((v, i) => (
-            <FramedTile key={i} frame={frame}>
-              {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`יצירה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <PendingTile progress={pendingTile} />}
-            </FramedTile>
+            <button key={i} type="button" className="block w-full cursor-zoom-in disabled:cursor-default" disabled={v.status !== 'done'} onClick={() => setZoom(i)} aria-label={`הגדלת יצירה ${i + 1}`}>
+              <FramedTile frame={frame}>
+                {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`יצירה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <PendingTile progress={pendingTile} />}
+              </FramedTile>
+            </button>
           ))}
         </RoomScene>
 
@@ -213,25 +209,17 @@ export default function ResultsView({ id }: { id: string }) {
         </div>
       )}
 
-      {/* Zoom: one version on the wall */}
-      {zoom !== null && variants[zoom]?.url && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setZoom(null)} role="dialog" aria-modal="true" aria-label={`יצירה ${zoom + 1}`}>
-          <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-3">
-              <FrameToggle value={frame} onChange={setFrame} />
-              <button type="button" onClick={() => setZoom(null)} className="bg-white rounded-full p-2" aria-label="סגירה"><X className="w-5 h-5" /></button>
-            </div>
-            <RoomScene className="aspect-[5/4]" cols={1} tileWidth="40%">
-              <FramedTile frame={frame}><TileImage src={variants[zoom].url!} alt={`יצירה ${zoom + 1}`} /></FramedTile>
-            </RoomScene>
-            {gen && (
-              <button type="button" className="mt-4 k-btn k-btn-cta w-full"
-                onClick={() => { add({ generationId: gen.id, variant: zoom, imageUrl: variants[zoom].url!, styleId: gen.styleId, frame }); setZoom(null); }}>
-                <Plus className="w-5 h-5" /> הוספה לעגלה · {formatPrice(TILE_PRICE)}
-              </button>
-            )}
-          </div>
-        </div>
+      {/* Large view: browse the finished artworks one by one */}
+      {zoom !== null && gen && ready.some((r) => r.i === zoom) && (
+        <Lightbox
+          items={ready.map((r) => ({ variant: r.i, url: r.url }))}
+          start={zoom}
+          frame={frame}
+          onFrame={setFrame}
+          onClose={() => setZoom(null)}
+          inCart={(variant) => has(gen.id, variant)}
+          onAdd={(it) => add({ generationId: gen.id, variant: it.variant, imageUrl: it.url, styleId: gen.styleId, frame })}
+        />
       )}
     </div>
   );
