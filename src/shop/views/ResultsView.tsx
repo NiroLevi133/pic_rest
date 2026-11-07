@@ -8,7 +8,7 @@ import { getStyle } from '../styles';
 import { useCart } from '../cart';
 import { FRAMES, formatPrice, orderTotals, TILE, TILE_PRICE, type FrameId } from '../pricing';
 import type { PublicGeneration, PublicVariant } from '../types';
-import { estimateProgress, expectedSeconds, formatRemaining, recordDuration } from '../progress';
+import { estimateProgress, expectedSeconds, recordDuration } from '../progress';
 import FramedTile, { TileImage } from '../components/FramedTile';
 import RoomScene from '../components/RoomScene';
 
@@ -133,15 +133,11 @@ export default function ResultsView({ id }: { id: string }) {
           <>
             <h1 className="k-h text-3xl sm:text-4xl">היצירות שלכם בדרך</h1>
             <div className="mt-5 max-w-md mx-auto">
-              <div className="flex items-baseline justify-between text-sm font-semibold">
-                <span className="text-2xl font-black tabular-nums" dir="ltr">{progress.percent}%</span>
-                <span className="text-[var(--k-muted)]" aria-live="polite">{formatRemaining(progress.remainingSec)}</span>
-              </div>
-              <div className="mt-2 h-3 rounded-full bg-[#EAE3D8] overflow-hidden" role="progressbar" aria-label="התקדמות היצירה" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent}>
+              <div className="h-3 rounded-full bg-[#EAE3D8] overflow-hidden" role="progressbar" aria-label="התקדמות היצירה" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent}>
                 <div className="h-full rounded-full bg-[var(--k-cta)] transition-[width] duration-1000 ease-linear" style={{ width: `${progress.percent}%` }} />
               </div>
               <div className="mt-2 flex items-center justify-between text-sm text-[var(--k-muted)]">
-                <span>{MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress.percent / 100) * MESSAGES.length))]}</span>
+                <span aria-live="polite">{MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress.percent / 100) * MESSAGES.length))]}</span>
                 <span className="tabular-nums">{readyCount} מתוך {variants.length} מוכנות</span>
               </div>
             </div>

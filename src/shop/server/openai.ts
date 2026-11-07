@@ -10,10 +10,10 @@ const API = `${(process.env.SHOP_OPENAI_BASE_URL || 'https://api.openai.com/v1')
 const ROUTER_MODEL = process.env.SHOP_OPENAI_ROUTER_MODEL || 'gpt-5.4-mini';
 const IMAGE_MODEL = process.env.SHOP_OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2';
 /**
- * Image quality: 'high' (default, best for print, slowest), 'medium' (noticeably faster and cheaper), or 'low'.
- * Set SHOP_OPENAI_IMAGE_QUALITY to trade quality for speed.
+ * Image quality: 'medium' (default: faster and cheaper, good for a 20×20 tile), 'high' (slowest), or 'low'.
+ * Set SHOP_OPENAI_IMAGE_QUALITY to change it.
  */
-const QUALITY = ['high', 'medium', 'low'].includes(process.env.SHOP_OPENAI_IMAGE_QUALITY ?? '') ? process.env.SHOP_OPENAI_IMAGE_QUALITY! : 'high';
+const QUALITY = ['high', 'medium', 'low'].includes(process.env.SHOP_OPENAI_IMAGE_QUALITY ?? '') ? process.env.SHOP_OPENAI_IMAGE_QUALITY! : 'medium';
 
 function apiKey(): string {
   const key = process.env.SHOP_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
