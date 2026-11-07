@@ -106,45 +106,58 @@ No modern objects, no cartoon styling, no text, logos, watermarks, borders, fram
     ],
   },
 
-  // Scenes and the style lock line are the owner's; the rest of the style prompt is a draft in the royal structure.
+  // From the owner, verbatim.
   'pet-life': {
     name: 'Humorous luxury lifestyle photography',
-    stylePrompt: `Create an ultra-photorealistic humorous luxury lifestyle photograph as part of a cohesive four-piece "secret life" pet collection.
+    stylePrompt: `Create a cohesive collection of four humorous, ultra-photorealistic lifestyle portraits featuring the exact same subject from the uploaded reference image.
 
 IDENTITY PRESERVATION:
-Use the uploaded original photograph as the primary identity reference. Preserve the pet's exact breed, facial structure, eye color, fur color, fur length and markings, ear shape, and distinctive characteristics.
+Use the uploaded original photograph as the primary identity reference. Preserve the subject's exact recognizable facial features, proportions, eye color, hairstyle, skin tone, fur colors, breed, markings, and distinctive characteristics where applicable.
 
-CHARACTER:
-Portray the pet as a relaxed, self-assured character enjoying a pampered human lifestyle, with natural animal anatomy and a subtly funny, deadpan expression. Maintain the same character appearance throughout the collection.
+CREATIVE DIRECTION:
+Portray the subject in funny, human-like everyday situations while maintaining its recognizable identity and believable anatomy.
 
-ARTISTIC STYLE LOCK:
-Ultra-photorealistic humorous luxury lifestyle photography. Warm beige and cream palette, soft editorial lighting, realistic fur and skin textures, sophisticated bathroom and home interiors.
+VISUAL STYLE LOCK:
+Premium editorial lifestyle photography.
+Warm beige, ivory, cream, soft brown, and subtle sage-green tones.
+Soft natural window lighting, realistic textures, sophisticated interior design, and subtle cinematic depth of field.
 
 COLLECTION CONSISTENCY:
-All four images must look like one editorial photo shoot by the same photographer. Maintain consistent lighting, color grading, lens look, interior design language, and visual mood.
+All four images must look like they were photographed during the same professional photoshoot.
+Maintain consistent color grading, lighting quality, photographic realism, subject identity, and overall aesthetic.
+
+SCENE VARIATION:
+Each artwork must show the same subject performing a different humorous activity in a distinct environment.
 
 OUTPUT RULES:
-Generate exactly ONE standalone photograph for the requested scene.
+Generate exactly ONE standalone image per request.
 Aspect ratio: {{aspect_ratio}}.
-Centered composition with safe margins for printing.
-No cartoon styling, no text, logos, watermarks, borders, frames, or collages.`,
+High-resolution, print-ready composition.
+Keep the subject comfortably within safe margins for printing.
+
+No collages, grids, frames, mockups, text, logos, signatures, or watermarks.
+
+Avoid cartoon styling, inconsistent faces, altered fur patterns, extra limbs, distorted anatomy, and additional subjects.`,
     scenes: [
       {
-        title: 'THE SPA',
-        prompt: 'The subject is relaxing in a luxurious spa wearing a white bathrobe and a towel on the head.',
+        title: 'LUXURY SPA DAY',
+        prompt:
+          'Create an ultra-photorealistic portrait of the subject relaxing in a luxurious spa bathroom. The subject wears a soft white bathrobe with a neatly wrapped towel on the head, looking calm, pampered, and slightly amusing. Include elegant beige stone surfaces, soft white towels, subtle spa accessories, and warm natural lighting. Preserve the exact recognizable identity, facial features, and realistic anatomy of the original subject. Premium editorial lifestyle photography with sophisticated warm neutral color grading.',
       },
       {
-        title: 'THE BUBBLE BATH',
-        prompt: 'The subject is enjoying a bubble bath in a stylish bathtub with elegant bath accessories.',
+        title: 'BUBBLE BATH',
+        prompt:
+          "Depict the exact same subject enjoying a luxurious bubble bath in a stylish freestanding bathtub. Surround the subject with fluffy white soap bubbles, warm cream-colored bathroom tiles, and elegant bath accessories. The subject's face must remain clearly visible and recognizable, with a relaxed and humorous expression. Maintain the same realistic photographic treatment, soft natural lighting, beige-and-ivory palette, and consistent identity as the other images.",
       },
       {
         title: 'MORNING COFFEE',
         prompt:
-          'The subject is sitting at a beautiful kitchen table with a cup of coffee and a relaxed morning atmosphere.',
+          "Show the exact same subject sitting comfortably at a beautiful minimalist kitchen table with a cup of morning coffee. Include a ceramic coffee mug, subtle breakfast details, warm sunlight entering through a nearby window, and a stylish beige-and-cream kitchen interior. The subject looks relaxed, confident, and amusingly human-like. Preserve the original subject's recognizable identity and believable anatomy. Premium photorealistic editorial lifestyle photography.",
       },
       {
-        title: 'THE MORNING PAPER',
-        prompt: 'The subject is sitting comfortably in a stylish bathroom reading a newspaper.',
+        title: 'BATHROOM NEWSPAPER',
+        prompt:
+          "Create a humorous ultra-photorealistic portrait of the exact same subject sitting on a modern toilet in a stylish beige bathroom while reading an open newspaper. The subject looks surprisingly serious and focused, creating a funny human-like moment. Include elegant neutral bathroom tiles, soft natural window lighting, and realistic photographic textures. Preserve the subject's exact recognizable identity, facial features, fur markings or hairstyle, and believable anatomy. No readable newspaper text, no cartoon styling.",
       },
     ],
   },

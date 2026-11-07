@@ -39,10 +39,11 @@ describe('shop prompts', () => {
     expect(p).toContain('SCENE 3 — THE PALACE\nPortray the same royal character standing inside a grand historical palace corridor');
   });
 
-  it("uses the owner's pet-life scenes verbatim, also in the collection's Scene line", () => {
+  it("uses the owner's pet-life style prompt and scenes verbatim, also in the collection's Scene line", () => {
     const p = buildPrompt('pet-life', 1);
     expect(p).toContain('Style: Humorous luxury lifestyle photography');
-    expect(p).toContain('Scene: The subject is enjoying a bubble bath in a stylish bathtub with elegant bath accessories.');
-    expect(p).toContain('ARTISTIC STYLE LOCK:\nUltra-photorealistic humorous luxury lifestyle photography. Warm beige and cream palette');
+    expect(p).toContain('Scene: Depict the exact same subject enjoying a luxurious bubble bath in a stylish freestanding bathtub.');
+    expect(p).toContain('VISUAL STYLE LOCK:\nPremium editorial lifestyle photography.\nWarm beige, ivory, cream');
+    expect(p).toContain('SCENE 2 — BUBBLE BATH\n');
   });
 });
