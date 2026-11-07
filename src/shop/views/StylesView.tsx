@@ -16,7 +16,7 @@ export default function StylesView() {
         <section key={g.id} className="mt-12">
           <h2 className="k-h text-2xl sm:text-3xl">{g.title}</h2>
           <p className="text-[var(--k-muted)] mt-1">{g.description}</p>
-          <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6">
+          <div className="mt-6 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6">
             {STYLES.filter((s) => s.group === g.id).map((s) => <StyleCard key={s.id} style={s} />)}
           </div>
         </section>

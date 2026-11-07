@@ -37,7 +37,7 @@ describe('shop generations', () => {
 
   it('starts 4 variations, each with its own prompt', async () => {
     startImage.mockImplementation(async (_p: string) => `resp_${startImage.mock.calls.length}`);
-    const g = await createGeneration('oil', photo, 'hash');
+    const g = await createGeneration('royal', photo, 'hash');
     expect(startImage).toHaveBeenCalledTimes(4);
     expect(new Set(startImage.mock.calls.map((c) => c[0])).size).toBe(4);
     expect(g.status).toBe('pending');
@@ -48,17 +48,17 @@ describe('shop generations', () => {
 
   it('keeps going when some variations fail to start, and fails when none start', async () => {
     startImage.mockRejectedValueOnce(new Error('boom')).mockResolvedValue('resp_ok');
-    const g = await createGeneration('oil', photo, 'hash');
+    const g = await createGeneration('royal', photo, 'hash');
     expect(g.variants.map((v) => v.status)).toEqual(['error', 'pending', 'pending', 'pending']);
 
     startImage.mockReset();
     startImage.mockRejectedValue(new Error('down'));
-    await expect(createGeneration('oil', photo, 'hash')).rejects.toThrow();
+    await expect(createGeneration('royal', photo, 'hash')).rejects.toThrow();
   });
 
   it('stores finished images and settles the status when nothing is pending', async () => {
     startImage.mockResolvedValue('resp');
-    await createGeneration('oil', photo, 'hash');
+    await createGeneration('royal', photo, 'hash');
 
     checkImage.mockResolvedValueOnce({ state: 'done', base64: 'img0' }).mockResolvedValue({ state: 'pending' });
     let g = await refreshGeneration('gen1234567890');

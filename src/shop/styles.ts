@@ -3,13 +3,15 @@
  * The prompts themselves live in server/prompts.ts and never reach the browser.
  */
 
-export type StyleGroup = 'classic' | 'fun';
+export type StyleGroup = 'art' | 'fun';
 export type SubjectHint = 'person' | 'pet' | 'family';
 
 export interface ArtStyle {
   id: string;
   title: string;
   description: string;
+  /** Who the style is for, shown on the upload page (e.g. pets only). */
+  suitsFor: string;
   group: StyleGroup;
   /** Example image of the style (real generated sample). Until there is one, a drawn placeholder is shown. */
   example?: string;
@@ -20,20 +22,16 @@ export interface ArtStyle {
 }
 
 export const STYLES: ArtStyle[] = [
-  { id: 'oil', title: 'ציור שמן', description: 'פורטרט קלאסי במשיכות מכחול עשירות, כמו במוזיאון', group: 'classic',
-    palette: ['#3B2F27', '#D9A57A', '#6E2F2A', '#C9A15A'], sample: 'person' },
-  { id: 'watercolor', title: 'צבעי מים', description: 'עדין, רך ומלא אור, על נייר בעל טקסטורה', group: 'classic',
-    palette: ['#EAF1F2', '#F1C3A1', '#8DB3C7', '#E58F65'], sample: 'pet' },
-  { id: 'sketch', title: 'רישום עיפרון', description: 'רישום גרפיט מדויק בשחור־לבן, על נייר שמנת', group: 'classic',
-    palette: ['#F2EDE3', '#BDB6AA', '#6F6A62', '#3A3732'], sample: 'person' },
-  { id: 'royal', title: 'מלכותי', description: 'גלימה, כתר ותכשיטים: פורטרט של אצולה מהמאה ה־17', group: 'classic',
+  { id: 'royal', title: 'מלכותי', description: 'ציור שמן רנסנסי: גלימות, כתר וזהב, כמו במוזיאון', suitsFor: 'אנשים וחיות מחמד', group: 'art',
     palette: ['#2A1E1A', '#D9A57A', '#7A1E2B', '#D4AF37'], sample: 'pet' },
-  { id: 'animated', title: 'סרט אנימציה', description: 'דמות תלת־ממדית חמודה, כאילו יצאתם מסרט מצויר', group: 'fun',
-    palette: ['#CFE6F5', '#F4C7A6', '#F28C6B', '#FFD166'], sample: 'family' },
-  { id: 'caricature', title: 'קריקטורה', description: 'ראש גדול, חיוך גדול. איור צבעוני ומצחיק', group: 'fun',
-    palette: ['#FFF7EC', '#F2C4A0', '#5DA9E9', '#FF6B6B'], sample: 'person' },
-  { id: 'popart', title: 'פופ־ארט', description: 'צבעים חזקים, קווי מתאר עבים ורקע נועז', group: 'fun',
-    palette: ['#FFD23F', '#F7B7A3', '#EE4266', '#3BCEAC'], sample: 'pet' },
+  { id: 'minimal', title: 'אמנות מינימליסטית', description: 'פורטרט עדין בצבעי מים, עיפרון או פחם, על רקע שמנת', suitsFor: 'אנשים וחיות מחמד', group: 'art',
+    palette: ['#F3ECE0', '#E9C9A8', '#B9A58C', '#8C7B68'], sample: 'person' },
+  { id: 'family', title: 'פורטרט משפחתי', description: 'איור מצויר ביד של כל המשפחה, כולל חיות המחמד', suitsFor: 'משפחות, זוגות וקבוצות', group: 'art',
+    palette: ['#F1E6D6', '#F0C9A6', '#B98E6B', '#7E9C83'], sample: 'family' },
+  { id: 'pet-life', title: 'החיים הסודיים', description: 'חיית המחמד שלכם בסיטואציה אנושית מצחיקה, כמו צילום אמיתי', suitsFor: 'חיות מחמד בלבד', group: 'fun',
+    palette: ['#DCE7EC', '#E3B887', '#5C7A8A', '#F2C14E'], sample: 'pet' },
+  { id: 'animated', title: 'סרט אנימציה', description: 'דמות תלת־ממדית מסרט מצויר, בעולם קסום', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
+    palette: ['#CFE6F5', '#F4C7A6', '#F28C6B', '#FFD166'], sample: 'person' },
 ];
 
 export function getStyle(id: string): ArtStyle | undefined {
@@ -41,6 +39,6 @@ export function getStyle(id: string): ArtStyle | undefined {
 }
 
 export const STYLE_GROUPS: { id: StyleGroup; title: string; description: string }[] = [
-  { id: 'classic', title: 'אמנות קלאסית', description: 'יצירות שנראות כאילו צוירו ביד' },
-  { id: 'fun', title: 'כיף ומשפחה', description: 'צבעוני, מצחיק ומלא אופי' },
+  { id: 'art', title: 'אמנות לקיר', description: 'יצירות מעודנות שמתאימות לכל בית' },
+  { id: 'fun', title: 'כיף ודמיון', description: 'מצחיק, צבעוני ומלא אופי' },
 ];

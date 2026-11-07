@@ -73,6 +73,7 @@ export default function UploadView({ style }: { style: ArtStyle }) {
           <p className="k-eyebrow">{style.title}</p>
           <h1 className="k-h text-3xl sm:text-4xl mt-1">{style.description}</h1>
           <p className="mt-3 text-[var(--k-muted)]">העלו תמונה אחת, ונכין לכם 4 גרסאות בסגנון {style.title}.</p>
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--k-paper)] border border-[var(--k-line)] px-3 py-1 text-sm font-semibold">מתאים ל: {style.suitsFor}</p>
 
           <input ref={input} type="file" accept="image/*" className="sr-only" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
 

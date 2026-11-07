@@ -63,7 +63,7 @@ export default function HomeView() {
           {STYLE_GROUPS.map((g) => (
             <div key={g.id} className="mt-14">
               <h3 className="k-h text-2xl sm:text-3xl text-center">{g.title}</h3>
-              <div className="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 sm:gap-x-6">
+              <div className="mt-8 grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-10 sm:gap-x-6 max-w-4xl mx-auto">
                 {STYLES.filter((s) => s.group === g.id).map((s) => <StyleCard key={s.id} style={s} />)}
               </div>
             </div>
@@ -80,7 +80,7 @@ export default function HomeView() {
         </div>
         <div className="mt-12 grid md:grid-cols-3 gap-5">
           {[
-            { icon: Wand2, t: 'בוחרים סגנון', d: 'ציור שמן, צבעי מים, סרט אנימציה, קריקטורה ועוד.' },
+            { icon: Wand2, t: 'בוחרים סגנון', d: 'מלכותי, מינימליסטי, משפחתי, סרט אנימציה, או חיית המחמד בסיטואציה מצחיקה.' },
             { icon: Upload, t: 'מעלים תמונה', d: 'של הילדים, של בן או בת הזוג, של הכלב. תמונה אחת מספיקה.' },
             { icon: Sparkles, t: 'בוחרים את האהובות', d: 'מקבלים 4 גרסאות ממוסגרות על קיר, ומזמינים את אלה שאוהבים.' },
           ].map(({ icon: Icon, t, d }, i) => (
@@ -100,8 +100,8 @@ export default function HomeView() {
       <section id="product" className="k-container pt-24 scroll-mt-16">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           <RoomScene className="aspect-[5/4]" cols={3} tileWidth="64%">
-            {STYLES.slice(0, 6).map((s, i) => (
-              <FramedTile key={s.id} frame={i % 2 ? 'white' : 'black'}><StyleArt style={s} variant={i % 4} /></FramedTile>
+            {[...STYLES, ...STYLES].slice(0, 6).map((s, i) => (
+              <FramedTile key={i} frame={i % 2 ? 'white' : 'black'}><StyleArt style={s} variant={i % 4} /></FramedTile>
             ))}
           </RoomScene>
           <div>
