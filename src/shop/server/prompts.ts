@@ -1,21 +1,29 @@
 /**
  * Image prompts for the store. Server-only: never sent to the browser.
  *
- * Every upload makes a 4-piece collection. Each of the 4 images gets:
+ * Every upload makes a 4-piece collection. Each of the 4 images is sent, in this order:
  *   1. COLLECTION_PROMPT — the same for every style and image ({{style_name}}, {{scene_description}}, {{aspect_ratio}} filled in)
- *   2. STYLE LOCK      — the same for all 4 images of a style (keeps the collection consistent)
- *   3. SCENE n         — different for each of the 4 images
- *   4. IMAGE_CLOSING   — the same for every image
+ *   2. STYLE PROMPT      — the style's own prompt, the same for all 4 images of that style ({{aspect_ratio}} filled in)
+ *   3. SCENE n           — the style's prompt for this one image, different for each of the 4
+ *   4. IMAGE_CLOSING     — the same for every image
  *
  * A style may have an approved style reference image (`reference`): it is sent as a second image,
  * after the customer's photo, and the prompt tells the model it defines only the visual treatment.
  */
 
+interface Scene {
+  /** e.g. 'THE ROYAL PORTRAIT', shown as "SCENE 1 — THE ROYAL PORTRAIT" */
+  title: string;
+  prompt: string;
+}
+
 interface CollectionStyle {
   /** English name, filled into {{style_name}} */
   name: string;
-  styleLock: string;
-  scenes: [string, string, string, string];
+  /** The style's prompt for all 4 images together. May use {{aspect_ratio}}. */
+  stylePrompt: string;
+  /** One prompt per image. */
+  scenes: [Scene, Scene, Scene, Scene];
   /** Optional approved style reference image (https URL). */
   reference?: string;
 }
@@ -51,61 +59,222 @@ const IMAGE_CLOSING =
 
 const STYLES: Record<string, CollectionStyle> = {
   // From the owner, verbatim.
-  'pet-life': {
-    name: 'Humorous luxury lifestyle photography',
-    styleLock:
-      'Ultra-photorealistic humorous luxury lifestyle photography. Warm beige and cream palette, soft editorial lighting, realistic fur and skin textures, sophisticated bathroom and home interiors.',
+  royal: {
+    name: 'Renaissance royal oil painting',
+    stylePrompt: `Create a museum-quality Renaissance oil painting as part of a cohesive four-piece royal portrait collection.
+
+IDENTITY PRESERVATION:
+Use the uploaded original photograph as the primary identity reference. Preserve the subject's exact recognizable facial features, facial structure, eye color, fur color and markings, hairstyle, skin tone, and distinctive characteristics where applicable.
+
+ROYAL CHARACTER:
+Portray the subject as a noble royal figure with an elegant and dignified presence. Maintain the same royal identity, crown design, clothing palette, and overall character appearance throughout the collection.
+
+ARTISTIC STYLE LOCK:
+Authentic 17th-century European aristocratic oil painting.
+Rich burgundy velvet, antique gold embroidery, deep emerald accents, and dark warm-brown backgrounds.
+Dramatic chiaroscuro lighting, subtle aged-canvas texture, refined oil brushstrokes, realistic proportions, and exquisite historical detailing.
+
+COLLECTION CONSISTENCY:
+All four artworks must appear to have been painted by the same historical portrait artist. Maintain consistent lighting direction, brushwork, color grading, royal costume design, and visual mood.
+
+OUTPUT RULES:
+Generate exactly ONE standalone painting for the requested scene.
+Aspect ratio: {{aspect_ratio}}.
+Centered, elegant composition with safe margins for printing.
+No modern objects, no cartoon styling, no text, logos, watermarks, borders, frames, or collages.`,
     scenes: [
-      'The subject is relaxing in a luxurious spa wearing a white bathrobe and a towel on the head.',
-      'The subject is enjoying a bubble bath in a stylish bathtub with elegant bath accessories.',
-      'The subject is sitting at a beautiful kitchen table with a cup of coffee and a relaxed morning atmosphere.',
-      'The subject is sitting comfortably in a stylish bathroom reading a newspaper.',
+      {
+        title: 'THE ROYAL PORTRAIT',
+        prompt:
+          'Create a formal waist-up royal portrait of the subject, facing slightly toward the viewer. The subject wears an ornate antique-gold crown and luxurious burgundy velvet robes with intricate gold embroidery. Use a dark classical studio background and dramatic soft side lighting. The face must be clearly visible and faithfully match the uploaded reference image. Elegant, symmetrical, dignified composition.',
+      },
+      {
+        title: 'THE ROYAL THRONE',
+        prompt:
+          'Depict the exact same royal character seated majestically on an elaborate antique-gold throne with carved details and burgundy velvet upholstery. Maintain the same crown, clothing colors, facial identity, and historical oil-painting style established in the first artwork. Show a wider composition with rich palace drapery and warm dramatic lighting. The subject remains the central focus.',
+      },
+      {
+        title: 'THE PALACE',
+        prompt:
+          'Portray the same royal character standing inside a grand historical palace corridor with marble columns, classical paintings, and elegant architectural details. Maintain the same royal identity, crown design, burgundy-and-gold costume, and consistent painterly treatment. Use a three-quarter-length composition and warm light entering from tall palace windows. Preserve accurate recognizable facial features.',
+      },
+      {
+        title: 'THE ROYAL GARDEN',
+        prompt:
+          'Create an elegant royal oil painting of the same character standing in a formal European palace garden. Include classical stone fountains, manicured hedges, and subtle architectural elements in the background. Preserve the identical royal costume, crown, facial identity, and oil-painting technique. Use warm late-afternoon light with the same rich color palette and refined aristocratic atmosphere. Keep the character visually dominant.',
+      },
     ],
   },
 
-  // Drafts in the same structure, based on the owner's earlier style prompts — review and replace freely.
-  royal: {
-    name: 'Renaissance royal oil painting',
-    styleLock:
-      'Exquisite Renaissance-style royal oil painting. Luxurious historical royal garments with intricate embroidery and elegant accessories, dramatic chiaroscuro lighting, deep burgundy and gold tones, rich oil-paint textures, dark classical background. Authentic museum-quality aristocratic portrait.',
+  // Scenes and the style lock line are the owner's; the rest of the style prompt is a draft in the royal structure.
+  'pet-life': {
+    name: 'Humorous luxury lifestyle photography',
+    stylePrompt: `Create an ultra-photorealistic humorous luxury lifestyle photograph as part of a cohesive four-piece "secret life" pet collection.
+
+IDENTITY PRESERVATION:
+Use the uploaded original photograph as the primary identity reference. Preserve the pet's exact breed, facial structure, eye color, fur color, fur length and markings, ear shape, and distinctive characteristics.
+
+CHARACTER:
+Portray the pet as a relaxed, self-assured character enjoying a pampered human lifestyle, with natural animal anatomy and a subtly funny, deadpan expression. Maintain the same character appearance throughout the collection.
+
+ARTISTIC STYLE LOCK:
+Ultra-photorealistic humorous luxury lifestyle photography. Warm beige and cream palette, soft editorial lighting, realistic fur and skin textures, sophisticated bathroom and home interiors.
+
+COLLECTION CONSISTENCY:
+All four images must look like one editorial photo shoot by the same photographer. Maintain consistent lighting, color grading, lens look, interior design language, and visual mood.
+
+OUTPUT RULES:
+Generate exactly ONE standalone photograph for the requested scene.
+Aspect ratio: {{aspect_ratio}}.
+Centered composition with safe margins for printing.
+No cartoon styling, no text, logos, watermarks, borders, frames, or collages.`,
     scenes: [
-      'The subject is seated on a velvet throne as a majestic king or queen, wearing a jeweled crown and an ermine-trimmed robe.',
-      'The subject stands in a candlelit palace library as a noble duke or duchess, wearing a lace collar and a gold chain of office.',
-      'The subject poses beside a marble column as an emperor or empress in a regal uniform with medals and a silk sash.',
-      'The subject holds a royal scepter in a palace garden at dusk as a young prince or princess, wearing a delicate circlet.',
+      {
+        title: 'THE SPA',
+        prompt: 'The subject is relaxing in a luxurious spa wearing a white bathrobe and a towel on the head.',
+      },
+      {
+        title: 'THE BUBBLE BATH',
+        prompt: 'The subject is enjoying a bubble bath in a stylish bathtub with elegant bath accessories.',
+      },
+      {
+        title: 'MORNING COFFEE',
+        prompt:
+          'The subject is sitting at a beautiful kitchen table with a cup of coffee and a relaxed morning atmosphere.',
+      },
+      {
+        title: 'THE MORNING PAPER',
+        prompt: 'The subject is sitting comfortably in a stylish bathroom reading a newspaper.',
+      },
     ],
   },
+
+  // Drafts in the royal structure — review and replace freely.
   minimal: {
     name: 'Minimalist fine-art portrait',
-    styleLock:
-      'Elegant minimalist fine-art portrait in soft watercolor with delicate pencil lines. Soft muted colors, subtle paper texture, gentle natural shading, clean ivory or warm beige background with generous negative space. Handcrafted, refined and timeless, suitable for a Scandinavian-inspired interior.',
+    stylePrompt: `Create an elegant minimalist fine-art portrait as part of a cohesive four-piece collection.
+
+IDENTITY PRESERVATION:
+Use the uploaded original photograph as the primary identity reference. Preserve the subject's exact recognizable facial features, facial structure, eye color, fur color and markings, hairstyle, skin tone, and distinctive characteristics where applicable.
+
+CHARACTER:
+Portray the subject with a calm, gentle, timeless presence. Maintain the same appearance throughout the collection.
+
+ARTISTIC STYLE LOCK:
+Soft watercolor with delicate pencil lines.
+Soft muted colors, subtle paper texture, gentle natural shading.
+Clean ivory or warm beige background with generous negative space. Handcrafted, refined and timeless, suitable for a Scandinavian-inspired interior.
+
+COLLECTION CONSISTENCY:
+All four artworks must appear to have been painted by the same artist on the same paper. Maintain consistent line weight, wash technique, palette, and amount of negative space.
+
+OUTPUT RULES:
+Generate exactly ONE standalone artwork for the requested scene.
+Aspect ratio: {{aspect_ratio}}.
+Centered, airy composition with safe margins for printing.
+No busy backgrounds, no text, logos, watermarks, borders, frames, or collages.`,
     scenes: [
-      'A calm close-up portrait of the subject looking gently toward the viewer.',
-      'The subject in a graceful side profile, eyes softly looking into the distance.',
-      'The subject resting peacefully beside a single small sprig of olive leaves.',
-      'The subject in a quiet, joyful moment, mid-movement, with a light breeze suggested by a few loose strokes.',
+      {
+        title: 'THE PORTRAIT',
+        prompt: 'A calm close-up portrait of the subject looking gently toward the viewer.',
+      },
+      {
+        title: 'THE PROFILE',
+        prompt: 'The subject in a graceful side profile, eyes softly looking into the distance.',
+      },
+      {
+        title: 'THE OLIVE SPRIG',
+        prompt: 'The subject resting peacefully beside a single small sprig of olive leaves.',
+      },
+      {
+        title: 'THE BREEZE',
+        prompt:
+          'The subject in a quiet, joyful moment, mid-movement, with a light breeze suggested by a few loose strokes.',
+      },
     ],
   },
   family: {
     name: 'Contemporary hand-painted family portrait',
-    styleLock:
-      'Sophisticated contemporary hand-painted family illustration. Warm neutral colors, delicate textures, soft natural lighting. Keep the exact number of people and pets, their recognizable faces, hairstyles, skin tones, body proportions, clothing characteristics and relative positions. Warm, connected, meaningful wall-art gift.',
+    stylePrompt: `Create a sophisticated contemporary hand-painted family portrait as part of a cohesive four-piece family collection.
+
+IDENTITY PRESERVATION:
+Use the uploaded original photograph as the primary identity reference. Keep the exact number of people and pets, their recognizable faces, hairstyles, skin tones, body proportions, clothing characteristics, and relative positions.
+
+FAMILY CHARACTER:
+Portray the family as warm, connected, and at ease together. Every family member must appear in every artwork, with the same appearance throughout the collection.
+
+ARTISTIC STYLE LOCK:
+Contemporary hand-painted illustration.
+Warm neutral colors, delicate textures, soft natural lighting.
+A warm, meaningful wall-art gift.
+
+COLLECTION CONSISTENCY:
+All four artworks must appear to have been painted by the same artist. Maintain consistent brushwork, palette, lighting mood, and character rendering.
+
+OUTPUT RULES:
+Generate exactly ONE standalone artwork for the requested scene.
+Aspect ratio: {{aspect_ratio}}.
+Balanced composition with every face clearly visible and safe margins for printing.
+No missing or extra people or pets, no text, logos, watermarks, borders, frames, or collages.`,
     scenes: [
-      'The whole family sits together on a sofa in a sunlit living room, close and relaxed.',
-      'The whole family walks together along a calm Mediterranean beach at golden hour.',
-      'The whole family enjoys a picnic on a blanket under a large tree in a green park.',
-      'The whole family gathers around a festive dinner table with warm candlelight.',
+      {
+        title: 'THE LIVING ROOM',
+        prompt: 'The whole family sits together on a sofa in a sunlit living room, close and relaxed.',
+      },
+      {
+        title: 'THE BEACH',
+        prompt: 'The whole family walks together along a calm Mediterranean beach at golden hour.',
+      },
+      {
+        title: 'THE PICNIC',
+        prompt: 'The whole family enjoys a picnic on a blanket under a large tree in a green park.',
+      },
+      {
+        title: 'THE FESTIVE DINNER',
+        prompt: 'The whole family gathers around a festive dinner table with warm candlelight.',
+      },
     ],
   },
   animated: {
     name: 'Premium 3D animated feature film',
-    styleLock:
-      'Charming premium 3D animated feature-film character rendering. Expressive but believable eyes, appealing character proportions, beautifully detailed textures, soft cinematic lighting, vibrant yet harmonious colors, depth of field and a magical atmosphere, like a polished frame from a major animated movie.',
+    stylePrompt: `Create a charming premium 3D animated feature-film frame as part of a cohesive four-piece animated collection.
+
+IDENTITY PRESERVATION:
+Use the uploaded original photograph as the primary identity reference. Preserve the subject's recognizable facial features, eye color, fur color and markings, hairstyle, skin tone, and distinctive characteristics, translated into an appealing animated character.
+
+CHARACTER:
+Portray the subject as a lovable lead character of an animated movie, with expressive but believable eyes and appealing proportions. Maintain the same character design and outfit throughout the collection.
+
+ARTISTIC STYLE LOCK:
+Premium 3D animated feature-film rendering.
+Beautifully detailed textures, soft cinematic lighting, vibrant yet harmonious colors.
+Depth of field and a magical atmosphere, like a polished frame from a major animated movie.
+
+COLLECTION CONSISTENCY:
+All four images must look like frames from the same movie. Maintain consistent character design, rendering quality, color grading, and mood.
+
+OUTPUT RULES:
+Generate exactly ONE standalone image for the requested scene.
+Aspect ratio: {{aspect_ratio}}.
+The character is the clear focal point, with safe margins for printing.
+No text, logos, watermarks, borders, frames, or collages.`,
     scenes: [
-      'The subject explores an enchanted forest full of glowing fireflies.',
-      'The subject rides a bicycle through a sunny Mediterranean seaside town.',
-      'The subject builds a snowman in a cozy snowy village at dusk.',
-      'The subject floats above the clouds under a magical starry night sky.',
+      {
+        title: 'THE ENCHANTED FOREST',
+        prompt: 'The subject explores an enchanted forest full of glowing fireflies.',
+      },
+      {
+        title: 'THE SEASIDE TOWN',
+        prompt: 'The subject rides a bicycle through a sunny Mediterranean seaside town.',
+      },
+      {
+        title: 'THE SNOWY VILLAGE',
+        prompt: 'The subject builds a snowman in a cozy snowy village at dusk.',
+      },
+      {
+        title: 'ABOVE THE CLOUDS',
+        prompt: 'The subject floats above the clouds under a magical starry night sky.',
+      },
     ],
   },
 };
@@ -128,9 +297,9 @@ export function buildPrompt(styleId: string, variation: number): string {
   const n = variation % 4;
   const scene = style.scenes[n];
   return [
-    fill(COLLECTION_PROMPT, { aspect_ratio: ASPECT_RATIO, style_name: style.name, scene_description: scene }),
-    `IMAGE ${n + 1}\nSTYLE LOCK:\n${style.styleLock}`,
-    `SCENE ${n + 1}:\n${scene}`,
+    fill(COLLECTION_PROMPT, { aspect_ratio: ASPECT_RATIO, style_name: style.name, scene_description: scene.prompt }),
+    fill(style.stylePrompt, { aspect_ratio: ASPECT_RATIO }),
+    `SCENE ${n + 1} — ${scene.title}\n${scene.prompt}`,
     IMAGE_CLOSING,
   ].join('\n\n');
 }
