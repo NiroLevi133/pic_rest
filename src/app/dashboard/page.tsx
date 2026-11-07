@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  CalendarDays, Clock, FilePlus2, FileText, Image as ImageIcon, Receipt, ReceiptText, Sparkles, UserPlus, Users, Wallet,
+  CalendarDays, Clock, ExternalLink, FilePlus2, FileText, Image as ImageIcon, Receipt, ReceiptText, Sparkles, Store, UserPlus, Users, Wallet,
 } from 'lucide-react';
+
+/** Where the photo store lives: /shop in this app, or its own domain once split out (NEXT_PUBLIC_SHOP_URL). */
+const SHOP_URL = process.env.NEXT_PUBLIC_SHOP_URL || '/shop';
 import { useCurrentUser, hasBusinessAccess } from '@/components/CurrentUser';
 import Spinner, { ErrorBox } from '@/components/ui/Spinner';
 import StatusBadge from '@/components/ui/StatusBadge';
@@ -71,9 +74,15 @@ export default function DashboardPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">שלום 👋</h1>
-        <p className="text-sm text-[var(--text-muted)] mt-1">מה קורה בעסק היום</p>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">שלום 👋</h1>
+          <p className="text-sm text-[var(--text-muted)] mt-1">מה קורה בעסק היום</p>
+        </div>
+        {/* The public photo store is a separate module (src/shop); this button is its only entry point here. */}
+        <a href={SHOP_URL} target="_blank" rel="noopener noreferrer" className="btn-primary">
+          <Store className="w-4 h-4" /> לחנות התמונות <ExternalLink className="w-3.5 h-3.5 opacity-70" />
+        </a>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

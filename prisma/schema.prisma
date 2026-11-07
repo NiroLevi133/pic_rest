@@ -358,3 +358,49 @@ model Receipt {
   @@index([issuedAt])
   @@index([documentDate])
 }
+
+// ─── Photo store (src/shop) ──────────────────────────────────────────────────
+// Kept apart from the workspace tables (no relations) so the store can move to its own database.
+
+/// One customer upload in one style → 4 AI variations.
+model ShopGeneration {
+  id         String   @id @default(cuid())
+  styleId    String
+  /// Uploaded source photo (storage URL)
+  sourceUrl  String
+  /// [{ responseId, status: pending|done|error, url?, error? }] — one per variation
+  variants   Json
+  /// pending | done | error (done = at least one variation is ready and none is pending)
+  status     String   @default("pending")
+  /// sha256 of the client IP + secret, for daily limits (no raw IPs stored)
+  clientHash String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([clientHash, createdAt])
+  @@index([createdAt])
+}
+
+/// An order placed from the store (no online payment yet: payment is arranged with the customer).
+model ShopOrder {
+  id        String   @id @default(cuid())
+  /// Human reference, e.g. P-7F3A9
+  ref       String   @unique
+  name      String
+  phone     String
+  city      String
+  address   String
+  notes     String?
+  /// [{ generationId, variant, imageUrl, frame, qty, unitPrice }]
+  items     Json
+  subtotal  Int
+  discount  Int
+  shipping  Int
+  total     Int
+  /// new | confirmed | printed | shipped | cancelled
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}

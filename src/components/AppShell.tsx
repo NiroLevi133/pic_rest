@@ -23,8 +23,8 @@ const NAV: NavItem[] = [
   { href: '/settings',  label: 'הגדרות',     icon: Settings },
 ];
 
-/** Screens rendered without the app chrome (auth, print views, public share pages). */
-const BARE_PREFIXES = ['/login', '/print/', '/d/'];
+/** Screens rendered without the app chrome (auth, print views, public share pages, the public store). */
+const BARE_PREFIXES = ['/login', '/print/', '/d/', '/shop'];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/');
