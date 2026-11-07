@@ -198,6 +198,59 @@ Premium gallery-quality watercolor artwork.`,
     ],
   },
 
+  // From the owner, verbatim.
+  'tel-aviv': {
+    name: 'Humorous Tel Aviv lifestyle editorial photography',
+    stylePrompt: `Create a cohesive four-piece humorous Tel Aviv lifestyle art collection featuring the exact same subject from the uploaded reference photograph.
+
+IDENTITY LOCK:
+Use the original photograph as the primary identity reference. Preserve the subject's recognizable face, facial structure, eyes, hairstyle, skin tone, or fur color and markings. Keep the same person or pet in every artwork.
+
+CREATIVE DIRECTION:
+Trendy 26-year-old Tel Aviv lifestyle, matcha obsession, boutique reformer Pilates, stylish brunch cafés, beach culture, effortless street fashion, and playful Gen Z humor.
+
+VISUAL STYLE LOCK:
+Ultra-photorealistic editorial lifestyle photography with a subtle playful, satirical twist.
+
+Color palette: matcha green, butter yellow, baby pink, warm ivory, oat milk beige, and soft Mediterranean blue.
+
+Natural Mediterranean sunlight, subtle film grain, soft shadows, candid poses, tasteful vintage digital-camera aesthetic, and premium Pinterest-inspired art direction.
+
+CHARACTER:
+The subject is the main character in every scene. If the subject is an animal, portray it naturally participating in human lifestyle activities while preserving its recognizable animal face and anatomy. If human, preserve realistic facial identity and body proportions.
+
+COLLECTION CONSISTENCY:
+All four images must share the same photographic treatment, lighting quality, color grading, and playful Tel Aviv aesthetic. Each scene must be visually distinct.
+
+OUTPUT:
+Create exactly ONE standalone artwork per generation.
+Aspect ratio: {{aspect_ratio}}.
+Premium print-ready composition with safe margins.
+No collages, frames, mockups, typography, logos, or watermarks.`,
+    scenes: [
+      {
+        title: 'MATCHA MORNING',
+        prompt:
+          "Depict the exact same subject at a trendy Tel Aviv sidewalk café, enjoying an oversized iced matcha latte in a clear glass. Add stylish sunglasses, a tiny café table, warm morning sunlight, and an effortlessly fashionable atmosphere. Matcha green and warm cream tones dominate. Humorous but believable, candid premium editorial photography. Preserve the original subject's exact recognizable identity.",
+      },
+      {
+        title: 'PILATES PRINCESS',
+        prompt:
+          'Depict the same subject exercising on a realistic Pilates reformer machine inside a beautiful boutique Pilates studio in Tel Aviv. Include pastel workout accessories, grip socks, soft pink and beige interiors, large windows, and natural morning sunlight. The subject looks adorably serious about the workout. If the subject is a pet, adapt the pose playfully while maintaining recognizable animal anatomy. Ultra-photorealistic editorial lifestyle photography.',
+      },
+      {
+        title: "BRUNCH O'CLOCK",
+        prompt:
+          "Show the same subject enjoying a fashionable Friday brunch at a charming Tel Aviv sidewalk café. Include a golden croissant, iced coffee, a minimalist ceramic plate, sunglasses, and a relaxed city-street atmosphere. Capture a spontaneous candid moment with warm sunlight, subtle film grain, stylish neutral colors, and playful humor. Keep the subject's identity completely recognizable.",
+      },
+      {
+        title: 'GORDON BEACH CLUB',
+        prompt:
+          'Portray the same subject relaxing on a chic striped beach chair at a Mediterranean Tel Aviv beach. Include stylish sunglasses, a pastel beach umbrella, turquoise sea, warm sand, and beautiful summer sunlight. The subject looks effortlessly cool and completely unbothered. Preserve recognizable identity and realistic anatomy. Premium playful editorial photography with consistent pastel color grading.',
+      },
+    ],
+  },
+
   // Drafts in the royal structure — review and replace freely.
   family: {
     name: 'Contemporary hand-painted family portrait',

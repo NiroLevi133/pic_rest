@@ -30,6 +30,8 @@ export const STYLES: ArtStyle[] = [
     palette: ['#F1E6D6', '#F0C9A6', '#B98E6B', '#7E9C83'], sample: 'family' },
   { id: 'pet-life', title: 'החיים הסודיים', description: 'ספא, אמבטיה, קפה של בוקר ועיתון: חיית המחמד שלכם בצילום יוקרתי ומצחיק', suitsFor: 'חיות מחמד בלבד', group: 'fun',
     palette: ['#DCE7EC', '#E3B887', '#5C7A8A', '#F2C14E'], sample: 'pet' },
+  { id: 'tel-aviv', title: 'החיים בתל אביב', description: 'מאצ\'ה של בוקר, פילאטיס מכשירים, בראנץ\' של שישי וחוף גורדון: צילום לייפסטייל מצחיק ויוקרתי', suitsFor: 'אנשים וחיות מחמד', group: 'fun',
+    palette: ['#F4EBDD', '#E8C4A6', '#A8C686', '#F6B8C8'], sample: 'person' },
   { id: 'animated', title: 'סרט אנימציה', description: 'דמות מסרט מצויר: ביער קסום, בעיירת חוף, בשלג ומעל העננים', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
     palette: ['#CFE6F5', '#F4C7A6', '#F28C6B', '#FFD166'], sample: 'person' },
 ];
