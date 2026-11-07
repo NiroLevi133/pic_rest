@@ -29,6 +29,7 @@ frontend:
         - echo "SHOP_DAILY_LIMIT_PER_CLIENT=$SHOP_DAILY_LIMIT_PER_CLIENT" >> .env.production
         - echo "SHOP_DAILY_LIMIT_TOTAL=$SHOP_DAILY_LIMIT_TOTAL" >> .env.production
         - echo "SHOP_RETENTION_DAYS=$SHOP_RETENTION_DAYS" >> .env.production
+        - echo "SHOP_OPENAI_IMAGE_QUALITY=$SHOP_OPENAI_IMAGE_QUALITY" >> .env.production
 
         # Bring the database to the current schema (baseline, migrations, legacy image sync) — idempotent
         - node scripts/db-setup.mjs

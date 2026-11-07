@@ -44,6 +44,7 @@
 |---|---|---|
 | `OPENAI_API_KEY` (או `SHOP_OPENAI_API_KEY`) | | חובה ליצירה |
 | `SHOP_OPENAI_IMAGE_MODEL` | `OPENAI_IMAGE_MODEL` או `gpt-image-2` | מודל התמונה |
+| `SHOP_OPENAI_IMAGE_QUALITY` | `medium` | `medium` (מהיר וזול, מספיק לאריח 20×20), `high` (הכי איטי), `low` |
 | `NEXT_PUBLIC_SHOP_WHATSAPP` | | המספר שמקבל הזמנות, `972501234567` |
 | `SHOP_DAILY_LIMIT_PER_CLIENT` | 3 | העלאות למבקר ב־24 שעות (כל העלאה = 4 תמונות) |
 | `SHOP_DAILY_LIMIT_TOTAL` | 100 | תקרה יומית לכל החנות (הגנה על העלות) |

@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, Check, Maximize2, Palette, Plus, ShoppingCart, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, LayoutGrid, Maximize2, Palette, Plus, ShoppingCart, X } from 'lucide-react';
 import { shopApi, shopHref } from '../config';
 import { getStyle } from '../styles';
 import { useCart } from '../cart';
-import { FRAMES, formatPrice, TILE, TILE_PRICE, type FrameId } from '../pricing';
+import { FRAMES, formatPrice, orderTotals, TILE, TILE_PRICE, type FrameId } from '../pricing';
 import type { PublicGeneration, PublicVariant } from '../types';
+import { estimateProgress, expectedSeconds, recordDuration } from '../progress';
 import FramedTile, { TileImage } from '../components/FramedTile';
 import RoomScene from '../components/RoomScene';
 
@@ -30,8 +31,13 @@ export default function ResultsView({ id }: { id: string }) {
   const [error, setError] = useState('');
   const [frame, setFrame] = useState<FrameId>('black');
   const [zoom, setZoom] = useState<number | null>(null);
-  const [elapsed, setElapsed] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const started = useRef(Date.now());
+  const expected = useRef(90);
+  /** True once we've seen this generation still running, so its duration is worth learning from. */
+  const sawPending = useRef(false);
+
+  useEffect(() => { expected.current = expectedSeconds(); }, []);
 
   const poll = useCallback(async () => {
     try {
@@ -40,7 +46,13 @@ export default function ResultsView({ id }: { id: string }) {
       if (res.status === 404) { setError('לא מצאנו את היצירה הזו'); return 'stop'; }
       if (!json?.success) return 'retry';
       setGen(json.data);
-      return json.data.status === 'pending' ? 'retry' : 'stop';
+      if (json.data.status === 'pending') { sawPending.current = true; return 'retry'; }
+      // Learn how long generations really take, for better estimates next time.
+      if (sawPending.current && json.data.status === 'done') {
+        const took = (Date.now() - new Date(json.data.createdAt).getTime()) / 1000;
+        if (took > 0 && took < 900) recordDuration(took);
+      }
+      return 'stop';
     } catch {
       return 'retry';
     }
@@ -59,7 +71,7 @@ export default function ResultsView({ id }: { id: string }) {
 
   useEffect(() => {
     if (gen && gen.status !== 'pending') return;
-    const t = setInterval(() => setElapsed(Math.floor((Date.now() - started.current) / 1000)), 1000);
+    const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, [gen]);
 
@@ -84,6 +96,24 @@ export default function ResultsView({ id }: { id: string }) {
   const variants: PublicVariant[] = gen?.variants ?? Array.from({ length: 4 }, () => ({ status: 'pending' }));
   const pending = !gen || gen.status === 'pending';
   const readyCount = variants.filter((v) => v.status === 'done').length;
+  const settledCount = variants.filter((v) => v.status !== 'pending').length;
+  // Time since the upload, from the server's timestamp (so a reload doesn't restart the bar);
+  // falls back to time on this page if the clocks disagree.
+  const pageSec = (now - started.current) / 1000;
+  const serverSec = gen?.createdAt ? (now - new Date(gen.createdAt).getTime()) / 1000 : NaN;
+  const elapsed = Number.isFinite(serverSec) && serverSec >= 0 && serverSec < pageSec + 900 ? Math.max(serverSec, pageSec) : pageSec;
+  const progress = estimateProgress(elapsed, expected.current, variants.length, settledCount);
+
+  // The whole set: every ready version, in the frame currently chosen.
+  const ready = variants.flatMap((v, i) => (v.status === 'done' && v.url ? [{ i, url: v.url }] : []));
+  const setSize = ready.length;
+  const setPrice = orderTotals(ready.map(() => 1));
+  const setInCart = gen ? setSize > 0 && ready.every((r) => has(gen.id, r.i)) : false;
+  function addSet() {
+    if (!gen) return;
+    // Versions already in the cart stay as they are (no doubled quantities).
+    for (const r of ready) if (!has(gen.id, r.i)) add({ generationId: gen.id, variant: r.i, imageUrl: r.url, styleId: gen.styleId, frame });
+  }
 
   if (gen?.status === 'error') {
     return (
@@ -102,10 +132,16 @@ export default function ResultsView({ id }: { id: string }) {
         {pending ? (
           <>
             <h1 className="k-h text-3xl sm:text-4xl">היצירות שלכם בדרך</h1>
-            <p className="mt-2 text-[var(--k-muted)]" aria-live="polite">
-              {MESSAGES[Math.min(MESSAGES.length - 1, Math.floor(elapsed / 12))]} {readyCount > 0 && `(${readyCount} מתוך ${variants.length} מוכנות)`}
-            </p>
-            <p className="mt-1 text-sm text-[var(--k-muted)]">זה לוקח בדרך כלל דקה עד שתיים. אפשר להשאיר את הדף פתוח.</p>
+            <div className="mt-5 max-w-md mx-auto">
+              <div className="h-3 rounded-full bg-[#EAE3D8] overflow-hidden" role="progressbar" aria-label="התקדמות היצירה" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent}>
+                <div className="h-full rounded-full bg-[var(--k-cta)] transition-[width] duration-1000 ease-linear" style={{ width: `${progress.percent}%` }} />
+              </div>
+              <div className="mt-2 flex items-center justify-between text-sm text-[var(--k-muted)]">
+                <span aria-live="polite">{MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress.percent / 100) * MESSAGES.length))]}</span>
+                <span className="tabular-nums">{readyCount} מתוך {variants.length} מוכנות</span>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-[var(--k-muted)]">אפשר להשאיר את הדף פתוח. כל תמונה מופיעה ברגע שהיא מוכנה.</p>
           </>
         ) : (
           <>
@@ -115,6 +151,20 @@ export default function ResultsView({ id }: { id: string }) {
           </>
         )}
         <div className="mt-5"><FrameToggle value={frame} onChange={setFrame} /></div>
+        {!pending && gen && setSize >= 2 && (
+          <div className="mt-5 max-w-md mx-auto">
+            {setInCart ? (
+              <Link href={shopHref('/cart')} className="k-btn k-btn-ghost w-full"><Check className="w-5 h-5" /> כל הסט בעגלה · לעגלה</Link>
+            ) : (
+              <button type="button" onClick={addSet} className="k-btn k-btn-dark w-full">
+                <LayoutGrid className="w-5 h-5" /> הוספת כל הסט ({setSize} אריחים) · {formatPrice(setPrice.subtotal - setPrice.discount)}
+              </button>
+            )}
+            {!setInCart && setPrice.discount > 0 && (
+              <p className="mt-2 text-sm text-[var(--k-ok)] font-semibold">במקום {formatPrice(setPrice.subtotal)}: {setPrice.discountPercent}% הנחה על סט</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-8 grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-start">
