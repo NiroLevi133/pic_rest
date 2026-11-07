@@ -57,7 +57,8 @@ export default function CartView() {
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
         if (json?.errors) setErrors(json.errors);
-        throw new Error(json?.error || 'שליחת ההזמנה נכשלה');
+        const tag = json?.code ? ` (קוד: ${json.code})` : !json ? ` (שגיאה ${res.status})` : '';
+        throw new Error(`${json?.error || 'שליחת ההזמנה נכשלה'}${tag}`);
       }
       setDone(json.data);
       clear();

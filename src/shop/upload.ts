@@ -1,7 +1,8 @@
 'use client';
 
-/** Photo preparation in the browser: decode, fix rotation, shrink to ≤1536px JPEG before upload. */
-const MAX_SIDE = 1536;
+/** Photo preparation in the browser: decode, fix rotation, shrink to ≤1280px JPEG before upload. */
+/** Plenty for the model (it works at 1024px) and keeps the request well under hosting body limits. */
+const MAX_SIDE = 1280;
 const MAX_FILE_BYTES = 25 * 1024 * 1024;
 
 export class PhotoError extends Error {}
@@ -26,7 +27,7 @@ export async function preparePhoto(file: File): Promise<string> {
   if (!ctx) throw new PhotoError('הדפדפן לא תומך בעיבוד תמונות');
   ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close();
-  return canvas.toDataURL('image/jpeg', 0.88);
+  return canvas.toDataURL('image/jpeg', 0.85);
 }
 
 const HISTORY_KEY = 'kiri-creations-v1';

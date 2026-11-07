@@ -46,11 +46,16 @@ export default function UploadView({ style }: { style: ArtStyle }) {
         body: JSON.stringify({ styleId: style.id, image: photo, consent: true }),
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok || !json?.success) throw new Error(json?.error || 'היצירה נכשלה. נסו שוב');
+      if (!res.ok || !json?.success) {
+        // The code (or HTTP status) makes a failure diagnosable from a screenshot.
+        const tag = json?.code ? ` (קוד: ${json.code})` : !json ? ` (שגיאה ${res.status})` : '';
+        throw new Error(`${json?.error || 'היצירה נכשלה. נסו שוב'}${tag}`);
+      }
       rememberCreation(json.data.id, style.id);
       router.push(shopHref(`/g/${json.data.id}`));
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'היצירה נכשלה. נסו שוב');
+      // fetch itself failed: offline, or the platform cut the request.
+      setError(e instanceof TypeError ? 'אין חיבור לשרת. בדקו את האינטרנט ונסו שוב (שגיאת רשת)' : e instanceof Error ? e.message : 'היצירה נכשלה. נסו שוב');
       setSending(false);
     }
   }

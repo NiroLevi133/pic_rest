@@ -34,7 +34,7 @@ export async function createGeneration(styleId: string, photo: { dataUrl: string
   );
   if (!variants.some((v) => v.status === 'pending')) {
     console.error('[shop] could not start any variation:', variants.map((v) => v.error));
-    throw new Error('generation failed to start');
+    throw new Error(`generation failed to start: ${variants[0]?.error ?? 'unknown'}`);
   }
   const g = await db.shopGeneration.create({
     data: { styleId, sourceUrl: photo.url, variants: variants as object[], status: 'pending', clientHash },

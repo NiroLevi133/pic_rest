@@ -12,19 +12,47 @@ import { db } from './db';
 import { createGeneration, refreshGeneration, variantImage } from './generations';
 import { checkDailyLimit, clientHash } from './limits';
 import { purgeExpiredGenerations } from './cleanup';
-import { isImageGenerationConfigured } from './openai';
+import { checkOpenAIAccess, isImageGenerationConfigured } from './openai';
 import { hasStylePrompt } from './prompts';
-import { InvalidImageError, storeUpload } from './storage';
+import { InvalidImageError, isStorageConfigured, storeUpload } from './storage';
 
 /** ~8MB of base64 — the browser resizes photos before upload, so real uploads are far smaller. */
 const MAX_UPLOAD_CHARS = 8 * 1024 * 1024;
 
-function fail(status: number, error: string) {
-  return NextResponse.json({ success: false, error }, { status });
+function fail(status: number, error: string, code?: string) {
+  return NextResponse.json({ success: false, error, ...(code ? { code } : {}) }, { status });
+}
+
+/** A short, non-secret reason code for logs and the error message, so failures can be diagnosed from a screenshot. */
+export function errorCode(e: unknown): string {
+  const m = String(e instanceof Error ? e.message : e);
+  if (/OpenAI 401/.test(m)) return 'openai-key';
+  if (/OpenAI 403/.test(m)) return 'openai-access';
+  if (/OpenAI 404/.test(m) || /model/i.test(m) && /OpenAI 400/.test(m)) return 'openai-model';
+  if (/OpenAI 429/.test(m)) return 'openai-quota';
+  if (/OpenAI \d+/.test(m)) return 'openai';
+  if (/does not exist|P2021|relation .* does not exist/i.test(m)) return 'db-missing-table';
+  if (/P10\d\d|Can't reach database|connect/i.test(m)) return 'db-connection';
+  if (/storage/i.test(m)) return 'storage';
+  if (/abort|timeout/i.test(m)) return 'timeout';
+  return 'server';
+}
+
+/** Never let an unexpected error escape as an empty 500: always answer with JSON and a reason code. */
+function guarded<A extends unknown[]>(name: string, fn: (...args: A) => Promise<Response>) {
+  return async (...args: A): Promise<Response> => {
+    try {
+      return await fn(...args);
+    } catch (e) {
+      const code = errorCode(e);
+      console.error(`[shop] ${name} failed (${code}):`, e);
+      return fail(500, 'משהו השתבש אצלנו. נסו שוב בעוד רגע', code);
+    }
+  };
 }
 
 /** POST { styleId, image: dataURL, consent: true } → starts 4 variations. */
-export async function postGeneration(req: Request) {
+async function postGenerationImpl(req: Request) {
   const body = await req.json().catch(() => null) as { styleId?: unknown; image?: unknown; consent?: unknown } | null;
   if (!body || typeof body.styleId !== 'string' || !getStyle(body.styleId) || !hasStylePrompt(body.styleId)) return fail(400, 'סגנון לא קיים');
   if (body.consent !== true) return fail(400, 'יש לאשר את תנאי השימוש בתמונה');
@@ -45,7 +73,7 @@ export async function postGeneration(req: Request) {
   } catch (e) {
     if (e instanceof InvalidImageError) return fail(400, 'לא הצלחנו לקרוא את התמונה. נסו תמונה אחרת (JPG או PNG, לפחות 256 פיקסלים)');
     console.error('[shop] upload failed', e);
-    return fail(500, 'העלאת התמונה נכשלה. נסו שוב');
+    return fail(500, 'העלאת התמונה נכשלה. נסו שוב', errorCode(e));
   }
 
   try {
@@ -54,13 +82,14 @@ export async function postGeneration(req: Request) {
     await purgeExpiredGenerations().catch((e) => console.error('[shop] cleanup failed', e));
     return NextResponse.json({ success: true, data: generation });
   } catch (e) {
-    console.error('[shop] generation failed', e);
-    return fail(502, 'היצירה נכשלה. נסו שוב בעוד רגע');
+    const code = errorCode(e);
+    console.error(`[shop] generation failed (${code})`, e);
+    return fail(502, 'היצירה נכשלה. נסו שוב בעוד רגע', code);
   }
 }
 
 /** GET → generation status and ready images (checks OpenAI for pending ones). */
-export async function getGeneration(_req: Request, { params }: { params: { id: string } }) {
+async function getGenerationImpl(_req: Request, { params }: { params: { id: string } }) {
   if (!/^[a-z0-9]{10,40}$/i.test(params.id)) return fail(404, 'לא נמצא');
   try {
     const g = await refreshGeneration(params.id);
@@ -73,7 +102,7 @@ export async function getGeneration(_req: Request, { params }: { params: { id: s
 }
 
 /** POST { items, details } → saves the order and returns its reference + WhatsApp link. */
-export async function postOrder(req: Request) {
+async function postOrderImpl(req: Request) {
   const body = await req.json().catch(() => null) as { items?: unknown; details?: Partial<CheckoutDetails> } | null;
   const items = parseOrderItems(body?.items);
   if (!items) return fail(400, 'העגלה לא תקינה');
@@ -106,3 +135,21 @@ export async function postOrder(req: Request) {
     data: { ref, total: totals.total, whatsappUrl: SHOP.whatsapp ? whatsappUrl(orderMessage(ref, lines, details)) : null },
   });
 }
+
+/**
+ * GET → what the store needs, without exposing any secret: database tables, OpenAI key + model access, storage.
+ * Open /api/shop/health in the browser to diagnose a failing store.
+ */
+async function healthImpl() {
+  const dbCheck = await db.shopGeneration.count().then(() => ({ ok: true }), (e) => ({ ok: false, error: errorCode(e) }));
+  const openai = isImageGenerationConfigured() ? await checkOpenAIAccess() : { ok: false, error: 'OPENAI_API_KEY is not set' };
+  const storage = { ok: isStorageConfigured(), note: isStorageConfigured() ? undefined : 'Supabase storage not configured: images are kept in the database' };
+  const whatsapp = { ok: Boolean(SHOP.whatsapp) };
+  const ok = dbCheck.ok && openai.ok;
+  return NextResponse.json({ ok, database: dbCheck, openai, storage, whatsapp }, { status: ok ? 200 : 503, headers: { 'Cache-Control': 'no-store' } });
+}
+
+export const health = guarded('health', healthImpl);
+export const postGeneration = guarded('postGeneration', postGenerationImpl);
+export const getGeneration = guarded('getGeneration', getGenerationImpl);
+export const postOrder = guarded('postOrder', postOrderImpl);

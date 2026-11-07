@@ -68,3 +68,18 @@ export async function checkImage(responseId: string): Promise<ImageStatus> {
   if (!image) return { state: 'error', message: 'no image returned' };
   return { state: 'done', base64: image.result as string };
 }
+
+/** Health check: is the key valid and the image model available to it? (free, no generation) */
+export async function checkOpenAIAccess(): Promise<{ ok: boolean; model: string; error?: string }> {
+  try {
+    const base = (process.env.SHOP_OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const res = await fetch(`${base}/models/${IMAGE_MODEL}`, {
+      headers: { Authorization: `Bearer ${apiKey()}` }, cache: 'no-store', signal: AbortSignal.timeout(10_000),
+    });
+    if (res.ok) return { ok: true, model: IMAGE_MODEL };
+    const data = await res.json().catch(() => null);
+    return { ok: false, model: IMAGE_MODEL, error: `${res.status}: ${data?.error?.message ?? 'request failed'}`.slice(0, 200) };
+  } catch (e) {
+    return { ok: false, model: IMAGE_MODEL, error: String(e instanceof Error ? e.message : e).slice(0, 200) };
+  }
+}

@@ -66,3 +66,7 @@ export async function deleteStored(urls: string[]): Promise<void> {
   });
   if (!res.ok) throw new Error(`storage delete failed ${res.status}`);
 }
+
+export function isStorageConfigured(): boolean {
+  return Boolean(SUPABASE_URL && SERVICE_KEY);
+}
