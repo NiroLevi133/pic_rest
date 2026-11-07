@@ -33,8 +33,11 @@ async function call(path: string, init?: RequestInit) {
   return data;
 }
 
-/** Start a background generation from a reference photo; returns the response id. */
-export async function startImage(prompt: string, imageUrl: string): Promise<string> {
+/**
+ * Start a background generation; returns the response id.
+ * images[0] is the customer's photo (identity); an optional images[1] is the style reference.
+ */
+export async function startImage(prompt: string, images: string[]): Promise<string> {
   const data = await call('', {
     method: 'POST',
     body: JSON.stringify({
@@ -44,7 +47,7 @@ export async function startImage(prompt: string, imageUrl: string): Promise<stri
         role: 'user',
         content: [
           { type: 'input_text', text: `Generate this image exactly as specified. Do not reply with text.\n\n${prompt}` },
-          { type: 'input_image', image_url: imageUrl },
+          ...images.map((url) => ({ type: 'input_image', image_url: url })),
         ],
       }],
       tools: [{ type: 'image_generation', model: IMAGE_MODEL, size: '1024x1024', quality: 'high' }],

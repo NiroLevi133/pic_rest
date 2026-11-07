@@ -1,5 +1,5 @@
 import { db } from './db';
-import { buildPrompt, variationCount } from './prompts';
+import { buildPrompt, styleReference, variationCount } from './prompts';
 import { checkImage, startImage } from './openai';
 import { storeResult } from './storage';
 import type { PublicGeneration, VariantStatus } from '../types';
@@ -26,8 +26,10 @@ function toPublic(g: { id: string; styleId: string; status: string; variants: un
 
 /** Start all variations for one uploaded photo. Throws if none could be started. */
 export async function createGeneration(styleId: string, photo: { dataUrl: string; url: string }, clientHash: string): Promise<PublicGeneration> {
+  const reference = styleReference(styleId);
+  const images = reference ? [photo.dataUrl, reference] : [photo.dataUrl];
   const started = await Promise.allSettled(
-    Array.from({ length: variationCount() }, (_, i) => startImage(buildPrompt(styleId, i), photo.dataUrl)),
+    Array.from({ length: variationCount() }, (_, i) => startImage(buildPrompt(styleId, i), images)),
   );
   const variants: StoredVariant[] = started.map((r) =>
     r.status === 'fulfilled' ? { responseId: r.value, status: 'pending' } : { status: 'error', error: String(r.reason).slice(0, 300) },

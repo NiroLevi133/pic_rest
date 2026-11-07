@@ -36,7 +36,7 @@ describe('shop generations', () => {
   });
 
   it('starts 4 variations, each with its own prompt', async () => {
-    startImage.mockImplementation(async (_p: string) => `resp_${startImage.mock.calls.length}`);
+    startImage.mockImplementation(async (_p: string, _images: string[]) => `resp_${startImage.mock.calls.length}`);
     const g = await createGeneration('royal', photo, 'hash');
     expect(startImage).toHaveBeenCalledTimes(4);
     expect(new Set(startImage.mock.calls.map((c) => c[0])).size).toBe(4);
