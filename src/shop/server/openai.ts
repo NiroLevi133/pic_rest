@@ -9,6 +9,11 @@ const API = `${(process.env.SHOP_OPENAI_BASE_URL || 'https://api.openai.com/v1')
 /** The text model only routes the request to the image tool. */
 const ROUTER_MODEL = process.env.SHOP_OPENAI_ROUTER_MODEL || 'gpt-5.4-mini';
 const IMAGE_MODEL = process.env.SHOP_OPENAI_IMAGE_MODEL || process.env.OPENAI_IMAGE_MODEL || 'gpt-image-2';
+/**
+ * Image quality: 'high' (default, best for print, slowest), 'medium' (noticeably faster and cheaper), or 'low'.
+ * Set SHOP_OPENAI_IMAGE_QUALITY to trade quality for speed.
+ */
+const QUALITY = ['high', 'medium', 'low'].includes(process.env.SHOP_OPENAI_IMAGE_QUALITY ?? '') ? process.env.SHOP_OPENAI_IMAGE_QUALITY! : 'high';
 
 function apiKey(): string {
   const key = process.env.SHOP_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
@@ -50,7 +55,7 @@ export async function startImage(prompt: string, images: string[]): Promise<stri
           ...images.map((url) => ({ type: 'input_image', image_url: url })),
         ],
       }],
-      tools: [{ type: 'image_generation', model: IMAGE_MODEL, size: '1024x1024', quality: 'high' }],
+      tools: [{ type: 'image_generation', model: IMAGE_MODEL, size: '1024x1024', quality: QUALITY }],
       tool_choice: { type: 'image_generation' },
     }),
   });
@@ -73,13 +78,13 @@ export async function checkImage(responseId: string): Promise<ImageStatus> {
 }
 
 /** Health check: is the key valid and the image model available to it? (free, no generation) */
-export async function checkOpenAIAccess(): Promise<{ ok: boolean; model: string; error?: string }> {
+export async function checkOpenAIAccess(): Promise<{ ok: boolean; model: string; quality?: string; error?: string }> {
   try {
     const base = (process.env.SHOP_OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
     const res = await fetch(`${base}/models/${IMAGE_MODEL}`, {
       headers: { Authorization: `Bearer ${apiKey()}` }, cache: 'no-store', signal: AbortSignal.timeout(10_000),
     });
-    if (res.ok) return { ok: true, model: IMAGE_MODEL };
+    if (res.ok) return { ok: true, model: IMAGE_MODEL, quality: QUALITY };
     const data = await res.json().catch(() => null);
     return { ok: false, model: IMAGE_MODEL, error: `${res.status}: ${data?.error?.message ?? 'request failed'}`.slice(0, 200) };
   } catch (e) {

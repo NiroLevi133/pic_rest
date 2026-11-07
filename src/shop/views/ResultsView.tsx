@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertCircle, ArrowLeft, Check, Maximize2, Palette, Plus, ShoppingCart, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Check, LayoutGrid, Maximize2, Palette, Plus, ShoppingCart, X } from 'lucide-react';
 import { shopApi, shopHref } from '../config';
 import { getStyle } from '../styles';
 import { useCart } from '../cart';
-import { FRAMES, formatPrice, TILE, TILE_PRICE, type FrameId } from '../pricing';
+import { FRAMES, formatPrice, orderTotals, TILE, TILE_PRICE, type FrameId } from '../pricing';
 import type { PublicGeneration, PublicVariant } from '../types';
 import { estimateProgress, expectedSeconds, formatRemaining, recordDuration } from '../progress';
 import FramedTile, { TileImage } from '../components/FramedTile';
@@ -104,6 +104,17 @@ export default function ResultsView({ id }: { id: string }) {
   const elapsed = Number.isFinite(serverSec) && serverSec >= 0 && serverSec < pageSec + 900 ? Math.max(serverSec, pageSec) : pageSec;
   const progress = estimateProgress(elapsed, expected.current, variants.length, settledCount);
 
+  // The whole set: every ready version, in the frame currently chosen.
+  const ready = variants.flatMap((v, i) => (v.status === 'done' && v.url ? [{ i, url: v.url }] : []));
+  const setSize = ready.length;
+  const setPrice = orderTotals(ready.map(() => 1));
+  const setInCart = gen ? setSize > 0 && ready.every((r) => has(gen.id, r.i)) : false;
+  function addSet() {
+    if (!gen) return;
+    // Versions already in the cart stay as they are (no doubled quantities).
+    for (const r of ready) if (!has(gen.id, r.i)) add({ generationId: gen.id, variant: r.i, imageUrl: r.url, styleId: gen.styleId, frame });
+  }
+
   if (gen?.status === 'error') {
     return (
       <div className="k-container pt-20 text-center max-w-md">
@@ -144,6 +155,20 @@ export default function ResultsView({ id }: { id: string }) {
           </>
         )}
         <div className="mt-5"><FrameToggle value={frame} onChange={setFrame} /></div>
+        {!pending && gen && setSize >= 2 && (
+          <div className="mt-5 max-w-md mx-auto">
+            {setInCart ? (
+              <Link href={shopHref('/cart')} className="k-btn k-btn-ghost w-full"><Check className="w-5 h-5" /> כל הסט בעגלה · לעגלה</Link>
+            ) : (
+              <button type="button" onClick={addSet} className="k-btn k-btn-dark w-full">
+                <LayoutGrid className="w-5 h-5" /> הוספת כל הסט ({setSize} אריחים) · {formatPrice(setPrice.subtotal - setPrice.discount)}
+              </button>
+            )}
+            {!setInCart && setPrice.discount > 0 && (
+              <p className="mt-2 text-sm text-[var(--k-ok)] font-semibold">במקום {formatPrice(setPrice.subtotal)}: {setPrice.discountPercent}% הנחה על סט</p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="mt-8 grid lg:grid-cols-[1.1fr_1fr] gap-8 lg:gap-12 items-start">
