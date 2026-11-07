@@ -1,7 +1,9 @@
--- Photo store tables (additive only)
+-- Photo store tables (additive only).
+-- Idempotent: the store also creates these at runtime if they are missing (src/shop/server/schema.ts),
+-- so this migration must succeed whether or not they already exist.
 
 -- CreateTable
-CREATE TABLE "ShopGeneration" (
+CREATE TABLE IF NOT EXISTS "ShopGeneration" (
     "id" TEXT NOT NULL,
     "styleId" TEXT NOT NULL,
     "sourceUrl" TEXT NOT NULL,
@@ -15,7 +17,7 @@ CREATE TABLE "ShopGeneration" (
 );
 
 -- CreateTable
-CREATE TABLE "ShopOrder" (
+CREATE TABLE IF NOT EXISTS "ShopOrder" (
     "id" TEXT NOT NULL,
     "ref" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -36,13 +38,13 @@ CREATE TABLE "ShopOrder" (
 );
 
 -- CreateIndex
-CREATE INDEX "ShopGeneration_clientHash_createdAt_idx" ON "ShopGeneration"("clientHash", "createdAt");
+CREATE INDEX IF NOT EXISTS "ShopGeneration_clientHash_createdAt_idx" ON "ShopGeneration"("clientHash", "createdAt");
 
 -- CreateIndex
-CREATE INDEX "ShopGeneration_createdAt_idx" ON "ShopGeneration"("createdAt");
+CREATE INDEX IF NOT EXISTS "ShopGeneration_createdAt_idx" ON "ShopGeneration"("createdAt");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "ShopOrder_ref_key" ON "ShopOrder"("ref");
+CREATE UNIQUE INDEX IF NOT EXISTS "ShopOrder_ref_key" ON "ShopOrder"("ref");
 
 -- CreateIndex
-CREATE INDEX "ShopOrder_createdAt_idx" ON "ShopOrder"("createdAt");
+CREATE INDEX IF NOT EXISTS "ShopOrder_createdAt_idx" ON "ShopOrder"("createdAt");

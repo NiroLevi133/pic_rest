@@ -15,6 +15,7 @@ import { purgeExpiredGenerations } from './cleanup';
 import { checkOpenAIAccess, isImageGenerationConfigured } from './openai';
 import { hasStylePrompt } from './prompts';
 import { InvalidImageError, isStorageConfigured, storeUpload } from './storage';
+import { ensureShopTables } from './schema';
 
 /** ~8MB of base64 — the browser resizes photos before upload, so real uploads are far smaller. */
 const MAX_UPLOAD_CHARS = 8 * 1024 * 1024;
@@ -42,7 +43,16 @@ export function errorCode(e: unknown): string {
 function guarded<A extends unknown[]>(name: string, fn: (...args: A) => Promise<Response>) {
   return async (...args: A): Promise<Response> => {
     try {
-      return await fn(...args);
+      // A request body can be read only once: keep a copy for the retry below.
+      const retryArgs = (args[0] instanceof Request ? [args[0].clone(), ...args.slice(1)] : args) as A;
+      try {
+        return await fn(...args);
+      } catch (e) {
+        // First use on a database the deploy didn't migrate: create the store tables and try once more.
+        if (errorCode(e) !== 'db-missing-table') throw e;
+        await ensureShopTables();
+        return await fn(...retryArgs);
+      }
     } catch (e) {
       const code = errorCode(e);
       console.error(`[shop] ${name} failed (${code}):`, e);
@@ -141,7 +151,12 @@ async function postOrderImpl(req: Request) {
  * Open /api/shop/health in the browser to diagnose a failing store.
  */
 async function healthImpl() {
-  const dbCheck = await db.shopGeneration.count().then(() => ({ ok: true }), (e) => ({ ok: false, error: errorCode(e) }));
+  const count = () => db.shopGeneration.count().then(() => ({ ok: true as boolean, error: undefined as string | undefined }));
+  const dbCheck = await count().catch(async (e) => {
+    if (errorCode(e) !== 'db-missing-table') return { ok: false, error: errorCode(e) };
+    await ensureShopTables();
+    return count();
+  }).catch((e) => ({ ok: false, error: errorCode(e) }));
   const openai = isImageGenerationConfigured() ? await checkOpenAIAccess() : { ok: false, error: 'OPENAI_API_KEY is not set' };
   const storage = { ok: isStorageConfigured(), note: isStorageConfigured() ? undefined : 'Supabase storage not configured: images are kept in the database' };
   const whatsapp = { ok: Boolean(SHOP.whatsapp) };
