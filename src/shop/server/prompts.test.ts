@@ -15,7 +15,6 @@ describe('shop prompts', () => {
         expect(p).not.toMatch(/\{\{|\}\}/);
         expect(p.startsWith('You are creating one artwork in a coordinated four-piece personalized art collection.')).toBe(true);
         expect(p).toContain('Aspect ratio: 1:1');
-        expect(p).toMatch(/STYLE LOCK:\n/);
         expect(p).toMatch(new RegExp(`\\n\\nSCENE ${v + 1} — [^\\n]+\\n`));
         expect(p.endsWith('No text, borders, logos, or watermarks.')).toBe(true);
       }

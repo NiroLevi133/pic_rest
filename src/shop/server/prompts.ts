@@ -251,49 +251,63 @@ No collages, frames, mockups, typography, logos, or watermarks.`,
     ],
   },
 
-  // Drafts in the royal structure — review and replace freely.
+  // From the owner, verbatim.
   family: {
-    name: 'Contemporary hand-painted family portrait',
-    stylePrompt: `Create a sophisticated contemporary hand-painted family portrait as part of a cohesive four-piece family collection.
+    name: 'Playful contemporary illustrated family portrait',
+    stylePrompt: `Create a cohesive collection of four playful, contemporary illustrated family portraits based on the uploaded reference image.
 
-IDENTITY PRESERVATION:
-Use the uploaded original photograph as the primary identity reference. Keep the exact number of people and pets, their recognizable faces, hairstyles, skin tones, body proportions, clothing characteristics, and relative positions.
+IDENTITY LOCK:
+Use the uploaded photograph as the primary identity reference. Preserve the exact number of people and pets, recognizable facial features, hairstyles, skin tones, body proportions, pet breeds, fur markings, and distinctive characteristics.
 
-FAMILY CHARACTER:
-Portray the family as warm, connected, and at ease together. Every family member must appear in every artwork, with the same appearance throughout the collection.
+ARTISTIC STYLE:
+Trendy contemporary editorial illustration for stylish young adults aged 25–35.
 
-ARTISTIC STYLE LOCK:
-Contemporary hand-painted illustration.
-Warm neutral colors, delicate textures, soft natural lighting.
-A warm, meaningful wall-art gift.
+Expressive hand-drawn characters, slightly exaggerated gestures, charming facial expressions, organic shapes, subtle paper grain, soft textured brushwork, and sophisticated flat-color shading.
 
-COLLECTION CONSISTENCY:
-All four artworks must appear to have been painted by the same artist. Maintain consistent brushwork, palette, lighting mood, and character rendering.
+COLOR PALETTE:
+Butter yellow, tomato red, pastel pink, sage green, sky blue, warm cream, and muted terracotta.
 
-OUTPUT RULES:
-Generate exactly ONE standalone artwork for the requested scene.
+HUMOR:
+Playful, relatable everyday situations with subtle Israeli lifestyle humor. Natural, spontaneous interactions and funny visual details.
+
+STYLE CONSISTENCY:
+All four artworks must look like they belong to the same illustrated art collection. Maintain identical character design, drawing technique, line thickness, color palette, texture, and overall visual treatment.
+
+SCENE VARIATION:
+Each image shows the exact same family in a different humorous everyday situation.
+
+OUTPUT:
+Generate exactly ONE standalone illustration per request.
 Aspect ratio: {{aspect_ratio}}.
-Balanced composition with every face clearly visible and safe margins for printing.
-No missing or extra people or pets, no text, logos, watermarks, borders, frames, or collages.`,
+Premium print-ready composition.
+No frames, mockups, collages, text, logos, signatures, or watermarks.
+
+Avoid generic faces, missing family members, additional people, distorted anatomy, childish cartoon proportions, or inconsistent character design.`,
     scenes: [
       {
-        title: 'THE LIVING ROOM',
-        prompt: 'The whole family sits together on a sofa in a sunlit living room, close and relaxed.',
+        title: 'CHAOTIC MORNING',
+        prompt:
+          'Illustrate the exact same family from the reference photo in a funny, chaotic morning scene inside a trendy Israeli apartment. Everyone is wearing comfortable pajamas, with messy morning hair and sleepy expressions. Include coffee cups, breakfast dishes, a slightly messy kitchen, and playful interactions. If a pet is present, show it stealing attention or causing harmless mischief. Keep the original number of people and pets. Contemporary editorial illustration, sophisticated pastel colors, charming humor, and recognizable faces.',
       },
       {
-        title: 'THE BEACH',
-        prompt: 'The whole family walks together along a calm Mediterranean beach at golden hour.',
+        title: 'GROCERY SHOPPING CHAOS',
+        prompt:
+          'Illustrate the exact same family from the reference image during a humorous supermarket shopping trip. Show an overflowing shopping cart filled with groceries, exaggerated but believable reactions, and playful everyday chaos. Include the family pet only if present in the original image, positioned safely and naturally. Maintain the same recognizable faces, character designs, clothing aesthetic, illustration style, linework, and color palette as the first artwork. No additional people.',
       },
       {
-        title: 'THE PICNIC',
-        prompt: 'The whole family enjoys a picnic on a blanket under a large tree in a green park.',
+        title: 'COUCH POTATO FAMILY',
+        prompt:
+          'Illustrate the exact same family enjoying a funny, lazy evening together on a cozy sofa in a modern apartment. Include pizza boxes, snacks, blankets, a television glow, and relaxed exaggerated expressions. If a pet is present, show it humorously occupying the best spot on the sofa. Create a warm, relatable composition with playful interactions, identical character designs, consistent pastel colors, and refined editorial illustration textures.',
       },
       {
-        title: 'THE FESTIVE DINNER',
-        prompt: 'The whole family gathers around a festive dinner table with warm candlelight.',
+        title: 'FAMILY BEACH DAY',
+        prompt:
+          "Illustrate the exact same family enjoying a slightly chaotic Mediterranean beach day in Tel Aviv. Include colorful beach towels, a striped umbrella, watermelon slices, beach bags, and playful summer details. Show natural humorous interactions, wind-blown hair, and expressive poses. Preserve every family member's recognizable identity and consistent character design. Use the same sophisticated editorial illustration style, pastel color palette, and textured hand-drawn appearance as the other artworks.",
       },
     ],
   },
+
+  // Draft in the royal structure — review and replace freely.
   animated: {
     name: 'Premium 3D animated feature film',
     stylePrompt: `Create a charming premium 3D animated feature-film frame as part of a cohesive four-piece animated collection.
