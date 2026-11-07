@@ -32,8 +32,8 @@ export const STYLES: ArtStyle[] = [
     palette: ['#DCE7EC', '#E3B887', '#5C7A8A', '#F2C14E'], sample: 'pet' },
   { id: 'tel-aviv', title: 'החיים בתל אביב', description: 'מאצ\'ה של בוקר, פילאטיס מכשירים, בראנץ\' של שישי וחוף גורדון: צילום לייפסטייל מצחיק ויוקרתי', suitsFor: 'אנשים וחיות מחמד', group: 'fun',
     palette: ['#F4EBDD', '#E8C4A6', '#A8C686', '#F6B8C8'], sample: 'person' },
-  { id: 'animated', title: 'סרט אנימציה', description: 'דמות מסרט מצויר: ביער קסום, בעיירת חוף, בשלג ומעל העננים', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
-    palette: ['#CFE6F5', '#F4C7A6', '#F28C6B', '#FFD166'], sample: 'person' },
+  { id: 'animated', title: 'סרט אנימציה', description: 'דמות מסרט אנימציה בהרפתקה: גיבור הסרט, יער קסום, טירת אגדות וסוף טוב בשקיעה', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
+    palette: ['#C9C3E6', '#F4C7A6', '#2E8B7A', '#F2B84B'], sample: 'person' },
 ];
 
 export function getStyle(id: string): ArtStyle | undefined {

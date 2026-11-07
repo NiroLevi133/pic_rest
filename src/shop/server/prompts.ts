@@ -307,46 +307,62 @@ Avoid generic faces, missing family members, additional people, distorted anatom
     ],
   },
 
-  // Draft in the royal structure — review and replace freely.
+  // From the owner, verbatim.
   animated: {
     name: 'Premium 3D animated feature film',
-    stylePrompt: `Create a charming premium 3D animated feature-film frame as part of a cohesive four-piece animated collection.
+    stylePrompt: `Create a cohesive collection of four premium 3D animated feature-film artworks featuring the exact same subject from the uploaded reference photograph.
 
-IDENTITY PRESERVATION:
-Use the uploaded original photograph as the primary identity reference. Preserve the subject's recognizable facial features, eye color, fur color and markings, hairstyle, skin tone, and distinctive characteristics, translated into an appealing animated character.
+IDENTITY LOCK:
+Use the original uploaded photograph as the primary identity reference. Preserve the subject's recognizable facial structure, eye color, hairstyle, skin tone, fur colors, distinctive markings, and unique physical characteristics.
 
-CHARACTER:
-Portray the subject as a lovable lead character of an animated movie, with expressive but believable eyes and appealing proportions. Maintain the same character design and outfit throughout the collection.
+CHARACTER DESIGN:
+Transform the subject into a charming, expressive, high-end 3D animated movie character.
 
-ARTISTIC STYLE LOCK:
-Premium 3D animated feature-film rendering.
-Beautifully detailed textures, soft cinematic lighting, vibrant yet harmonious colors.
-Depth of field and a magical atmosphere, like a polished frame from a major animated movie.
+Use appealing stylized proportions, expressive eyes, believable anatomy, detailed hair or fur grooming, sophisticated material shaders, and natural facial expressions.
+
+The character must remain immediately recognizable as the original subject, rather than becoming a generic animated character.
+
+STYLE LOCK:
+Premium cinematic 3D animation with polished rendering, soft global illumination, beautiful volumetric lighting, detailed environments, subtle depth of field, and rich but harmonious colors.
+
+COLOR PALETTE:
+Warm golden highlights, teal-blue shadows, soft lavender, emerald green, and vibrant cinematic accents.
 
 COLLECTION CONSISTENCY:
-All four images must look like frames from the same movie. Maintain consistent character design, rendering quality, color grading, and mood.
+All four images must use the exact same character design, facial proportions, eye shape, hairstyle or fur pattern, outfit design, rendering technique, and overall cinematic quality.
 
-OUTPUT RULES:
-Generate exactly ONE standalone image for the requested scene.
+SCENE VARIATION:
+Each artwork depicts the same character in a different cinematic moment, forming a connected visual adventure.
+
+OUTPUT:
+Generate exactly ONE standalone image per request.
 Aspect ratio: {{aspect_ratio}}.
-The character is the clear focal point, with safe margins for printing.
-No text, logos, watermarks, borders, frames, or collages.`,
+High-resolution, print-ready composition.
+Keep important character details within safe print margins.
+
+No collages, grids, frames, mockups, typography, logos, signatures, or watermarks.
+
+Avoid inconsistent faces, extra limbs, distorted anatomy, generic character designs, or changes to the subject's recognizable identity.`,
     scenes: [
       {
-        title: 'THE ENCHANTED FOREST',
-        prompt: 'The subject explores an enchanted forest full of glowing fireflies.',
+        title: 'THE MAIN CHARACTER',
+        prompt:
+          "Create a cinematic hero portrait of the subject as a charming premium 3D animated feature-film character. The character stands confidently in a beautifully lit environment with a playful, expressive face and subtle heroic pose. Use dramatic but friendly golden and teal cinematic lighting, soft depth of field, detailed fur or hair, and sophisticated animated-film rendering. Establish a consistent character design that will be reused across the entire collection. Preserve the original subject's recognizable identity.",
       },
       {
-        title: 'THE SEASIDE TOWN',
-        prompt: 'The subject rides a bicycle through a sunny Mediterranean seaside town.',
+        title: 'THE ADVENTURE BEGINS',
+        prompt:
+          'Depict the exact same animated character exploring an enchanting magical forest filled with softly glowing plants, whimsical mushrooms, floating fireflies, and mysterious pathways. The character looks curious and excited, as if discovering a new world. Preserve identical facial proportions, eye shape, hairstyle or fur markings, character design, and outfit. Use premium cinematic 3D rendering with magical volumetric lighting, emerald and teal tones, and warm golden highlights.',
       },
       {
-        title: 'THE SNOWY VILLAGE',
-        prompt: 'The subject builds a snowman in a cozy snowy village at dusk.',
+        title: 'THE FANTASY WORLD',
+        prompt:
+          'Show the same animated character standing before a magnificent whimsical fantasy castle surrounded by colorful landscapes, magical clouds, and charming architectural details. The character looks amazed and delighted. Maintain the exact same recognizable character identity, outfit, facial design, rendering technique, and cinematic lighting style. Use a rich but harmonious palette of lavender, emerald, warm gold, and sky blue. Create a polished animated feature-film composition.',
       },
       {
-        title: 'ABOVE THE CLOUDS',
-        prompt: 'The subject floats above the clouds under a magical starry night sky.',
+        title: 'THE FAIRY-TALE ENDING',
+        prompt:
+          'Create a heartwarming cinematic finale featuring the exact same animated character standing triumphantly on a beautiful hilltop at golden sunset. The character displays a joyful, slightly humorous expression, celebrating the end of an unforgettable adventure. Include soft glowing clouds, subtle magical particles, and a breathtaking warm sky. Maintain consistent character design, recognizable identity, costume, proportions, and premium 3D animated-film rendering. The atmosphere should feel magical, emotional, and uplifting.',
       },
     ],
   },
