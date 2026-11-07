@@ -9,7 +9,7 @@ import StyleArt from './StyleArt';
 export default function StyleCard({ style }: { style: ArtStyle }) {
   const href = shopHref(`/create/${style.id}`);
   return (
-    <div className="k-lift">
+    <div className="k-lift h-full flex flex-col">
       <Link href={href} className="block" aria-label={`יצירה בסגנון ${style.title}`}>
         <RoomScene className="aspect-[3/4]" tileWidth="66%">
           {[0, 1, 2, 3].map((v) => (
@@ -17,12 +17,13 @@ export default function StyleCard({ style }: { style: ArtStyle }) {
           ))}
         </RoomScene>
       </Link>
-      <div className="mt-3 flex items-center justify-between gap-3">
+      {/* Narrow cards (2 per row on phones): full title and description, button underneath. */}
+      <div className="mt-3 flex flex-1 flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
         <div className="min-w-0">
-          <h3 className="font-bold text-[17px] truncate">{style.title}</h3>
-          <p className="text-sm text-[var(--k-muted)] line-clamp-1">{style.description}</p>
+          <h3 className="font-bold text-[17px] leading-snug">{style.title}</h3>
+          <p className="mt-0.5 text-sm leading-snug text-[var(--k-muted)]">{style.description}</p>
         </div>
-        <Link href={href} className="k-btn k-btn-cta k-btn-sm shrink-0">צרו</Link>
+        <Link href={href} className="k-btn k-btn-cta k-btn-sm shrink-0 w-full mt-auto sm:mt-0 sm:w-auto">צרו</Link>
       </div>
     </div>
   );
