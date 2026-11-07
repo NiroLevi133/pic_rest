@@ -22,16 +22,18 @@ export interface ArtStyle {
 }
 
 export const STYLES: ArtStyle[] = [
-  { id: 'royal', title: 'מלכותי', description: 'ציור שמן רנסנסי: כס מלכות, ספרייה, ארמון וגן, כמו במוזיאון', suitsFor: 'אנשים וחיות מחמד', group: 'art',
+  { id: 'royal', title: 'מלכותי', description: 'ציור שמן רנסנסי: פורטרט מלכותי, כס מלכות, ארמון וגן, כמו במוזיאון', suitsFor: 'אנשים וחיות מחמד', group: 'art',
     palette: ['#2A1E1A', '#D9A57A', '#7A1E2B', '#D4AF37'], sample: 'pet' },
-  { id: 'minimal', title: 'אמנות מינימליסטית', description: 'פורטרט עדין בצבעי מים, עיפרון או פחם, על רקע שמנת', suitsFor: 'אנשים וחיות מחמד', group: 'art',
+  { id: 'minimal', title: 'אמנות מינימליסטית', description: 'פורטרט עדין בצבעי מים על נייר שמנת: דיוקן, פרחים, רגע של שקט ואור שמש', suitsFor: 'אנשים וחיות מחמד', group: 'art',
     palette: ['#F3ECE0', '#E9C9A8', '#B9A58C', '#8C7B68'], sample: 'person' },
-  { id: 'family', title: 'פורטרט משפחתי', description: 'כל המשפחה, כולל חיות המחמד: בסלון, בים, בפיקניק ובארוחה חגיגית', suitsFor: 'משפחות, זוגות וקבוצות', group: 'art',
-    palette: ['#F1E6D6', '#F0C9A6', '#B98E6B', '#7E9C83'], sample: 'family' },
+  { id: 'family', title: 'פורטרט משפחתי', description: 'איור משפחתי שובב, כולל חיות המחמד: בוקר כאוטי, קניות בסופר, ערב על הספה ויום בחוף', suitsFor: 'משפחות, זוגות וקבוצות', group: 'art',
+    palette: ['#F7EBD3', '#F0C9A6', '#E0533D', '#A3B899'], sample: 'family' },
   { id: 'pet-life', title: 'החיים הסודיים', description: 'ספא, אמבטיה, קפה של בוקר ועיתון: חיית המחמד שלכם בצילום יוקרתי ומצחיק', suitsFor: 'חיות מחמד בלבד', group: 'fun',
     palette: ['#DCE7EC', '#E3B887', '#5C7A8A', '#F2C14E'], sample: 'pet' },
-  { id: 'animated', title: 'סרט אנימציה', description: 'דמות מסרט מצויר: ביער קסום, בעיירת חוף, בשלג ומעל העננים', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
-    palette: ['#CFE6F5', '#F4C7A6', '#F28C6B', '#FFD166'], sample: 'person' },
+  { id: 'tel-aviv', title: 'החיים בתל אביב', description: 'מאצ\'ה של בוקר, פילאטיס מכשירים, בראנץ\' של שישי וחוף גורדון: צילום לייפסטייל מצחיק ויוקרתי', suitsFor: 'אנשים וחיות מחמד', group: 'fun',
+    palette: ['#F4EBDD', '#E8C4A6', '#A8C686', '#F6B8C8'], sample: 'person' },
+  { id: 'animated', title: 'סרט אנימציה', description: 'דמות מסרט אנימציה בהרפתקה: גיבור הסרט, יער קסום, טירת אגדות וסוף טוב בשקיעה', suitsFor: 'אנשים, ילדים וחיות מחמד', group: 'fun',
+    palette: ['#C9C3E6', '#F4C7A6', '#2E8B7A', '#F2B84B'], sample: 'person' },
 ];
 
 export function getStyle(id: string): ArtStyle | undefined {
