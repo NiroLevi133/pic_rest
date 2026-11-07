@@ -15,7 +15,7 @@ export default function FramedTile({ frame, children, className = '', shadow = t
 /** A remote or data-URL image filling a tile. */
 export function TileImage({ src, alt }: { src: string; alt: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />;
+  return <img src={src} alt={alt} draggable={false} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />;
 }
 
 /** A tile still being generated: soft shimmer with a thin progress line across the middle of the frame. */

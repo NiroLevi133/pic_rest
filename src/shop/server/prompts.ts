@@ -106,7 +106,7 @@ No modern objects, no cartoon styling, no text, logos, watermarks, borders, fram
     ],
   },
 
-  // From the owner, verbatim.
+  // From the owner; adapted so it works for people as well as pets.
   'pet-life': {
     name: 'Humorous luxury lifestyle photography',
     stylePrompt: `Create a cohesive collection of four humorous, ultra-photorealistic lifestyle portraits featuring the exact same subject from the uploaded reference image.
@@ -115,7 +115,10 @@ IDENTITY PRESERVATION:
 Use the uploaded original photograph as the primary identity reference. Preserve the subject's exact recognizable facial features, proportions, eye color, hairstyle, skin tone, fur colors, breed, markings, and distinctive characteristics where applicable.
 
 CREATIVE DIRECTION:
-Portray the subject in funny, human-like everyday situations while maintaining its recognizable identity and believable anatomy.
+Portray the subject in funny, pampered everyday situations while maintaining its recognizable identity and believable anatomy.
+If the subject is a pet, show it humorously behaving like a human, with its real animal face, fur and anatomy.
+If the subject is a person, keep them natural and tasteful: the humor comes from the luxurious, slightly over-the-top situation and their deadpan expression.
+Always tasteful and family-friendly: the subject stays fully covered, no nudity or exposed underwear.
 
 VISUAL STYLE LOCK:
 Premium editorial lifestyle photography.
@@ -152,12 +155,12 @@ Avoid cartoon styling, inconsistent faces, altered fur patterns, extra limbs, di
       {
         title: 'MORNING COFFEE',
         prompt:
-          "Show the exact same subject sitting comfortably at a beautiful minimalist kitchen table with a cup of morning coffee. Include a ceramic coffee mug, subtle breakfast details, warm sunlight entering through a nearby window, and a stylish beige-and-cream kitchen interior. The subject looks relaxed, confident, and amusingly human-like. Preserve the original subject's recognizable identity and believable anatomy. Premium photorealistic editorial lifestyle photography.",
+          "Show the exact same subject sitting comfortably at a beautiful minimalist kitchen table with a cup of morning coffee. Include a ceramic coffee mug, subtle breakfast details, warm sunlight entering through a nearby window, and a stylish beige-and-cream kitchen interior. The subject looks relaxed, confident, and amusingly serious about the coffee ritual. Preserve the original subject's recognizable identity and believable anatomy. Premium photorealistic editorial lifestyle photography.",
       },
       {
         title: 'BATHROOM NEWSPAPER',
         prompt:
-          "Create a humorous ultra-photorealistic portrait of the exact same subject sitting on a modern toilet in a stylish beige bathroom while reading an open newspaper. The subject looks surprisingly serious and focused, creating a funny human-like moment. Include elegant neutral bathroom tiles, soft natural window lighting, and realistic photographic textures. Preserve the subject's exact recognizable identity, facial features, fur markings or hairstyle, and believable anatomy. No readable newspaper text, no cartoon styling.",
+          "Create a humorous ultra-photorealistic portrait of the exact same subject sitting on the closed lid of a modern toilet in a stylish beige bathroom, fully dressed or in a cozy bathrobe, while reading an open newspaper. Nothing pulled down, nothing exposed. The subject looks surprisingly serious and focused, creating a funny human-like moment. Include elegant neutral bathroom tiles, soft natural window lighting, and realistic photographic textures. Preserve the subject's exact recognizable identity, facial features, fur markings or hairstyle, and believable anatomy. No readable newspaper text, no cartoon styling.",
       },
     ],
   },
@@ -264,18 +267,18 @@ No collages, frames, mockups, typography, logos, or watermarks.`,
     ],
   },
 
-  // From the owner, verbatim.
+  // From the owner; set to a semi-realistic painted look (owner's choice after the first examples).
   family: {
-    name: 'Playful contemporary illustrated family portrait',
+    name: 'Playful semi-realistic painted family portrait',
     stylePrompt: `Create a cohesive collection of four playful, contemporary illustrated family portraits based on the uploaded reference image.
 
 IDENTITY LOCK:
 Use the uploaded photograph as the primary identity reference. Preserve the exact number of people and pets, recognizable facial features, hairstyles, skin tones, body proportions, pet breeds, fur markings, and distinctive characteristics.
 
 ARTISTIC STYLE:
-Trendy contemporary editorial illustration for stylish young adults aged 25–35.
+Semi-realistic hand-painted illustration for stylish young adults aged 25–35: realistic faces and proportions with a warm, painterly finish.
 
-Expressive hand-drawn characters, slightly exaggerated gestures, charming facial expressions, organic shapes, subtle paper grain, soft textured brushwork, and sophisticated flat-color shading.
+Expressive characters, slightly exaggerated gestures, charming facial expressions, subtle paper grain, soft textured brushwork, and soft painterly shading. Not a flat cartoon, not a photograph.
 
 COLOR PALETTE:
 Butter yellow, tomato red, pastel pink, sage green, sky blue, warm cream, and muted terracotta.
@@ -320,7 +323,7 @@ Avoid generic faces, missing family members, additional people, distorted anatom
     ],
   },
 
-  // From the owner, verbatim.
+  // From the owner; strengthened so the result is clearly a 3D animated-film character, not a realistic painting.
   animated: {
     name: 'Premium 3D animated feature film',
     stylePrompt: `Create a cohesive collection of four premium 3D animated feature-film artworks featuring the exact same subject from the uploaded reference photograph.
@@ -329,11 +332,15 @@ IDENTITY LOCK:
 Use the original uploaded photograph as the primary identity reference. Preserve the subject's recognizable facial structure, eye color, hairstyle, skin tone, fur colors, distinctive markings, and unique physical characteristics.
 
 CHARACTER DESIGN:
-Transform the subject into a charming, expressive, high-end 3D animated movie character.
+Transform the subject into a charming, expressive, high-end 3D animated movie character: a fully computer-animated CGI character, like a frame from a modern big-studio animated feature film.
 
-Use appealing stylized proportions, expressive eyes, believable anatomy, detailed hair or fur grooming, sophisticated material shaders, and natural facial expressions.
+Use clearly stylized cartoon proportions: an oversized head, very large expressive cartoon eyes (much larger than real eyes), a small rounded nose, softened and simplified facial features, and rounded, chunky body shapes.
+Materials: smooth, poreless, softly glowing CG skin; sculpted hair or fur rendered as soft stylized clumps; clean rounded clothing folds; toy-like, soft-plastic and clay-like surfaces lit like a CG animated feature.
+If the subject is a person, make a stylized 3D animated human character; if it is a pet, a stylized 3D animated animal character.
 
-The character must remain immediately recognizable as the original subject, rather than becoming a generic animated character.
+The character must remain immediately recognizable as the original subject (same hairstyle, hair color, skin tone, eye color, glasses, fur colors and markings), rather than becoming a generic animated character.
+
+This must NOT look like a photograph, a realistic painting, or a 2D illustration. It is unmistakably 3D animation.
 
 STYLE LOCK:
 Premium cinematic 3D animation with polished rendering, soft global illumination, beautiful volumetric lighting, detailed environments, subtle depth of field, and rich but harmonious colors.
@@ -355,12 +362,12 @@ Keep important character details within safe print margins.
 
 No collages, grids, frames, mockups, typography, logos, signatures, or watermarks.
 
-Avoid inconsistent faces, extra limbs, distorted anatomy, generic character designs, or changes to the subject's recognizable identity.`,
+Avoid photorealism, realistic skin texture, painterly or 2D illustration styles, inconsistent faces, extra limbs, distorted anatomy, generic character designs, or changes to the subject's recognizable identity.`,
     scenes: [
       {
         title: 'THE MAIN CHARACTER',
         prompt:
-          "Create a cinematic hero portrait of the subject as a charming premium 3D animated feature-film character. The character stands confidently in a beautifully lit environment with a playful, expressive face and subtle heroic pose. Use dramatic but friendly golden and teal cinematic lighting, soft depth of field, detailed fur or hair, and sophisticated animated-film rendering. Establish a consistent character design that will be reused across the entire collection. Preserve the original subject's recognizable identity.",
+          "Create a cinematic hero portrait of the subject as a charming premium 3D animated feature-film character (stylized CGI, not realistic). The character stands confidently in a beautifully lit environment with a playful, expressive face and subtle heroic pose. Use dramatic but friendly golden and teal cinematic lighting, soft depth of field, detailed fur or hair, and sophisticated animated-film rendering. Establish a consistent character design that will be reused across the entire collection. Preserve the original subject's recognizable identity.",
       },
       {
         title: 'THE ADVENTURE BEGINS',

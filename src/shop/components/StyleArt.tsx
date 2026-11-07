@@ -2,11 +2,12 @@ import type { ArtStyle, SubjectHint } from '../styles';
 import { TileImage } from './FramedTile';
 
 /**
- * The look of a style: its real example image when there is one, otherwise a drawn portrait
- * placeholder in the style's colors (variant shifts the pose/colors a little).
+ * The look of a style: its real example artwork for this variant (one of 4), otherwise a drawn
+ * portrait placeholder in the style's colors (variant shifts the pose/colors a little).
  */
 export default function StyleArt({ style, variant = 0 }: { style: ArtStyle; variant?: number }) {
-  if (style.example) return <TileImage src={style.example} alt={style.title} />;
+  const example = style.examples?.[variant % 4];
+  if (example) return <TileImage src={example} alt={`${style.title}, דוגמה ${(variant % 4) + 1}`} />;
   return <PortraitSvg palette={style.palette} subject={style.sample} variant={variant} id={`${style.id}-${variant}`} label={style.title} />;
 }
 
