@@ -149,50 +149,56 @@ No cartoon styling, no text, logos, watermarks, borders, frames, or collages.`,
     ],
   },
 
-  // Drafts in the royal structure — review and replace freely.
+  // From the owner, verbatim.
   minimal: {
-    name: 'Minimalist fine-art portrait',
-    stylePrompt: `Create an elegant minimalist fine-art portrait as part of a cohesive four-piece collection.
+    name: 'Minimalist watercolor fine-art portrait',
+    stylePrompt: `Create a cohesive collection of four elegant, minimalist watercolor artworks featuring the same subject from the uploaded reference image.
 
 IDENTITY PRESERVATION:
-Use the uploaded original photograph as the primary identity reference. Preserve the subject's exact recognizable facial features, facial structure, eye color, fur color and markings, hairstyle, skin tone, and distinctive characteristics where applicable.
-
-CHARACTER:
-Portray the subject with a calm, gentle, timeless presence. Maintain the same appearance throughout the collection.
+Use the original uploaded photograph as the authoritative identity reference. Preserve the subject's recognizable facial features, proportions, expression, hairstyle, fur colors, markings, eye color, and distinctive details.
 
 ARTISTIC STYLE LOCK:
-Soft watercolor with delicate pencil lines.
-Soft muted colors, subtle paper texture, gentle natural shading.
-Clean ivory or warm beige background with generous negative space. Handcrafted, refined and timeless, suitable for a Scandinavian-inspired interior.
+Delicate hand-painted watercolor on premium textured ivory paper.
+Soft pastel washes, warm beige and cream tones, muted sage green, subtle dusty rose accents, and gentle natural shading.
+Refined organic brushstrokes, translucent pigment layers, soft feathered edges, and generous negative space.
 
 COLLECTION CONSISTENCY:
-All four artworks must appear to have been painted by the same artist on the same paper. Maintain consistent line weight, wash technique, palette, and amount of negative space.
+All four artworks must appear to be painted by the same watercolor artist, using identical artistic techniques, paper texture, color palette, softness, and level of detail.
+
+SCENE VARIATION:
+Each image depicts the same subject in a different setting or pose, while maintaining the same recognizable identity and consistent visual language.
 
 OUTPUT RULES:
-Generate exactly ONE standalone artwork for the requested scene.
+Generate exactly ONE standalone artwork per request.
 Aspect ratio: {{aspect_ratio}}.
-Centered, airy composition with safe margins for printing.
-No busy backgrounds, no text, logos, watermarks, borders, frames, or collages.`,
+Keep the subject comfortably within print-safe margins.
+No frames, mockups, collages, typography, logos, signatures, or watermarks.
+Premium gallery-quality watercolor artwork.`,
     scenes: [
       {
-        title: 'THE PORTRAIT',
-        prompt: 'A calm close-up portrait of the subject looking gently toward the viewer.',
-      },
-      {
-        title: 'THE PROFILE',
-        prompt: 'The subject in a graceful side profile, eyes softly looking into the distance.',
-      },
-      {
-        title: 'THE OLIVE SPRIG',
-        prompt: 'The subject resting peacefully beside a single small sprig of olive leaves.',
-      },
-      {
-        title: 'THE BREEZE',
+        title: 'CLASSIC WATERCOLOR PORTRAIT',
         prompt:
-          'The subject in a quiet, joyful moment, mid-movement, with a light breeze suggested by a few loose strokes.',
+          'Create a refined close-up watercolor portrait of the subject, facing slightly toward the viewer. Use a minimal warm ivory background, subtle watercolor pigment variations, and generous negative space. Focus on accurate recognizable facial features and gentle natural expression. Soft brushwork and delicate shadows. The subject should be the clear focal point.',
+      },
+      {
+        title: 'BOTANICAL PORTRAIT',
+        prompt:
+          'Depict the exact same subject surrounded by delicate botanical flowers and soft greenery. Include muted blush-pink blossoms, sage-green leaves, and subtle watercolor botanical details. Maintain the same face, fur or hair characteristics, painting technique, and warm ivory paper texture. The flowers should frame the subject naturally without obscuring important facial details.',
+      },
+      {
+        title: 'PEACEFUL MOMENT',
+        prompt:
+          'Portray the same subject resting peacefully in a relaxed, natural pose. Use a soft cream-colored cushion or subtle neutral fabric, delicate warm shadows, and an uncluttered ivory background. Maintain consistent watercolor brushwork, translucent pigment layers, recognizable identity, and gentle pastel color palette. Create a calm, intimate, timeless atmosphere.',
+      },
+      {
+        title: 'GOLDEN SUNLIGHT',
+        prompt:
+          'Create a delicate watercolor portrait of the same subject sitting beside a softly illuminated window. Gentle golden sunlight falls naturally across the face and body, creating subtle warm highlights and feathered watercolor shadows. Keep the background minimal, with ivory paper texture and muted beige tones. Maintain the exact same artistic treatment and recognizable identity as the other artworks.',
       },
     ],
   },
+
+  // Drafts in the royal structure — review and replace freely.
   family: {
     name: 'Contemporary hand-painted family portrait',
     stylePrompt: `Create a sophisticated contemporary hand-painted family portrait as part of a cohesive four-piece family collection.

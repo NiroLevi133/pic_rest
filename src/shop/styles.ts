@@ -24,7 +24,7 @@ export interface ArtStyle {
 export const STYLES: ArtStyle[] = [
   { id: 'royal', title: 'מלכותי', description: 'ציור שמן רנסנסי: פורטרט מלכותי, כס מלכות, ארמון וגן, כמו במוזיאון', suitsFor: 'אנשים וחיות מחמד', group: 'art',
     palette: ['#2A1E1A', '#D9A57A', '#7A1E2B', '#D4AF37'], sample: 'pet' },
-  { id: 'minimal', title: 'אמנות מינימליסטית', description: 'פורטרט עדין בצבעי מים, עיפרון או פחם, על רקע שמנת', suitsFor: 'אנשים וחיות מחמד', group: 'art',
+  { id: 'minimal', title: 'אמנות מינימליסטית', description: 'פורטרט עדין בצבעי מים על נייר שמנת: דיוקן, פרחים, רגע של שקט ואור שמש', suitsFor: 'אנשים וחיות מחמד', group: 'art',
     palette: ['#F3ECE0', '#E9C9A8', '#B9A58C', '#8C7B68'], sample: 'person' },
   { id: 'family', title: 'פורטרט משפחתי', description: 'כל המשפחה, כולל חיות המחמד: בסלון, בים, בפיקניק ובארוחה חגיגית', suitsFor: 'משפחות, זוגות וקבוצות', group: 'art',
     palette: ['#F1E6D6', '#F0C9A6', '#B98E6B', '#7E9C83'], sample: 'family' },

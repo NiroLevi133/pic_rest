@@ -26,7 +26,7 @@ describe('shop prompts', () => {
     for (const id of PROMPT_STYLE_IDS) {
       const prompts = [0, 1, 2, 3].map((v) => buildPrompt(id, v));
       expect(new Set(prompts).size).toBe(4);
-      const stylePrompts = prompts.map((p) => p.split('Highest available quality.\n\n')[1].split('\n\nSCENE ')[0]);
+      const stylePrompts = prompts.map((p) => p.split('Highest available quality.\n\n')[1].split(/\n\nSCENE \d — /)[0]);
       expect(new Set(stylePrompts).size).toBe(1);
       expect(stylePrompts[0]).toContain('Aspect ratio: 1:1');
     }
