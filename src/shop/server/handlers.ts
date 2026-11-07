@@ -10,12 +10,13 @@ import { orderTotals, TILE_PRICE } from '../pricing';
 import type { CheckoutDetails } from '../types';
 import { db } from './db';
 import { createGeneration, refreshGeneration, variantImage } from './generations';
-import { checkDailyLimit, clientHash } from './limits';
+import { checkDailyLimit, clientHash, OWNER_HASH } from './limits';
 import { purgeExpiredGenerations } from './cleanup';
 import { checkOpenAIAccess, isImageGenerationConfigured } from './openai';
 import { hasStylePrompt } from './prompts';
 import { InvalidImageError, isStorageConfigured, storeUpload } from './storage';
 import { ensureShopTables } from './schema';
+import { isUnlimitedVisitor } from './owner';
 
 /** ~8MB of base64 — the browser resizes photos before upload, so real uploads are far smaller. */
 const MAX_UPLOAD_CHARS = 8 * 1024 * 1024;
@@ -69,8 +70,10 @@ async function postGenerationImpl(req: Request) {
   if (typeof body.image !== 'string' || body.image.length > MAX_UPLOAD_CHARS) return fail(400, 'התמונה גדולה מדי');
   if (!isImageGenerationConfigured()) return fail(503, 'היצירה לא זמינה כרגע. נסו שוב מאוחר יותר');
 
-  const hash = clientHash(req);
-  const limit = await checkDailyLimit(hash);
+  // The owner (logged in to the workspace) is never limited, and doesn't use up the store's daily total.
+  const unlimited = await isUnlimitedVisitor(req);
+  const hash = unlimited ? OWNER_HASH : clientHash(req);
+  const limit = unlimited ? ({ ok: true } as const) : await checkDailyLimit(hash);
   if (!limit.ok) {
     return fail(429, limit.reason === 'client'
       ? 'הגעתם למספר היצירות היומי. אפשר לנסות שוב מחר'

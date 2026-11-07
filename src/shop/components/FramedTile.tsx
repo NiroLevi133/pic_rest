@@ -18,13 +18,13 @@ export function TileImage({ src, alt }: { src: string; alt: string }) {
   return <img src={src} alt={alt} draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />;
 }
 
-/** A tile still being generated: soft shimmer with a thin progress line inside the frame. */
+/** A tile still being generated: soft shimmer with a thin progress line across the middle of the frame. */
 export function PendingTile({ progress }: { progress: number }) {
   const pct = Math.round(Math.min(1, Math.max(0, progress)) * 100);
   return (
     <div className="w-full h-full k-shimmer relative">
       <div
-        className="absolute bottom-[8%] inset-x-[10%] h-[3px] rounded-full bg-black/10 overflow-hidden"
+        className="absolute top-1/2 -translate-y-1/2 inset-x-[18%] h-[3px] rounded-full bg-black/10 overflow-hidden"
         role="progressbar" aria-label="היצירה בהכנה" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}
       >
         <div className="h-full rounded-full bg-[var(--k-cta)] transition-[width] duration-1000 ease-linear" style={{ width: `${pct}%` }} />

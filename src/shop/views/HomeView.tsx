@@ -9,9 +9,9 @@ import StyleCard from '../components/StyleCard';
 import RoomScene from '../components/RoomScene';
 
 const FAQ = [
-  { q: 'כמה עולה לראות את התוצאות?', a: 'כלום. מעלים תמונה, מקבלים 4 גרסאות ורואים אותן ממוסגרות על הקיר. משלמים רק אם מזמינים.' },
+  { q: 'כמה עולה לראות את התוצאות?', a: 'כלום. מעלים תמונה, מקבלים 4 יצירות אמנות ורואים אותן ממוסגרות על הקיר. משלמים רק אם מזמינים.' },
   { q: 'אפשר להעלות תמונה של אנשים?', a: 'בטח. אנשים, זוגות, משפחות, ילדים, כלבים וחתולים. כדאי תמונה מוארת וחדה, עם הפנים בבירור.' },
-  { q: 'אפשר לבחור איזו גרסה תודפס?', a: 'כן. מכל 4 הגרסאות בוחרים את אלה שאוהבים, אחת או כולן, ובוחרים לכל אחת מסגרת שחורה או לבנה.' },
+  { q: 'אפשר לבחור איזו יצירה תודפס?', a: 'כן. מכל 4 היצירות בוחרים את אלה שאוהבים, אחת או כולן, ובוחרים לכל אחת מסגרת שחורה או לבנה.' },
   { q: 'איך תולים?', a: 'בגב כל אריח יש מדבקה חזקה שלא משאירה סימנים. מצמידים לקיר וזהו, בלי מסמרים ובלי מקדחה. אפשר להזיז ולהדביק מחדש.' },
   { q: 'מה קורה עם התמונות שאני מעלה?', a: 'משתמשים בהן רק כדי ליצור את היצירות שלכם. תמונות שלא הוזמנו נמחקות אוטומטית, ואנחנו לא משתמשים בהן לשום מטרה אחרת.' },
   { q: 'כמה זמן לוקח משלוח?', a: `${SHOP.deliveryDays} לכל הארץ. משלוח חינם בהזמנה מעל ${formatPrice(FREE_SHIPPING_FROM)}.` },
@@ -38,7 +38,7 @@ export default function HomeView() {
       <section className="pt-12 sm:pt-16 text-center">
         <div className="k-container k-rise">
           <h1 className="k-h text-[38px] sm:text-6xl max-w-3xl mx-auto">הפכו את האנשים שאתם אוהבים ליצירת אמנות על הקיר</h1>
-          <p className="mt-5 text-lg sm:text-xl text-[var(--k-muted)] max-w-2xl mx-auto">מעלים תמונה אחת, וה־AI יוצר 4 גרסאות בסגנון שבחרתם. רואים אותן ממוסגרות על הקיר, ומזמינים רק את מה שאוהבים.</p>
+          <p className="mt-5 text-lg sm:text-xl text-[var(--k-muted)] max-w-2xl mx-auto">מעלים תמונה אחת, וה־AI יוצר 4 יצירות אמנות בסגנון שבחרתם. רואים אותן ממוסגרות על הקיר, ומזמינים רק את מה שאוהבים.</p>
           <Link href={shopHref('/create')} className="mt-8 k-btn k-btn-cta text-lg px-10">צרו את התמונה שלכם <ArrowLeft className="w-5 h-5" /></Link>
           <div className="mt-5 flex flex-wrap justify-center gap-x-6 gap-y-2 text-sm font-medium">
             <span className="flex items-center gap-1.5"><Eye className="w-4 h-4" /> תצוגה מקדימה בחינם</span>
@@ -82,7 +82,7 @@ export default function HomeView() {
           {[
             { icon: Wand2, t: 'בוחרים סגנון', d: 'מלכותי, מינימליסטי, משפחתי, סרט אנימציה, או חיית המחמד בסיטואציה מצחיקה.' },
             { icon: Upload, t: 'מעלים תמונה', d: 'של הילדים, של בן או בת הזוג, של הכלב. תמונה אחת מספיקה.' },
-            { icon: Sparkles, t: 'בוחרים את האהובות', d: 'מקבלים 4 גרסאות ממוסגרות על קיר, ומזמינים את אלה שאוהבים.' },
+            { icon: Sparkles, t: 'בוחרים את האהובות', d: 'מקבלים 4 יצירות אמנות ממוסגרות על קיר, ומזמינים את אלה שאוהבים.' },
           ].map(({ icon: Icon, t, d }, i) => (
             <div key={t} className="rounded-2xl bg-[var(--k-paper)] border border-[var(--k-line)] p-7">
               <div className="flex items-center gap-3">

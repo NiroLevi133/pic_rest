@@ -92,7 +92,7 @@ export default function CartView() {
       <div className="k-container pt-16 max-w-xl text-center">
         <ShoppingCart className="w-12 h-12 mx-auto text-[var(--k-muted)]" />
         <h1 className="k-h text-4xl mt-5">העגלה ריקה</h1>
-        <p className="mt-3 text-[var(--k-muted)]">מעלים תמונה, בוחרים את הגרסאות שאוהבים, והן מחכות כאן.</p>
+        <p className="mt-3 text-[var(--k-muted)]">מעלים תמונה, בוחרים את היצירות שאוהבים, והן מחכות כאן.</p>
         <Link href={shopHref('/create')} className="mt-8 k-btn k-btn-cta">ליצירת תמונה <ArrowLeft className="w-5 h-5" /></Link>
       </div>
     );

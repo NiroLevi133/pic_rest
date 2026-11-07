@@ -36,7 +36,7 @@
 
 **כלל:** קוד תחת `src/shop` לא מייבא מהמערכת, חוץ מ־`server/db.ts` (לקוח Prisma המשותף). הטבלאות `ShopGeneration` ו־`ShopOrder` בלי קשרים לטבלאות המערכת.
 
-החיבורים למערכת: הכפתור בדשבורד, `/shop` ו־`/api/shop/` ב־`src/middleware.ts`, ו־`/shop` ב־`BARE_PREFIXES` ב־`src/components/AppShell.tsx`.
+החיבורים למערכת: `server/owner.ts` (זיהוי בעל העסק לפי ההתחברות למערכת, ליצירה בלי מגבלה), הכפתור בדשבורד, `/shop` ו־`/api/shop/` ב־`src/middleware.ts`, ו־`/shop` ב־`BARE_PREFIXES` ב־`src/components/AppShell.tsx`.
 
 ## משתני סביבה
 
@@ -48,6 +48,7 @@
 | `NEXT_PUBLIC_SHOP_WHATSAPP` | | המספר שמקבל הזמנות, `972501234567` |
 | `SHOP_DAILY_LIMIT_PER_CLIENT` | 3 | העלאות למבקר ב־24 שעות (כל העלאה = 4 תמונות) |
 | `SHOP_DAILY_LIMIT_TOTAL` | 100 | תקרה יומית לכל החנות (הגנה על העלות) |
+| `SHOP_UNLIMITED_PHONES` | | מספרים נוספים (מופרדים בפסיק) בלי מגבלה יומית. `OWNER_PHONE` תמיד בלי מגבלה, כשהוא מחובר למערכת באותו דפדפן (`server/owner.ts`) |
 | `SHOP_RETENTION_DAYS` | 30 | אחרי כמה ימים נמחקות יצירות שלא הוזמנו |
 | `SHOP_OPENAI_BASE_URL` | `https://api.openai.com/v1` | לבדיקות או gateway בלבד |
 | `SHOP_STORAGE_BUCKET` | `SUPABASE_BUCKET` | באקט לתמונות החנות |

@@ -72,7 +72,7 @@ export default function UploadView({ style }: { style: ArtStyle }) {
         <div className="text-center lg:text-start order-1 lg:order-none">
           <p className="k-eyebrow">{style.title}</p>
           <h1 className="k-h text-3xl sm:text-4xl mt-1">{style.description}</h1>
-          <p className="mt-3 text-[var(--k-muted)]">העלו תמונה אחת, ונכין לכם 4 גרסאות בסגנון {style.title}.</p>
+          <p className="mt-3 text-[var(--k-muted)]">העלו תמונה אחת, ונכין לכם 4 יצירות אמנות בסגנון {style.title}.</p>
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--k-paper)] border border-[var(--k-line)] px-3 py-1 text-sm font-semibold">מתאים ל: {style.suitsFor}</p>
 
           <input ref={input} type="file" accept="image/*" className="sr-only" onChange={(e) => { pick(e.target.files?.[0]); e.target.value = ''; }} />
@@ -111,7 +111,7 @@ export default function UploadView({ style }: { style: ArtStyle }) {
                 <span>אני מאשר/ת שיש לי זכות להשתמש בתמונה ושהאנשים שבה מסכימים לכך, ומקבל/ת את <Link href={shopHref('/privacy')} target="_blank" className="underline">תנאי השימוש והפרטיות</Link>.</span>
               </label>
               <button type="button" onClick={create} disabled={sending} className="mt-5 k-btn k-btn-cta w-full text-lg">
-                {sending ? <><Loader2 className="w-5 h-5 animate-spin" /> שולחים…</> : 'צרו לי 4 גרסאות'}
+                {sending ? <><Loader2 className="w-5 h-5 animate-spin" /> שולחים…</> : 'צרו לי 4 יצירות אמנות'}
               </button>
             </>
           )}

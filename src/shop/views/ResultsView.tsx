@@ -95,7 +95,6 @@ export default function ResultsView({ id }: { id: string }) {
   const style = gen ? getStyle(gen.styleId) : undefined;
   const variants: PublicVariant[] = gen?.variants ?? Array.from({ length: 4 }, () => ({ status: 'pending' }));
   const pending = !gen || gen.status === 'pending';
-  const readyCount = variants.filter((v) => v.status === 'done').length;
   const settledCount = variants.filter((v) => v.status !== 'pending').length;
   // Time since the upload, from the server's timestamp (so a reload doesn't restart the bar);
   // falls back to time on this page if the clocks disagree.
@@ -133,15 +132,7 @@ export default function ResultsView({ id }: { id: string }) {
         {pending ? (
           <>
             <h1 className="k-h text-3xl sm:text-4xl">היצירות שלכם בדרך</h1>
-            <div className="mt-5 max-w-md mx-auto">
-              <div className="h-3 rounded-full bg-[#EAE3D8] overflow-hidden" role="progressbar" aria-label="התקדמות היצירה" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent}>
-                <div className="h-full rounded-full bg-[var(--k-cta)] transition-[width] duration-1000 ease-linear" style={{ width: `${progress.percent}%` }} />
-              </div>
-              <div className="mt-2 flex items-center justify-between text-sm text-[var(--k-muted)]">
-                <span aria-live="polite">{MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress.percent / 100) * MESSAGES.length))]}</span>
-                <span className="tabular-nums">{readyCount} מתוך {variants.length} מוכנות</span>
-              </div>
-            </div>
+            <p className="mt-2 text-[var(--k-muted)]" aria-live="polite">{MESSAGES[Math.min(MESSAGES.length - 1, Math.floor((progress.percent / 100) * MESSAGES.length))]}</p>
             <p className="mt-3 text-sm text-[var(--k-muted)]">אפשר להשאיר את הדף פתוח. כל תמונה מופיעה ברגע שהיא מוכנה.</p>
           </>
         ) : (
@@ -173,7 +164,7 @@ export default function ResultsView({ id }: { id: string }) {
         <RoomScene className="aspect-[5/4] lg:sticky lg:top-24" tileWidth="54%">
           {variants.map((v, i) => (
             <FramedTile key={i} frame={frame}>
-              {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`גרסה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <PendingTile progress={pendingTile} />}
+              {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`יצירה ${i + 1}`} /> : v.status === 'error' ? <div className="w-full h-full bg-[#E9E2D7]" /> : <PendingTile progress={pendingTile} />}
             </FramedTile>
           ))}
         </RoomScene>
@@ -184,10 +175,10 @@ export default function ResultsView({ id }: { id: string }) {
             const inCart = gen ? has(gen.id, i) : false;
             return (
               <div key={i} className="rounded-2xl bg-[var(--k-paper)] border border-[var(--k-line)] p-3 sm:p-4">
-                <button type="button" className="block w-full relative group" disabled={v.status !== 'done'} onClick={() => setZoom(i)} aria-label={`הגדלת גרסה ${i + 1}`}>
+                <button type="button" className="block w-full relative group" disabled={v.status !== 'done'} onClick={() => setZoom(i)} aria-label={`הגדלת יצירה ${i + 1}`}>
                   <FramedTile frame={frame} shadow={false}>
-                    {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`גרסה ${i + 1}`} />
-                      : v.status === 'error' ? <div className="w-full h-full flex items-center justify-center text-xs text-[var(--k-muted)] p-2 text-center bg-[#F1ECE4]">הגרסה הזו לא הצליחה</div>
+                    {v.status === 'done' && v.url ? <TileImage src={v.url} alt={`יצירה ${i + 1}`} />
+                      : v.status === 'error' ? <div className="w-full h-full flex items-center justify-center text-xs text-[var(--k-muted)] p-2 text-center bg-[#F1ECE4]">היצירה הזו לא הצליחה</div>
                       : <PendingTile progress={pendingTile} />}
                   </FramedTile>
                   {v.status === 'done' && <span className="absolute top-2 start-2 bg-white/90 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"><Maximize2 className="w-4 h-4" /></span>}
@@ -224,14 +215,14 @@ export default function ResultsView({ id }: { id: string }) {
 
       {/* Zoom: one version on the wall */}
       {zoom !== null && variants[zoom]?.url && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setZoom(null)} role="dialog" aria-modal="true" aria-label={`גרסה ${zoom + 1}`}>
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setZoom(null)} role="dialog" aria-modal="true" aria-label={`יצירה ${zoom + 1}`}>
           <div className="w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-3">
               <FrameToggle value={frame} onChange={setFrame} />
               <button type="button" onClick={() => setZoom(null)} className="bg-white rounded-full p-2" aria-label="סגירה"><X className="w-5 h-5" /></button>
             </div>
             <RoomScene className="aspect-[5/4]" cols={1} tileWidth="40%">
-              <FramedTile frame={frame}><TileImage src={variants[zoom].url!} alt={`גרסה ${zoom + 1}`} /></FramedTile>
+              <FramedTile frame={frame}><TileImage src={variants[zoom].url!} alt={`יצירה ${zoom + 1}`} /></FramedTile>
             </RoomScene>
             {gen && (
               <button type="button" className="mt-4 k-btn k-btn-cta w-full"

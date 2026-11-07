@@ -13,13 +13,16 @@ export function clientHash(req: Request): string {
   return createHash('sha256').update(`${salt}:${ip}`).digest('hex').slice(0, 32);
 }
 
+/** Generations made by the owner are stored under this marker and don't count toward the store's total. */
+export const OWNER_HASH = 'owner';
+
 export type LimitResult = { ok: true } | { ok: false; reason: 'client' | 'total' };
 
 export async function checkDailyLimit(hash: string): Promise<LimitResult> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const [mine, all] = await Promise.all([
     db.shopGeneration.count({ where: { clientHash: hash, createdAt: { gte: since } } }),
-    db.shopGeneration.count({ where: { createdAt: { gte: since } } }),
+    db.shopGeneration.count({ where: { createdAt: { gte: since }, clientHash: { not: OWNER_HASH } } }),
   ]);
   if (mine >= PER_CLIENT) return { ok: false, reason: 'client' };
   if (all >= TOTAL) return { ok: false, reason: 'total' };
